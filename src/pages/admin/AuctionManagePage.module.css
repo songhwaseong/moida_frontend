@@ -1,0 +1,267 @@
+.wrap {
+  padding: 28px 32px;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1A1A2E;
+  white-space: nowrap;
+}
+
+.searchInput {
+  flex: 1;
+  max-width: 360px;
+  padding: 8px 14px;
+  border: 1.5px solid #D0D3DE;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.searchInput:focus { border-color: #4A4A6A; }
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #EBEBF0;
+  background: #fff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead tr {
+  background: #F4F5F7;
+}
+
+.table th {
+  padding: 11px 14px;
+  text-align: center;
+  font-weight: 600;
+  color: #4A4A6A;
+  border-bottom: 1px solid #EBEBF0;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 11px 14px;
+  text-align: center;
+  border-bottom: 1px solid #F0F0F5;
+  color: #1A1A2E;
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover > td { background: #FAFAFA; }
+
+.auctionNo {
+  font-family: monospace;
+  font-size: 12px;
+  color: #4A4A6A;
+  font-weight: 600;
+}
+
+.name {
+  text-align: left !important;
+  font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusSelect {
+  padding: 4px 8px;
+  border: 1.5px solid #D0D3DE;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  background: #fff;
+  outline: none;
+}
+
+.bidBtn {
+  padding: 4px 12px;
+  border: 1.5px solid #4A4A6A;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4A4A6A;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.bidBtn:hover { background: #4A4A6A; color: #fff; }
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: #8B8FA8;
+}
+
+/* 입찰 내역 펼침 */
+.bidHistoryCell {
+  padding: 0 !important;
+  background: #F8F9FB !important;
+}
+
+.bidHistory {
+  padding: 16px 24px;
+}
+
+.bidHistoryTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 12px;
+}
+
+.noBid {
+  font-size: 13px;
+  color: #8B8FA8;
+}
+
+.bidTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #EBEBF0;
+}
+
+.bidTable th {
+  padding: 8px 14px;
+  background: #F4F5F7;
+  font-weight: 600;
+  color: #4A4A6A;
+  text-align: center;
+  border-bottom: 1px solid #EBEBF0;
+}
+
+.bidTable td {
+  padding: 8px 14px;
+  text-align: center;
+  border-bottom: 1px solid #F0F0F5;
+  color: #1A1A2E;
+}
+
+.bidTable tbody tr:last-child td { border-bottom: none; }
+
+.winBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: #43A047;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.memberNo {
+  font-family: monospace;
+  font-size: 11px;
+  color: #8B8FA8;
+}
+
+.bidAmount {
+  font-weight: 700;
+  color: #1E88E5;
+}
+
+/* 낙찰자 행 */
+.winnerRow {
+  background: #FFF8E1 !important;
+  border-bottom: 2px solid #F9A825 !important;
+}
+
+.winnerRow td {
+  border-bottom: 2px solid #F9A825 !important;
+}
+
+.winnerLabel {
+  display: inline-block;
+  background: #F9A825;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+
+.winnerName {
+  font-weight: 700;
+  color: #1A1A2E;
+}
+
+.winnerAmount {
+  font-weight: 700;
+  color: #F9A825;
+  font-size: 14px;
+}
+
+/* 페이징 */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+}
+
+.pageInfo {
+  font-size: 13px;
+  color: #8B8FA8;
+  margin-right: 8px;
+}
+
+.pageBtn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1.5px solid #D0D3DE;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  color: #4A4A6A;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #4A4A6A;
+  color: #fff;
+  border-color: #4A4A6A;
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pageBtnActive {
+  background: #4A4A6A;
+  color: #fff;
+  border-color: #4A4A6A;
+  font-weight: 700;
+}

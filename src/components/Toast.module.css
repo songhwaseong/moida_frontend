@@ -1,0 +1,61 @@
+.container {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  animation: slideDown 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: all;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.success { background: #EAF5EC; border: 1px solid #A8D5B0; }
+.error   { background: #FFF0F0; border: 1px solid #F5B8B8; }
+.warning { background: #FFF8EC; border: 1px solid #F5D898; }
+.info    { background: #EEF4FF; border: 1px solid #B0C8F5; }
+
+.icon { font-size: 17px; flex-shrink: 0; }
+
+.message {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+.success .message { color: #2A6E38; }
+.error   .message { color: #B03030; }
+.warning .message { color: #8A6010; }
+.info    .message { color: #2A4E9E; }
+
+.close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.4;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.close:hover { opacity: 0.8; }

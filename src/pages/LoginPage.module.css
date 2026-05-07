@@ -1,0 +1,224 @@
+.page {
+  min-height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px 40px;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 72px 0 40px;
+}
+
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  color: var(--primary);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.tagline {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  outline: none;
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+
+.input:focus { border-color: var(--primary); }
+.inputError { border-color: var(--primary) !important; }
+
+.pwWrap { position: relative; }
+.pwWrap .input { padding-right: 64px; }
+
+.pwToggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 500;
+}
+
+.errorMsg {
+  font-size: 13px;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.loginBtn {
+  width: 100%;
+  padding: 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  margin-top: 4px;
+  transition: opacity 0.2s;
+}
+
+.loginBtn:active { opacity: 0.85; }
+.loading { opacity: 0.7; cursor: not-allowed; }
+
+.forgotPw {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.dividerRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.dividerText {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.socialBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.socialBtn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: opacity 0.15s;
+}
+
+.socialBtn:active { opacity: 0.85; }
+
+.kakao { background: #FEE500; color: #3C1E1E; }
+.naver { background: #03C75A; color: #fff; }
+.google { background: #fff; color: #333; border: 1.5px solid var(--border); }
+
+.socialIcon {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.signupRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+
+.signupText { font-size: 14px; color: var(--muted); }
+
+.signupLink {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.findRow { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.findDivider { color: var(--border); font-size: 13px; }
+
+@media (min-width: 768px) {
+  .page {
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+  }
+  .page > * {
+    width: 420px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+}
+
+.guestBtn {
+  width: 100%;
+  padding: 13px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-top: 4px;
+  transition: color 0.15s;
+}
+.guestBtn:hover { color: var(--text); }

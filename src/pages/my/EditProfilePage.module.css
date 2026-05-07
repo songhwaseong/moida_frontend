@@ -1,0 +1,114 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 40px;
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: #fff; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.back {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; cursor: pointer; color: var(--text);
+}
+.title { font-size: 16px; font-weight: 700; }
+.saveTopBtn {
+  font-size: 14px; font-weight: 700; color: var(--primary);
+  background: none; border: none; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif; padding: 4px 8px;
+}
+
+/* 아바타 */
+.avatarSection {
+  background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24px 16px;
+}
+.avatarMain {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: #F0F1F4; display: flex; align-items: center;
+  justify-content: center; font-size: 42px; margin-bottom: 8px;
+  border: 3px solid var(--primary);
+}
+.avatarHint { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.avatarGrid {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+.avatarOpt {
+  width: 46px; height: 46px; border-radius: 50%; font-size: 24px;
+  background: #F0F1F4; border: 2px solid transparent; cursor: pointer;
+  transition: all 0.15s;
+}
+.avatarOptActive {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* 폼 */
+.form {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 20px 16px;
+}
+.inputGroup { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: 13px; font-weight: 600; color: var(--text); }
+
+.input {
+  width: 100%; padding: 14px 16px;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 15px; outline: none; color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: border-color 0.2s; background: #fff;
+}
+.input:focus { border-color: var(--primary); }
+.inputError { border-color: var(--primary) !important; }
+.inputReadonly { background: #f9f8f5; color: var(--muted); cursor: not-allowed; }
+
+.hint { font-size: 11px; color: var(--muted); text-align: right; }
+.fieldError { font-size: 12px; color: var(--primary); }
+.matchOk { font-size: 12px; color: #3B6D11; font-weight: 500; }
+
+/* 비밀번호 */
+.pwWrap { position: relative; }
+.pwWrap .input { padding-right: 64px; }
+.pwToggle {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; font-size: 12px; color: var(--muted);
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; font-weight: 500;
+}
+.strengthWrap { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.strengthBar { flex: 1; height: 4px; background: #F0F1F4; border-radius: 2px; overflow: hidden; }
+.strengthFill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+.strengthLabel { font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+.successMsg {
+  font-size: 13px; color: #3B6D11; background: #EAF3DE;
+  padding: 12px 14px; border-radius: 10px; text-align: center; font-weight: 500;
+}
+
+.pwChangeBtn {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; padding: 15px 16px; background: #fff;
+  border: 1px solid var(--border); border-radius: 12px;
+  font-size: 14px; font-weight: 500; color: var(--text);
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+}
+
+.saveBtn {
+  width: 100%; padding: 16px; background: var(--primary); color: #fff;
+  border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  transition: opacity 0.2s; margin-top: 4px;
+}
+.saveBtn:active { opacity: 0.85; }
+.loading { opacity: 0.7; cursor: not-allowed; }
+
+.deleteBtn {
+  width: 100%; padding: 14px; background: none;
+  border: 1px solid var(--border); border-radius: 14px;
+  font-size: 14px; color: var(--muted); cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}

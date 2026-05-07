@@ -1,0 +1,216 @@
+.main { padding-bottom: 0px; }
+
+.header { padding: 16px 16px 8px; }
+.title { font-size: 20px; font-weight: 700; }
+
+.list { display: flex; flex-direction: column; }
+
+.room {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--card);
+  transition: background 0.15s;
+}
+
+.room:active { background: #F4F5F7; }
+
+.roomEmoji {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #F0F1F4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.roomContent { flex: 1; min-width: 0; }
+
+.roomTop {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.roomUser { font-size: 15px; font-weight: 600; }
+.roomTime { font-size: 11px; color: var(--muted); }
+
+.roomBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.roomMsg {
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.unreadBadge {
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.roomProduct { font-size: 11px; color: #B4B2A9; }
+
+/* chat room */
+.chatMain {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+}
+
+.chatHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.back {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+
+.chatHeaderInfo {}
+.chatHeaderName { font-size: 15px; font-weight: 700; }
+.chatHeaderProduct { font-size: 12px; color: var(--muted); }
+
+.productBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.productBarEmoji { font-size: 28px; }
+.productBarName { font-size: 13px; font-weight: 500; }
+.productBarPrice { font-size: 13px; color: var(--primary); font-weight: 700; }
+
+.tradeBtn {
+  margin-left: auto;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.messages {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  max-width: 72%;
+}
+
+.mine { align-items: flex-end; align-self: flex-end; }
+.theirs { align-items: flex-start; align-self: flex-start; }
+
+.bubbleText {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mine .bubbleText {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.theirs .bubbleText {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.bubbleTime { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+.inputBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border-top: 1px solid var(--border);
+}
+
+.attach {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.msgInput {
+  flex: 1;
+  background: #F0F1F4;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 14px;
+  font-size: 14px;
+  outline: none;
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.sendBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.sendBtn:disabled { opacity: 0.4; cursor: default; }

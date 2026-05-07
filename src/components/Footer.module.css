@@ -1,0 +1,44 @@
+.footer {
+  background: #F8F9FB;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 28px 24px;
+}
+
+/* ── 회사 정보 ── */
+.bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.companyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.companyInfo p {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.sep {
+  margin: 0 8px;
+  color: #D0D3DC;
+}
+
+.copyright {
+  font-size: 12px;
+  color: #B0B4C0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}

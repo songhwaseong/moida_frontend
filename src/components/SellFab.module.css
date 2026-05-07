@@ -1,0 +1,23 @@
+.fab {
+  position: fixed;
+  bottom: 72px;
+  right: calc(50% - 195px + 16px);
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(226, 75, 74, 0.4);
+  z-index: 150;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fab:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(226, 75, 74, 0.3);
+}

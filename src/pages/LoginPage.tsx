@@ -1,0 +1,157 @@
+import React, { useState } from 'react';
+import styles from './LoginPage.module.css';
+import { useToast } from '../components/Toast';
+
+const ADMIN_CREDENTIALS = [
+
+  { email: 'admin@admin.com',       password: 'admin'       },
+  { email: 'admin@bazar.kr',        password: 'admin1234'   },
+  { email: 'kmikyung761@gmail.com', password: '1' },
+  { email: 'manager@bazar.kr',      password: 'manager5678' },
+  { email: 'yalejong96@gmail.com',      password: '2' },
+  { email: 'zes1357@outlook.com',      password: '1' },
+  { email: 'supyoungsun@gmail.com', password: '2' },
+
+];
+
+interface Props {
+  onLogin: (name?: string) => void;
+  onAdmin: () => void;
+  onGoSignup: () => void;
+  onFindAccount: (tab?: 'id' | 'pw') => void;
+  onGuest?: () => void;
+}
+
+const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccount, onGuest }) => {
+  const { showToast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!email.trim()) { setError('이메일을 입력해주세요'); return; }
+    if (!password.trim()) { setError('비밀번호를 입력해주세요'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('이메일 형식이 올바르지 않아요'); return; }
+
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setLoading(false);
+
+    if (ADMIN_CREDENTIALS.some(c => c.email === email && c.password === password)) {
+      onAdmin();
+      return;
+    }
+    onLogin(email.split('@')[0]);
+  };
+
+  const handleSocial = (provider: string) => {
+    showToast(`${provider} 로그인은 백엔드 연동 후 사용 가능합니다`, 'info');
+  };
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.top}>
+        <div className={styles.logo}>MOIDA</div>
+        <p className={styles.tagline}>중고거래와 경매를 한번에</p>
+      </div>
+
+      <div className={styles.form}>
+        {/* 이메일 */}
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>이메일</label>
+          <input
+            className={`${styles.input} ${error && !email ? styles.inputError : ''}`}
+            type="email"
+            placeholder="example@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            autoComplete="email"
+          />
+        </div>
+
+        {/* 비밀번호 */}
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>비밀번호</label>
+          <div className={styles.pwWrap}>
+            <input
+              className={`${styles.input} ${error && !password ? styles.inputError : ''}`}
+              type={showPw ? 'text' : 'password'}
+              placeholder="비밀번호를 입력해주세요"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              autoComplete="current-password"
+            />
+            <button
+              className={styles.pwToggle}
+              onClick={() => setShowPw((p) => !p)}
+              type="button"
+            >
+              {showPw ? '숨기기' : '보기'}
+            </button>
+          </div>
+        </div>
+
+        {/* 에러 메시지 */}
+        {error && <p className={styles.errorMsg}>⚠️ {error}</p>}
+
+        {/* 로그인 버튼 */}
+        <button
+          className={`${styles.loginBtn} ${loading ? styles.loading : ''}`}
+          onClick={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? '로그인 중...' : '로그인'}
+        </button>
+
+        {/* 비회원 둘러보기 */}
+        {onGuest && (
+          <button className={styles.guestBtn} onClick={onGuest}>
+            비회원으로 둘러보기
+          </button>
+        )}
+
+        {/* 아이디/비밀번호 찾기 */}
+        <div className={styles.findRow}>
+          <button className={styles.forgotPw} onClick={() => onFindAccount('id')}>아이디 찾기</button>
+          <span className={styles.findDivider}>|</span>
+          <button className={styles.forgotPw} onClick={() => onFindAccount('pw')}>비밀번호 찾기</button>
+        </div>
+      </div>
+
+      {/* 소셜 로그인 */}
+      <div className={styles.dividerRow}>
+        <div className={styles.dividerLine} />
+        <span className={styles.dividerText}>또는</span>
+        <div className={styles.dividerLine} />
+      </div>
+
+      <div className={styles.socialBtns}>
+        <button className={`${styles.socialBtn} ${styles.kakao}`} onClick={() => handleSocial('카카오')}>
+          <span className={styles.socialIcon}>💬</span>
+          카카오로 로그인
+        </button>
+        <button className={`${styles.socialBtn} ${styles.naver}`} onClick={() => handleSocial('네이버')}>
+          <span className={styles.socialIcon} style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>N</span>
+          네이버로 로그인
+        </button>
+        <button className={`${styles.socialBtn} ${styles.google}`} onClick={() => handleSocial('구글')}>
+          <span className={styles.socialIcon}>G</span>
+          구글로 로그인
+        </button>
+      </div>
+
+      {/* 회원가입 */}
+      <div className={styles.signupRow}>
+        <span className={styles.signupText}>아직 계정이 없으신가요?</span>
+        <button className={styles.signupLink} onClick={onGoSignup}>회원가입</button>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;

@@ -1,0 +1,158 @@
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+.modal {
+  background: #111; border-radius: 20px;
+  width: 100%; max-width: 600px;
+  overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+  animation: slideUp 0.25s ease;
+}
+
+/* 헤더 */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.headerLeft { display: flex; align-items: center; gap: 10px; }
+.badge360 {
+  background: var(--primary, #E24B4A); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 6px; letter-spacing: 0.5px;
+}
+.title { font-size: 14px; font-weight: 600; color: #fff; }
+.closeBtn {
+  background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+  width: 30px; height: 30px; color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; transition: background 0.15s;
+}
+.closeBtn:hover { background: rgba(255,255,255,0.2); }
+
+/* 뷰어 */
+.viewer {
+  width: 100%; aspect-ratio: 4/3;
+  background: #1c1c1c;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  user-select: none;
+}
+.grab    { cursor: grab; }
+.grabbing { cursor: grabbing; }
+
+.frameImg {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  pointer-events: none; display: block;
+}
+
+/* 각도 표시 */
+.angleDisplay {
+  position: absolute; top: 12px; right: 14px;
+  background: rgba(0,0,0,0.6); color: #fff;
+  font-size: 13px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 10px; border-radius: 10px;
+  pointer-events: none; min-width: 52px; text-align: center;
+}
+
+/* 화살표 */
+.arrowBtn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; z-index: 2;
+}
+.arrowBtn:hover { background: rgba(0,0,0,0.7); }
+.arrowLeft  { left: 12px; }
+.arrowRight { right: 12px; }
+
+/* 힌트 */
+.hint {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.55); color: rgba(255,255,255,0.8);
+  font-size: 12px; padding: 5px 14px; border-radius: 20px;
+  display: flex; align-items: center; gap: 6px;
+  pointer-events: none; white-space: nowrap;
+  animation: fadeOut 4s forwards 2.5s;
+}
+
+/* 로딩 */
+.loadingWrap {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; color: #fff;
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: var(--primary, #E24B4A);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.loadingText { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+/* 컨트롤 */
+.controls {
+  padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 10px;
+  background: #161616; border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* 프로그레스바 */
+.progressWrap { position: relative; height: 20px; display: flex; align-items: center; }
+.progressTrack {
+  width: 100%; height: 4px;
+  background: rgba(255,255,255,0.15); border-radius: 2px;
+  position: relative; overflow: visible;
+}
+.progressFill {
+  height: 100%; background: var(--primary, #E24B4A);
+  border-radius: 2px; transition: width 0.05s;
+}
+.progressThumb {
+  position: absolute; top: 50%; transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 0 3px var(--primary, #E24B4A);
+  transition: left 0.05s; pointer-events: none;
+}
+.sliderHidden {
+  position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; margin: 0;
+}
+
+.btns {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.ctrlBtn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.ctrlBtn:hover { background: rgba(255,255,255,0.18); }
+
+.autoBtn {
+  padding: 9px 22px; border-radius: 20px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; font-size: 13px; font-weight: 600;
+  font-family: 'Noto Sans KR', sans-serif; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.autoBtn:hover { background: rgba(255,255,255,0.16); }
+.autoBtnActive {
+  background: var(--primary, #E24B4A) !important;
+  border-color: var(--primary, #E24B4A) !important;
+}
+
+.keyHint { font-size: 11px; color: rgba(255,255,255,0.3); text-align: center; }
+
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeOut { 0% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; pointer-events: none; } }
+@keyframes spin    { to { transform: rotate(360deg); } }

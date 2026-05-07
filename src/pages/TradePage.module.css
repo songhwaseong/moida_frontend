@@ -1,0 +1,66 @@
+.main { padding-bottom: 0px; background: var(--bg); }
+
+.filterRow {
+  display: flex; gap: 8px; padding: 12px 16px;
+  overflow-x: auto; scrollbar-width: none; background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.filterRow::-webkit-scrollbar { display: none; }
+
+.filterChip {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--border); background: #fff; color: var(--muted);
+  cursor: pointer; white-space: nowrap; font-family: 'Noto Sans KR', sans-serif;
+  transition: all 0.15s;
+}
+.filterChip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.sortRow {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--border);
+}
+.resultCount { font-size: 13px; color: var(--muted); }
+.sortBtn {
+  font-size: 13px; font-weight: 500; background: none; border: none;
+  color: var(--text); cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+}
+.sortDropdown {
+  position: absolute; right: 0; top: 28px; background: #fff;
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden; z-index: 20;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 120px;
+}
+.sortItem {
+  display: block; width: 100%; padding: 11px 16px; font-size: 13px;
+  background: none; border: none; text-align: left; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif; color: var(--text);
+}
+.sortItem:hover { background: var(--bg); }
+.sortActive { color: var(--primary); font-weight: 600; }
+
+.list { padding: 12px 16px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.categoryBadge {
+  display: inline-block;
+  margin-left: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  gap: 10px;
+  text-align: center;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
+}

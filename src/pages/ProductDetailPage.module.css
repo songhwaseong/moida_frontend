@@ -1,0 +1,395 @@
+/* ── 페이지 전체 ── */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--header-height));
+  background: var(--bg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.back, .shareBtn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text); display: flex; align-items: center;
+}
+.headerTitle { font-size: 16px; font-weight: 700; }
+
+/* ── 스크롤 영역 ── */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 40px;
+}
+
+/* ── 2컬럼 레이아웃 ── */
+.twoCol {
+  display: grid;
+  grid-template-columns: 480px 1fr;
+  gap: 0;
+  align-items: start;
+  background: #fff;
+}
+
+/* ── 왼쪽: 이미지 영역 ── */
+.imgArea {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  border-right: 1px solid var(--border);
+  padding: 20px;
+}
+
+.mainImg {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  background: #F0F1F4;
+  position: relative;
+  overflow: hidden;
+}
+.mainImgEl {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.conditionBadge {
+  position: absolute;
+  top: 14px; left: 14px;
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  font-size: 11px; font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+}
+
+/* 썸네일 가로 나열 */
+.thumbRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.thumb {
+  width: 72px; height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  background: #F0F1F4;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s;
+}
+.thumb:focus { outline: none; }
+.thumbActive { border-color: var(--primary); }
+.thumbImg {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 9px;
+}
+
+/* ── 오른쪽: 정보 영역 ── */
+.rightCol {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* 브레드크럼 */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.breadcrumb span { color: var(--muted); }
+.breadcrumb strong { color: var(--text); font-weight: 500; }
+
+/* 상품 상태 배지 */
+.categoryRow { display: flex; gap: 6px; margin-bottom: 10px; }
+.conditionTag { font-size: 11px; padding: 4px 11px; border-radius: 6px; background: var(--primary-light); color: #A32D2D; font-weight: 600; }
+
+/* 상품명 + 좋아요 */
+.nameRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.name {
+  font-size: 22px; font-weight: 700;
+  line-height: 1.35; flex: 1;
+}
+.likeBtn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: #F0F1F4; border: none; border-radius: 14px;
+  cursor: pointer; padding: 8px 14px; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.likeBtn:hover { background: #E8E9EC; }
+.likeHeart { font-size: 22px; line-height: 1; }
+.likeCnt { font-size: 11px; color: var(--muted); }
+
+/* 가격 */
+.price {
+  font-size: 28px; font-weight: 700;
+  margin-bottom: 6px;
+}
+.immediatePriceRow {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.immediatePriceLabel {
+  font-size: 12px; font-weight: 600;
+  color: #fff; background: #E24B4A;
+  padding: 3px 8px; border-radius: 5px;
+}
+.immediatePriceValue {
+  font-size: 15px; font-weight: 700; color: #E24B4A;
+}
+.meta {
+  font-size: 13px; color: var(--muted);
+  margin-bottom: 20px;
+}
+.timeGlow {
+  font-weight: 600;
+  display: inline-block;
+  background: linear-gradient(90deg, #E24B4A 0%, #ff9a9a 45%, #E24B4A 55%, #E24B4A 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* 태그 */
+.tagRow {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.tag { font-size: 11px; padding: 4px 11px; border-radius: 6px; font-weight: 600; }
+.new     { background: #EAF3DE; color: #3B6D11; }
+.auction { background: var(--primary-light); color: #A32D2D; }
+.free    { background: #E1F5EE; color: #0F6E56; }
+.good    { background: #F0F1F4; color: #6B7080; }
+
+
+/* 상품 상태 */
+.conditionRow {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  background: #F8F8FA;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.conditionRowLabel { color: var(--muted); }
+.conditionRowValue { font-weight: 600; }
+
+/* 판매자 */
+.sellerRow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px;
+  background: #F8F8FA;
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+.sellerAvatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #F0F1F4; display: flex; align-items: center;
+  justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.sellerInfo { flex: 1; }
+.sellerName { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.sellerMeta { display: flex; gap: 8px; flex-wrap: wrap; }
+.sellerTemp  { font-size: 12px; color: #E24B4A; font-weight: 500; }
+.sellerSales, .sellerLoc { font-size: 12px; color: var(--muted); }
+.profileBtn {
+  background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  padding: 7px 14px; font-size: 13px; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background 0.15s;
+}
+.profileBtn:hover { background: #F0F1F4; }
+
+/* 구분선 */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* 상품 설명 */
+.section { margin-bottom: 20px; }
+.sectionTitle { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.description { font-size: 14px; line-height: 1.85; color: var(--text); white-space: pre-line; }
+
+/* 탭: 상품 설명 / 상품 문의 */
+.tabsRow { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  background: none; border: none; cursor: pointer;
+  padding: 12px 4px; margin-right: 20px;
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  font-family: 'Noto Sans KR', sans-serif;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.tab:hover { color: var(--text); }
+.tabActive { color: var(--text); border-bottom-color: var(--primary); }
+.tabCount {
+  font-size: 12px; font-weight: 700; color: var(--primary);
+  background: rgba(226,75,74,0.10);
+  padding: 1px 7px; border-radius: 10px;
+}
+.askBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.askBtn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* 문의 목록 */
+.qnaList { display: flex; flex-direction: column; gap: 14px; }
+.qnaEmpty {
+  text-align: center; color: var(--muted); font-size: 13px;
+  padding: 32px 0;
+}
+.qnaItem {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.qnaQuestion { padding: 14px 16px; background: #fff; }
+.qnaAnswer { padding: 14px 16px; background: #FAFAFB; border-top: 1px dashed var(--border); }
+.qnaHead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.qnaBadgeQ {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 5px;
+  background: #1A1A2E; color: #fff;
+  font-size: 11px; font-weight: 800;
+}
+.qnaBadgeA {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 5px;
+  background: var(--primary); color: #fff;
+  font-size: 11px; font-weight: 800;
+}
+.qnaUser { font-size: 13px; font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+.qnaSellerTag {
+  font-size: 10px; font-weight: 700; color: var(--primary);
+  background: rgba(226,75,74,0.10);
+  padding: 1px 6px; border-radius: 4px;
+}
+.qnaDate { font-size: 12px; color: var(--muted); margin-left: auto; }
+.qnaText { font-size: 13.5px; line-height: 1.7; color: var(--text); white-space: pre-line; margin: 0; }
+
+/* 문의 등록 모달 */
+.askOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+}
+.askModal {
+  width: min(440px, 92vw);
+  background: #fff; border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.22);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.askModalHead { display: flex; align-items: center; justify-content: space-between; }
+.askModalTitle { font-size: 16px; font-weight: 700; color: var(--text); }
+.askModalClose {
+  background: none; border: none; cursor: pointer;
+  width: 28px; height: 28px; border-radius: 6px;
+  color: var(--muted); font-size: 16px;
+}
+.askModalClose:hover { background: #F0F1F4; color: var(--text); }
+.askTextarea {
+  width: 100%; min-height: 120px;
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px;
+  font-size: 14px; line-height: 1.6;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.askTextarea:focus { outline: none; border-color: var(--primary); }
+.askActions { display: flex; gap: 8px; justify-content: flex-end; }
+.askCancel {
+  height: 38px; padding: 0 16px; border-radius: 8px;
+  background: #F0F1F4; color: var(--text);
+  border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.askCancel:hover { background: #E4E5E9; }
+.askSubmit {
+  height: 38px; padding: 0 18px; border-radius: 8px;
+  background: var(--primary); color: #fff;
+  border: none; cursor: pointer;
+  font-size: 13px; font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.askSubmit:hover { opacity: 0.9; }
+.askSubmit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 거래 정보 그리드 */
+.infoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.infoItem { display: flex; flex-direction: column; gap: 3px; background: #F0F1F4; border-radius: 10px; padding: 12px 14px; }
+.infoLabel { font-size: 11px; color: var(--muted); }
+.infoValue { font-size: 14px; font-weight: 600; }
+
+/* 하단 액션바 — 숨김 */
+.actionBar { display: none; }
+.chatBtn   { display: none; }
+.auctionBtn { display: none; }
+.mainEmoji { font-size: 100px; }
+
+/* 360° 버튼 */
+.btn360 {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+  font-family: 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.3px;
+}
+.btn360:hover { background: var(--primary); }

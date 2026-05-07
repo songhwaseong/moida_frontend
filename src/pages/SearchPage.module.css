@@ -1,0 +1,103 @@
+.main { padding-bottom: 0px; background: var(--bg); }
+
+.searchBar {
+  display: flex; align-items: center; background: #F0F1F4;
+  border-radius: 10px; padding: 10px 14px; gap: 8px;
+  margin: 12px 16px;
+}
+.searchBar input {
+  flex: 1; border: none; background: transparent;
+  font-size: 15px; color: var(--text); outline: none;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.searchBar input::placeholder { color: var(--muted); }
+.clear { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 0 2px; }
+
+.section { padding: 8px 16px 0; }
+
+.sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.sectionTitle { font-size: 15px; font-weight: 700; }
+.clearAll { font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer; }
+
+/* 최근 검색어 */
+.recentList { display: flex; flex-direction: column; }
+.recentRow { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.recentItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 4px; font-size: 14px; color: var(--text);
+  background: none; border: none; cursor: pointer; flex: 1; text-align: left;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.removeBtn { background: none; border: none; color: var(--muted); font-size: 11px; cursor: pointer; padding: 8px; }
+.noRecent { font-size: 13px; color: var(--muted); padding: 12px 4px; }
+
+/* 인기 검색어 */
+.hotGrid { display: grid; grid-template-columns: 1fr 1fr; }
+.hotItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 4px; font-size: 14px; color: var(--text);
+  background: none; border: none; border-bottom: 1px solid var(--border);
+  cursor: pointer; text-align: left; font-family: 'Noto Sans KR', sans-serif;
+}
+.hotRank { font-size: 13px; font-weight: 700; color: var(--primary); min-width: 18px; }
+
+/* 결과 영역 */
+.resultSection { padding-bottom: 0; }
+
+.tabs {
+  display: flex; background: #fff;
+  border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.tab {
+  flex: 1; padding: 12px; font-size: 14px; font-weight: 500; color: var(--muted);
+  background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  margin-bottom: -1px;
+}
+.tabActive { color: var(--primary); border-bottom-color: var(--primary); }
+.tabCount {
+  background: var(--primary); color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px;
+}
+
+.resultList { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
+.resultLabel { font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 8px; }
+
+/* 경매 결과 카드 */
+.auctionRow {
+  display: flex; gap: 12px; background: var(--card);
+  border-radius: var(--radius); border: 1px solid var(--border);
+  padding: 12px; margin-bottom: 10px; cursor: pointer; transition: transform 0.15s;
+}
+.auctionRow:active { transform: scale(0.98); }
+
+.auctionImgWrap { width: 86px; height: 86px; border-radius: 10px; overflow: hidden; flex-shrink: 0; position: relative; }
+.auctionImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.liveBadge {
+  position: absolute; top: 4px; left: 4px; background: var(--primary);
+  color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 5px;
+  display: flex; align-items: center; gap: 3px;
+}
+.liveDot { width: 4px; height: 4px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+.auctionBody { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+.auctionName { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.auctionCategory { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.auctionPrice { font-size: 16px; font-weight: 700; color: var(--primary); }
+.auctionMeta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.auctionBids { font-size: 11px; color: var(--muted); }
+.auctionTimer { font-size: 11px; font-weight: 600; color: #2C2C2A; background: #F0F1F4; padding: 2px 7px; border-radius: 5px; }
+
+.empty { display: flex; flex-direction: column; align-items: center; padding: 60px 0; gap: 10px; text-align: center; }
+.emptyText { font-size: 15px; font-weight: 500; }
+.emptySubText { font-size: 13px; color: var(--muted); }
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 8px;
+}

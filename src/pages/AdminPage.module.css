@@ -1,0 +1,118 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: #F4F5F7;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: #1A1A1A;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sideTop {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #E24B4A;
+  letter-spacing: 1px;
+  font-family: 'Bebas Neue', sans-serif;
+}
+
+.adminBadge {
+  display: inline-block;
+  margin-top: 6px;
+  background: rgba(226,75,74,0.2);
+  color: #E24B4A;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(226,75,74,0.3);
+}
+
+.nav {
+  flex: 1;
+  padding: 16px 12px;
+}
+
+.navSection {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 8px;
+  margin: 8px 0 6px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+  margin-bottom: 2px;
+}
+
+.navItem:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+.navActive {
+  background: rgba(226,75,74,0.15) !important;
+  color: #ff7875 !important;
+}
+
+.navIcon { font-size: 15px; flex-shrink: 0; }
+.navLabel { flex: 1; }
+
+.navBadge {
+  background: #E24B4A;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.logoutBtn {
+  margin: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background 0.15s;
+}
+.logoutBtn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  height: 100vh;
+}

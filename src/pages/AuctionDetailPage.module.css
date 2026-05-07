@@ -1,0 +1,388 @@
+/* ── 페이지 ── */
+.page { display: flex; flex-direction: column; min-height: calc(100vh - var(--header-height)); background: var(--bg); }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; background: #fff; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.back { background: none; border: none; cursor: pointer; color: var(--text); display: flex; align-items: center; }
+.headerTitle { font-size: 16px; font-weight: 700; }
+
+.scroll { flex: 1; overflow-y: auto; padding-bottom: 40px; }
+
+/* ── 2컬럼 ── */
+.twoCol {
+  display: grid;
+  grid-template-columns: 480px 1fr;
+  align-items: start;
+  background: #fff;
+}
+
+/* ── 왼쪽: 이미지 ── */
+.imgArea {
+  position: sticky;
+  top: 0;
+  padding: 20px;
+  border-right: 1px solid var(--border);
+  background: #fff;
+}
+
+.mainImg {
+  width: 100%; aspect-ratio: 1 / 1;
+  border-radius: 16px; background: #F0F1F4;
+  overflow: hidden; position: relative;
+}
+.mainImgEl { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mainEmoji { font-size: 100px; }
+
+.liveBadge {
+  position: absolute; top: 14px; left: 14px;
+  background: var(--primary); color: #fff;
+  font-size: 11px; font-weight: 700; padding: 5px 11px;
+  border-radius: 8px; display: flex; align-items: center; gap: 5px;
+}
+.liveDot { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.timerBadge {
+  position: absolute; bottom: 14px; right: 14px;
+  background: rgba(0,0,0,0.72); backdrop-filter: blur(4px);
+  color: #fff; font-size: 15px; font-weight: 700;
+  padding: 7px 14px; border-radius: 10px;
+}
+.urgent { background: var(--primary) !important; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
+
+.thumbRow { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.thumb {
+  width: 72px; height: 72px; border-radius: 12px; overflow: hidden;
+  border: 2.5px solid transparent; cursor: pointer; padding: 0;
+  background: #F0F1F4; outline: none; -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s;
+}
+.thumb:focus { outline: none; }
+.thumbActive { border-color: var(--primary); }
+.thumbImg { width: 100%; height: 100%; object-fit: cover; border-radius: 9px; }
+
+/* ── 오른쪽: 정보 ── */
+.rightCol {
+  padding: 28px 32px;
+  display: flex; flex-direction: column; gap: 0;
+}
+
+/* 브레드크럼 */
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--muted); margin-bottom: 14px;
+}
+.breadcrumb strong { color: var(--text); font-weight: 500; }
+
+/* 배지 행 */
+.categoryRow { display: flex; gap: 6px; margin-bottom: 10px; }
+.categoryTag { font-size: 11px; padding: 4px 11px; border-radius: 6px; background: #F0F1F4; color: var(--muted); font-weight: 600; }
+.conditionTag { font-size: 11px; padding: 4px 11px; border-radius: 6px; background: var(--primary-light); color: #A32D2D; font-weight: 600; }
+
+/* 상품명 */
+.name { font-size: 22px; font-weight: 700; line-height: 1.35; margin-bottom: 8px; }
+.location { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+.timeGlow {
+  font-weight: 600;
+  display: inline-block;
+  background: linear-gradient(90deg, #E24B4A 0%, #ff9a9a 45%, #E24B4A 55%, #E24B4A 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* 가격 박스 */
+.priceBox {
+  border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 20px; margin-bottom: 16px;
+}
+.priceRow { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.priceLabel { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.price { font-size: 28px; font-weight: 700; color: var(--primary); }
+.startPrice { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.bidStat {
+  text-align: center; background: var(--primary-light);
+  padding: 12px 20px; border-radius: 12px;
+}
+.bidCount { font-size: 24px; font-weight: 700; color: var(--primary); }
+.bidLabel { font-size: 11px; color: var(--muted); }
+
+/* 입찰 버튼 (오른쪽 컬럼 내 인라인) */
+.inlineBidBtn {
+  flex: 1; padding: 16px;
+  background: var(--primary); color: #fff; border: none; border-radius: 14px;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: opacity 0.15s;
+}
+.inlineBidBtn:hover { opacity: 0.88; }
+.inlineBidBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.inlineInstantBtn {
+  flex: 1; padding: 16px;
+  background: #fff; color: var(--primary); border: 2px solid var(--primary); border-radius: 14px;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: background 0.15s, color 0.15s;
+}
+.inlineInstantBtn:hover { background: var(--primary); color: #fff; }
+.inlineInstantBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 입찰 이력 */
+.historyToggle {
+  width: 100%; padding: 10px; background: #F0F1F4; border: none; border-radius: 10px;
+  font-size: 13px; color: var(--text); cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  margin-bottom: 16px;
+}
+.historyList { margin-bottom: 16px; display: flex; flex-direction: column; gap: 2px; }
+.historyItem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 4px; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.historyRank { font-weight: 700; color: var(--primary); min-width: 24px; }
+.historyUser { flex: 1; color: var(--muted); }
+.historyAmount { font-weight: 600; }
+.historyTime { font-size: 11px; color: var(--muted); }
+
+/* 구분선 */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* 판매자 */
+.sectionTitle { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.sellerRow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px; background: #F8F8FA; border-radius: 14px; margin-bottom: 20px;
+}
+.sellerAvatar { width: 44px; height: 44px; border-radius: 50%; background: #F0F1F4; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.sellerInfo { flex: 1; }
+.sellerName { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.sellerMeta { display: flex; gap: 10px; }
+.sellerTemp { font-size: 12px; color: #E24B4A; font-weight: 500; }
+.sellerSales { font-size: 12px; color: var(--muted); }
+.sellerChat {
+  background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif; transition: background 0.15s;
+}
+.sellerChat:hover { background: #F0F1F4; }
+
+/* 설명 */
+.section { margin-bottom: 20px; }
+.description { font-size: 14px; line-height: 1.85; color: var(--text); white-space: pre-line; }
+
+/* 탭: 상품 설명 / 상품 문의 */
+.tabsRow { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tabs { display: flex; gap: 4px; }
+.tab {
+  background: none; border: none; cursor: pointer;
+  padding: 12px 4px; margin-right: 20px;
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  font-family: 'Noto Sans KR', sans-serif;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.tab:hover { color: var(--text); }
+.tabActive { color: var(--text); border-bottom-color: var(--primary); }
+.tabCount {
+  font-size: 12px; font-weight: 700; color: var(--primary);
+  background: rgba(226,75,74,0.10);
+  padding: 1px 7px; border-radius: 10px;
+}
+.askBtn {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 32px; padding: 0 12px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.askBtn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* 문의 목록 */
+.qnaList { display: flex; flex-direction: column; gap: 14px; }
+.qnaEmpty {
+  text-align: center; color: var(--muted); font-size: 13px;
+  padding: 32px 0;
+}
+.qnaItem {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.qnaQuestion { padding: 14px 16px; background: #fff; }
+.qnaAnswer { padding: 14px 16px; background: #FAFAFB; border-top: 1px dashed var(--border); }
+.qnaHead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.qnaBadgeQ {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 5px;
+  background: #1A1A2E; color: #fff;
+  font-size: 11px; font-weight: 800;
+}
+.qnaBadgeA {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 5px;
+  background: var(--primary); color: #fff;
+  font-size: 11px; font-weight: 800;
+}
+.qnaUser { font-size: 13px; font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+.qnaSellerTag {
+  font-size: 10px; font-weight: 700; color: var(--primary);
+  background: rgba(226,75,74,0.10);
+  padding: 1px 6px; border-radius: 4px;
+}
+.qnaDate { font-size: 12px; color: var(--muted); margin-left: auto; }
+.qnaText { font-size: 13.5px; line-height: 1.7; color: var(--text); white-space: pre-line; margin: 0; }
+
+/* 문의 등록 모달 */
+.askOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+}
+.askModal {
+  width: min(440px, 92vw);
+  background: #fff; border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.22);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.askModalHead { display: flex; align-items: center; justify-content: space-between; }
+.askModalTitle { font-size: 16px; font-weight: 700; color: var(--text); }
+.askModalClose {
+  background: none; border: none; cursor: pointer;
+  width: 28px; height: 28px; border-radius: 6px;
+  color: var(--muted); font-size: 16px;
+}
+.askModalClose:hover { background: #F0F1F4; color: var(--text); }
+.askTextarea {
+  width: 100%; min-height: 120px;
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px;
+  font-size: 14px; line-height: 1.6;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.askTextarea:focus { outline: none; border-color: var(--primary); }
+.askActions { display: flex; gap: 8px; justify-content: flex-end; }
+.askCancel {
+  height: 38px; padding: 0 16px; border-radius: 8px;
+  background: #F0F1F4; color: var(--text);
+  border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.askCancel:hover { background: #E4E5E9; }
+.askSubmit {
+  height: 38px; padding: 0 18px; border-radius: 8px;
+  background: var(--primary); color: #fff;
+  border: none; cursor: pointer;
+  font-size: 13px; font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.askSubmit:hover { opacity: 0.9; }
+.askSubmit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 거래 정보 */
+.infoGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.infoItem { display: flex; flex-direction: column; gap: 3px; background: #F0F1F4; border-radius: 10px; padding: 12px 14px; }
+.infoLabel { font-size: 11px; color: var(--muted); }
+.infoValue { font-size: 14px; font-weight: 600; }
+
+/* 하단 액션바 — 숨김 (인라인으로 대체) */
+.actionBar { display: none; }
+.likeBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: color 0.15s;
+}
+.likeBtn:active { transform: scale(0.92); }
+.likeBtnActive { color: #f43f5e; }
+.likeBtnCount { font-size: 13px; font-weight: 600; }
+.likeCnt { display: none; }
+.bidBtn { display: none; }
+
+/* ── 입찰 모달 ── */
+.modalOverlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal {
+  width: 400px; background: #fff; border-radius: 20px; padding: 28px 24px;
+}
+.modalTitle { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.modalSub { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.balanceRow {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #f9f8f5; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;
+}
+.balanceLabel { font-size: 13px; color: var(--muted); }
+.balanceValue { font-size: 14px; font-weight: 700; color: var(--text); }
+.balanceInsufficient { color: #e53935; }
+.modalInputError { border-color: #e53935 !important; }
+.insufficientMsg { font-size: 12px; color: #e53935; margin-top: -8px; margin-bottom: 10px; font-weight: 500; }
+.modalInput {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; font-size: 16px; outline: none;
+  font-family: 'Noto Sans KR', sans-serif; margin-bottom: 14px;
+}
+.modalInput:focus { border-color: var(--primary); }
+.modalBtns { display: flex; gap: 10px; }
+.modalCancel {
+  flex: 1; padding: 14px; border: 1px solid var(--border); border-radius: 12px;
+  background: none; font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.modalConfirm {
+  flex: 2; padding: 14px; background: var(--primary); color: #fff; border: none;
+  border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 360° 버튼 */
+.btn360 {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: none;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+  font-family: 'Noto Sans KR', sans-serif;
+  letter-spacing: 0.3px;
+}
+.btn360:hover { background: var(--primary); }

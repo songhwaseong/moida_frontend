@@ -1,0 +1,149 @@
+.page { min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; padding-bottom: 40px; }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: #fff; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.back { width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--text); }
+.title { font-size: 16px; font-weight: 700; }
+
+/* 잔액 카드 */
+.balanceCard {
+  background: linear-gradient(135deg, #2C2C2A 0%, #444441 100%);
+  padding: 24px 20px 20px; margin: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.balanceLabel { font-size: 13px; color: #B4B2A9; }
+.balanceAmount { font-size: 32px; font-weight: 700; color: #fff; letter-spacing: -1px; }
+.balanceBtns { display: flex; gap: 10px; margin-top: 8px; }
+.balanceBtn {
+  padding: 9px 24px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  background: var(--primary); color: #fff; border: none; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.balanceBtnOutline { background: transparent; border: 1.5px solid rgba(255,255,255,0.4); color: #fff; }
+.balanceBtnWithdraw { background: #e53935; border: 1.5px solid #e53935; color: #fff; font-weight: 700; }
+.balanceBtnDepositActive { background: var(--primary); border: 1.5px solid var(--primary); color: #fff; font-weight: 700; }
+
+/* 탭 */
+.tabs {
+  display: flex; background: #fff; border-bottom: 1px solid var(--border);
+}
+.tab {
+  flex: 1; padding: 13px 8px; font-size: 13px; font-weight: 500; color: var(--muted);
+  background: none; border: none; border-bottom: 2px solid transparent;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; margin-bottom: -1px;
+}
+.tabActive { color: var(--primary); border-bottom-color: var(--primary); }
+
+.content { flex: 1; }
+
+/* 섹션 */
+.section { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.sectionTitle { font-size: 15px; font-weight: 700; }
+.sectionDesc { font-size: 13px; color: var(--muted); margin-top: -8px; }
+
+/* 빠른 금액 */
+.quickAmounts { display: flex; gap: 8px; }
+.quickBtn {
+  flex: 1; padding: 10px 0; border-radius: 10px; border: 1.5px solid var(--border);
+  background: #fff; font-size: 13px; font-weight: 600; color: var(--text);
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all 0.15s;
+}
+.quickBtn:active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+/* 입력 */
+.inputRow { display: flex; align-items: center; gap: 8px; }
+.inputPrefix { font-size: 18px; font-weight: 700; flex-shrink: 0; }
+.input {
+  flex: 1; padding: 13px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 16px; outline: none; color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif; background: #fff;
+}
+.input:focus { border-color: var(--primary); }
+
+/* 가상계좌 안내 */
+.infoBox { background: #f9f8f5; border-radius: 12px; padding: 14px; }
+.infoText { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.infoDesc { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.virtualAccount { display: flex; flex-direction: column; gap: 6px; }
+.vaRow { display: flex; justify-content: space-between; }
+.vaLabel { font-size: 13px; color: var(--muted); }
+.vaValue { font-size: 13px; font-weight: 600; }
+
+/* 액션 버튼 */
+.actionBtn {
+  width: 100%; padding: 15px; background: var(--primary); color: #fff;
+  border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: opacity 0.2s;
+}
+.actionBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.loading { opacity: 0.7; }
+
+/* 계좌 카드 */
+.accountCard {
+  background: #fff; border-radius: var(--radius); border: 1px solid var(--border); padding: 16px;
+}
+.accountHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.accountBank { font-size: 15px; font-weight: 700; }
+.verifiedBadge { font-size: 11px; background: #EAF3DE; color: #3B6D11; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+.accountNumber { font-size: 18px; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; }
+.accountHolder { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.accountBtns { display: flex; gap: 8px; }
+.accountChangeBtn {
+  flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 10px;
+  background: none; font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.accountDeleteBtn {
+  padding: 9px 16px; border: 1px solid #fcc; border-radius: 10px;
+  background: none; font-size: 13px; font-weight: 500; color: var(--primary);
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+}
+
+.balanceHint { font-size: 12px; color: var(--muted); margin-top: -8px; }
+
+/* 폼 */
+.inputGroup { display: flex; flex-direction: column; gap: 6px; }
+.label { font-size: 13px; font-weight: 600; color: var(--text); }
+.select {
+  width: 100%; padding: 13px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 15px; outline: none; color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif; background: #fff; appearance: none;
+}
+.select:focus { border-color: var(--primary); }
+.inputFull {
+  width: 100%; padding: 13px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 15px; outline: none; color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif; background: #fff;
+}
+.inputFull:focus { border-color: var(--primary); }
+.inputError { border-color: var(--primary) !important; }
+.fieldError { font-size: 12px; color: var(--primary); }
+.formBtns { display: flex; gap: 10px; }
+.cancelBtn {
+  flex: 1; padding: 15px; border: 1px solid var(--border); border-radius: 14px;
+  background: none; font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 거래 내역 */
+.txItem {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; background: #fff; border-bottom: 1px solid var(--border);
+}
+.txIcon {
+  width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0;
+}
+.txDeposit { background: #EAF3DE; color: #3B6D11; }
+.txWithdraw { background: var(--primary-light); color: var(--primary); }
+.txBody { flex: 1; }
+.txDesc { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+.txDate { font-size: 12px; color: var(--muted); }
+.txRight { text-align: right; }
+.txAmount { font-size: 15px; font-weight: 700; }
+.txAmountPos { color: #3B6D11; }
+.txAmountNeg { color: var(--primary); }
+.txStatus { font-size: 11px; color: var(--muted); margin-top: 2px; }

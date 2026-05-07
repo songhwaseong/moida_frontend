@@ -1,0 +1,51 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #E24B4A;
+  --primary-light: #FDEEED;
+  --accent: #BA7517;
+  --bg: #F4F5F7;
+  --card: #ffffff;
+  --text: #1A1A1A;
+  --muted: #8B8FA8;
+  --border: rgba(0, 0, 0, 0.07);
+  --radius: 14px;
+  --sidebar-width: 220px;
+  --header-height: 104px;
+}
+
+html, body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  max-width: 100%;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+input {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

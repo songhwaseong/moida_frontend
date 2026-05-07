@@ -1,0 +1,359 @@
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 페이지 타이틀 */
+.pageTitle {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1A1A2E;
+  margin-bottom: 4px;
+}
+.pageSubtitle {
+  font-size: 13px;
+  color: #8B8FA8;
+  margin-bottom: 20px;
+}
+
+/* ─── 요약 카드 그리드 ─── */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 1100px) {
+  .summaryGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.summaryCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 1px solid #E8E8EF;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.cardIcon {
+  font-size: 28px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cardBlue   .cardIcon { background: #EAF2FF; }
+.cardGreen  .cardIcon { background: #EAF7EC; }
+.cardRed    .cardIcon { background: #FDEEED; }
+.cardOrange .cardIcon { background: #FFF3E0; }
+.cardPurple .cardIcon { background: #F3EEFF; }
+.cardTeal   .cardIcon { background: #E6F7F5; }
+
+.cardBody { flex: 1; min-width: 0; }
+.cardLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8B8FA8;
+  margin-bottom: 4px;
+}
+.cardValue {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1A1A2E;
+  line-height: 1.1;
+}
+.cardUnit {
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: 2px;
+  color: #4A4A6A;
+}
+.cardSub {
+  font-size: 11px;
+  color: #B0B4C8;
+  margin-top: 4px;
+}
+
+/* accent colors per card */
+.cardBlue   .cardValue { color: #1565C0; }
+.cardGreen  .cardValue { color: #2E7D32; }
+.cardRed    .cardValue { color: #C62828; }
+.cardOrange .cardValue { color: #E65C00; }
+.cardPurple .cardValue { color: #6A3DA8; }
+.cardTeal   .cardValue { color: #00796B; }
+
+/* ─── 하단 3열 ─── */
+.bottomGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1200px) {
+  .bottomGrid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 800px) {
+  .bottomGrid { grid-template-columns: 1fr; }
+}
+
+/* 패널 공통 */
+.panel {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #E8E8EF;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid #F0F2F5;
+}
+.panelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.panelBadge {
+  font-size: 11px;
+  font-weight: 700;
+  background: #FDEEED;
+  color: #C62828;
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+.panelBadgeGreen {
+  font-size: 11px;
+  font-weight: 700;
+  background: #EAF7EC;
+  color: #2E7D32;
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+.panelBadgeGray {
+  font-size: 11px;
+  font-weight: 700;
+  background: #F0F1F4;
+  color: #8B8FA8;
+  border-radius: 20px;
+  padding: 2px 9px;
+}
+
+/* 낙찰/유찰 행 */
+.auctionRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #F8F9FB;
+}
+.auctionRow:last-child { border-bottom: none; }
+.auctionThumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid #F0F0F0;
+}
+.auctionInfo {
+  flex: 1;
+  min-width: 0;
+}
+.auctionName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A2E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.auctionMeta {
+  font-size: 11px;
+  color: #B0B4C8;
+  margin-top: 2px;
+}
+.auctionPrice {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2E7D32;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.auctionPriceFailed {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8B8FA8;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.panelBody {
+  padding: 8px 0;
+  flex: 1;
+}
+.emptyMsg {
+  padding: 24px 18px;
+  font-size: 13px;
+  color: #B0B4C8;
+  text-align: center;
+}
+
+/* 신고 행 */
+.reportRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  gap: 10px;
+  border-bottom: 1px solid #F8F9FB;
+}
+.reportRow:last-child { border-bottom: none; }
+.reportLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.reportType {
+  font-size: 10px;
+  font-weight: 700;
+  background: #F0F1F4;
+  color: #4A4A6A;
+  border-radius: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.reportName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A2E;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+.reportMeta {
+  font-size: 11px;
+  color: #B0B4C8;
+  margin-top: 2px;
+}
+
+/* 상태 배지 */
+.statusBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badgePending  { background: #FFF3E0; color: #E65C00; }
+.badgeApproved { background: #EAF3DE; color: #3B6D11; }
+.badgeRejected { background: #F0F1F4; color: #8B8FA8; }
+.badgeDeleted  { background: #FFF3F3; color: #B03030; }
+
+/* 사기 감지 행 */
+.caseRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  gap: 10px;
+  border-bottom: 1px solid #F8F9FB;
+}
+.caseRow:last-child { border-bottom: none; }
+.caseLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.sevBadge {
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.sevHigh { background: #FDEEED; color: #C62828; }
+.sevMed  { background: #FFF3E0; color: #E65C00; }
+.sevLow  { background: #F0F1F4; color: #8B8FA8; }
+.caseName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A2E;
+}
+.caseMeta {
+  font-size: 11px;
+  color: #B0B4C8;
+  margin-top: 2px;
+}
+.caseStatus {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4A4A6A;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 제재 행 */
+.sanctionRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #F8F9FB;
+}
+.sanctionRow:last-child { border-bottom: none; }
+.sanctionIcon {
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  background: #F3EEFF;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sanctionBody { flex: 1; min-width: 0; }
+.sanctionName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1A1A2E;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sanctionType {
+  font-size: 10px;
+  font-weight: 700;
+  background: #FDEEED;
+  color: #C62828;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+.sanctionReason {
+  font-size: 12px;
+  color: #4A4A6A;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sanctionDate {
+  font-size: 11px;
+  color: #B0B4C8;
+  margin-top: 2px;
+}

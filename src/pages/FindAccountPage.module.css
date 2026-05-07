@@ -1,0 +1,120 @@
+.page { min-height: 100vh; background: #fff; display: flex; flex-direction: column; }
+
+/* 헤더 */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+.back { display: flex; align-items: center; background: none; border: none; cursor: pointer; color: var(--text); padding: 4px; }
+.headerTitle { font-size: 16px; font-weight: 700; color: var(--text); }
+
+/* 탭 */
+.tabRow {
+  display: flex; border-bottom: 2px solid var(--border);
+}
+.tabBtn {
+  flex: 1; padding: 16px; font-size: 15px; font-weight: 600;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-family: 'Noto Sans KR', sans-serif;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.tabActive { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* 컨텐츠 */
+.content { flex: 1; padding: 24px 24px 40px; }
+.section { display: flex; flex-direction: column; gap: 16px; }
+
+.desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+/* 입력 */
+.inputGroup { display: flex; flex-direction: column; gap: 7px; }
+.label { font-size: 13px; font-weight: 600; color: var(--text); }
+.input {
+  width: 100%; padding: 14px 16px;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  font-size: 15px; outline: none; color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif; background: #fff;
+  transition: border-color 0.2s;
+}
+.input:focus { border-color: var(--primary); }
+.inputError { border-color: var(--primary) !important; }
+
+/* 코드 입력 */
+.codeWrap { position: relative; }
+.codeWrap .input { padding-right: 72px; letter-spacing: 3px; font-weight: 700; }
+.timer {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums;
+}
+
+/* 비번 입력 */
+.pwWrap { position: relative; }
+.pwWrap .input { padding-right: 68px; }
+.pwToggle {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; font-size: 12px; color: var(--muted);
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif; font-weight: 500;
+}
+
+/* 비번 강도 */
+.strengthBar { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.strengthFill { height: 4px; border-radius: 4px; flex: 1; transition: background 0.3s; }
+.weak { background: var(--primary); width: 33%; }
+.medium { background: #F5A623; width: 66%; }
+.strong { background: #3B8F1A; width: 100%; }
+.strengthLabel { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 24px; }
+
+.matchOk { font-size: 12px; color: #3B8F1A; font-weight: 600; margin-top: 2px; }
+
+/* 에러 */
+.errorMsg {
+  font-size: 13px; color: var(--primary);
+  background: var(--primary-light); padding: 10px 14px; border-radius: 10px;
+}
+
+/* 발송 배지 */
+.sentBadge {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #F0F4FF; border-radius: 12px; padding: 12px 14px;
+  font-size: 13px; color: #3A5BC7; line-height: 1.5;
+}
+
+/* 버튼 */
+.submitBtn {
+  width: 100%; padding: 16px; background: var(--primary); color: #fff;
+  border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  transition: opacity 0.15s; margin-top: 4px;
+}
+.submitBtn:active { opacity: 0.85; }
+.loading { opacity: 0.7; cursor: not-allowed; }
+
+.ghostBtn {
+  width: 100%; padding: 14px; background: none; color: var(--muted);
+  border: 1.5px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 아이디 결과 */
+.resultBox {
+  background: var(--bg); border-radius: 16px; padding: 32px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+}
+.resultIcon { font-size: 44px; margin-bottom: 4px; }
+.resultLabel { font-size: 13px; color: var(--muted); }
+.resultEmail { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: 0.5px; }
+.resultSub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* 완료 */
+.doneBox {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 40px 20px; text-align: center;
+}
+.doneCircle {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: #3B8F1A; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(59,143,26,0.25);
+}
+.doneTitle { font-size: 22px; font-weight: 800; color: var(--text); }
+.doneSub { font-size: 14px; color: var(--muted); }

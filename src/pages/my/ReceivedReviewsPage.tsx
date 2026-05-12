@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { reviewStore } from '../../data/reviewStore';
 import styles from './MySubPage.module.css';
 
 interface Props { onBack: () => void; }
 
 const ReceivedReviewsPage: React.FC<Props> = ({ onBack }) => {
-  // reviewStore 변경 감지를 위한 forceUpdate
-  const [, forceUpdate] = useState(0);
   const reviews = reviewStore;
 
   const ThumbUp = () => (

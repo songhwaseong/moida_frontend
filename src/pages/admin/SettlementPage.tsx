@@ -59,7 +59,7 @@ const SettlementPage: React.FC = () => {
   const [settlements, setSettlements] = useState<Settlement[]>(INITIAL_SETTLEMENTS);
   const [feeRules, setFeeRules] = useState<FeeRule[]>(INITIAL_FEE_RULES);
   const [filterStatus, setFilterStatus] = useState('전체');
-  const [filterType, setFilterType] = useState('전체');
+  const [filterType] = useState('전체');
   const [filterRole, setFilterRole] = useState('판매자');
   const [searchNo, setSearchNo] = useState('');
   const [editFee, setEditFee] = useState<FeeRule | null>(null);
@@ -100,9 +100,6 @@ const SettlementPage: React.FC = () => {
   const statusBg: Record<Settlement['status'], string> = {
     '정산완료': '#EAF7EC', '정산대기': '#FFF3E0', '보류': '#FDEEED',
   };
-  const typeColor = { '중고거래': '#3B6D11', '경매': '#E65C00' };
-  const typeBg   = { '중고거래': '#EAF3DE', '경매': '#FFF3E0' };
-
   return (
     <div className={s.page}>
       <div className={s.header}>

@@ -8,6 +8,7 @@ export interface AuctionItem {
   timeLeft: number; // 남은 시간(초)
   isLive: boolean;
   category: string;
+  condition?: 'S급' | 'A급' | 'B급' | 'C급';
   liked?: boolean;
 }
 
@@ -28,11 +29,11 @@ export interface AuctionDetail extends AuctionItem {
   startPrice: number;
   immediatePrice?: number;
   endDate: string;
-  condition: 'S급' | 'A급' | 'B급' | 'C급';
   location: string;
   bidHistory: BidHistory[];
   liked: boolean;
   likeCount: number;
+  timeAgo?: string;
 }
 
 export interface Product {

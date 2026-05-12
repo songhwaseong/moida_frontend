@@ -21,8 +21,6 @@ const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
   { value: 'B급', label: 'B급', desc: '사용감 있음' },
   { value: 'C급', label: 'C급', desc: '하자 있음' },
 ];
-const TRADE_METHODS: TradeMethod[] = ['직거래', '택배', '둘다'];
-
 const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const { showToast } = useToast();
   const [step, setStep] = useState<Step>(1);
@@ -34,12 +32,12 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState<Condition | ''>('');
-  const [price, setPrice] = useState('');
-  const [isAuction, setIsAuction] = useState(false);
+  const [price] = useState('');
+  const [_isAuction, _setIsAuction] = useState(false);
   const [auctionStartPrice, setAuctionStartPrice] = useState('');
   const [buyNowPrice, setBuyNowPrice] = useState('');
   const [minBidUnit, setMinBidUnit] = useState('');
-  const [tradeMethod, setTradeMethod] = useState<TradeMethod | ''>('');
+  const [tradeMethod] = useState<TradeMethod | ''>('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [phone, setPhone] = useState('');

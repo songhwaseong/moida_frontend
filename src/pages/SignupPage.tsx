@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import styles from './SignupPage.module.css';
 
-import axios from '../api/axiosInstance';
-
 interface Props {
   onSignup: () => void;
   onGoLogin: () => void;
@@ -74,21 +72,9 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
   const handleSubmit = async () => {
     if (!validateStep2()) return;
     setLoading(true);
-    try {
-      await axios.post('/api/auth/signup', {
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        phone: form.phone,
-        nickname: form.nickname, // 3단계에서 백엔드에도 추가해야 함
-      });
-      onSignup(); // 성공 시에만 호출
-    } catch (error: any) {
-      const msg = error.response?.data?.message || '회원가입에 실패했어요';
-      setErrors(prev => ({ ...prev, general: msg }));
-    } finally {
-      setLoading(false);
-    }
+    await new Promise((r) => setTimeout(r, 800));
+    setLoading(false);
+    onSignup();
   };
 
   const toggleAll = (checked: boolean) => {

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { PRODUCTS, AUCTION_ITEMS } from '../../data/mockData';
 import { myProductStore } from '../../data/myProductStore';
-import { MEMBERS } from '../../data/memberData';
 import DashboardPage from './DashboardPage';
 import NoticePage from './NoticePage';
 import BannerPage from './BannerPage';
@@ -72,7 +71,7 @@ const buildInitialProducts = (): AdminProduct[] => {
     type: '경매',
     seller: getSeller(a.id + 3),
     category: a.category,
-    condition: a.condition,
+    condition: a.condition ?? 'S급',
     price: a.currentPrice,
     status: auctionStatus(a),
     registeredAt: `2026.04.${String(27 - (a.id % 12)).padStart(2, '0')}`,
@@ -219,7 +218,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
       : 10;
   });
   const [showIdleModal, setShowIdleModal] = useState(false);
-  const [countdown, setCountdown] = useState(WARN_COUNTDOWN_S);
+  const [_countdown, setCountdown] = useState(WARN_COUNTDOWN_S);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const idleMinutesRef = useRef(idleMinutes);

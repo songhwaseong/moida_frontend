@@ -19,7 +19,7 @@ const statusColor = (s: Member['status']) => ({
 const tempColor = (t: number) => t >= 40 ? '#3B6D11' : t >= 35 ? '#EF9F27' : '#E24B4A';
 
 const MemberDetailPage: React.FC<Props> = ({ member, onBack, onUpdateStatus }) => {
-  const [activeTab, setActiveTab] = useState<'sanction'>('sanction');
+  const [activeTab] = useState<'sanction'>('sanction');
   const [showSanctionModal, setShowSanctionModal] = useState(false);
   const [sanctionType, setSanctionType] = useState<Member['status']>('suspended');
   const [suspendUntil, setSuspendUntil] = useState('');

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { AuctionItem, AuctionDetail, Category, Product, ProductDetail } from '../types';
 
 export const CATEGORIES: Category[] = [

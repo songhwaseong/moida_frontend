@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import TopBar from './components/TopBar';
-import MainTabs from './components/MainTabs';
-import BottomNav from './components/BottomNav';
-import SellFab from './components/SellFab';
 import CategoryRow from './components/CategoryRow';
 import HomePage from './pages/HomePage';
 import TradePage from './pages/TradePage';
@@ -27,7 +23,6 @@ import type { MyProduct } from './data/myProductStore';
 import PurchaseHistoryPage from './pages/my/PurchaseHistoryPage';
 import BidHistoryPage from './pages/my/BidHistoryPage';
 import ReceivedReviewsPage from './pages/my/ReceivedReviewsPage';
-import PaymentPage from './pages/my/PaymentPage';
 import AddressPage from './pages/my/AddressPage';
 import NotificationSettingsPage from './pages/my/NotificationSettingsPage';
 import FaqPage from './pages/my/FaqPage';
@@ -141,7 +136,7 @@ const App: React.FC = () => {
     setAuthScreen('login');
   };
   const switchToNormal = () => { localStorage.setItem('bazar_admin_view', 'normal'); setAdminViewMode('normal'); };
-  const switchToAdmin = () => { localStorage.setItem('bazar_admin_view', 'admin'); setAdminViewMode('admin'); };
+  const switchToAdmin  = () => { localStorage.setItem('bazar_admin_view', 'admin');  setAdminViewMode('admin');  };
   const login = (name?: string) => {
     const userName = name || '사용자';
     localStorage.setItem('bazar_logged_in', 'true');
@@ -164,7 +159,7 @@ const App: React.FC = () => {
       showAlert(
         '로그인이 필요한 서비스입니다.\n로그인 페이지로 이동하시겠어요?',
         () => { setIsGuest(false); setAuthScreen('login'); },
-        () => { }
+        () => {}
       );
       return;
     }
@@ -204,7 +199,7 @@ const App: React.FC = () => {
   // 로그인 전
   if (!isLoggedIn && !isGuest && !isAdmin) {
     if (authScreen === 'signup') {
-      return <ToastProvider><SignupPage onSignup={() => setAuthScreen('login')} onGoLogin={() => setAuthScreen('login')} /></ToastProvider>;
+      return <ToastProvider><SignupPage onSignup={login} onGoLogin={() => setAuthScreen('login')} /></ToastProvider>;
     }
     if (authScreen === 'find-id' || authScreen === 'find-pw') {
       return <ToastProvider><FindAccountPage initialTab={authScreen === 'find-pw' ? 'pw' : 'id'} onBack={() => setAuthScreen('login')} /></ToastProvider>;
@@ -228,7 +223,7 @@ const App: React.FC = () => {
     const action = () => {
       // 비로그인 상태에서 보호된 탭 접근 차단
       if (!isLoggedIn && !isAdmin && PROTECTED_TABS.includes(tab)) {
-        requireLogin(() => { });
+        requireLogin(() => {});
         return;
       }
       setNavTab(tab);
@@ -248,7 +243,7 @@ const App: React.FC = () => {
   const PROTECTED_MAIN_TABS: MainTab[] = ['관심목록'];
   const handleMainTabChange = (tab: MainTab) => {
     if (!isLoggedIn && !isAdmin && PROTECTED_MAIN_TABS.includes(tab)) {
-      requireLogin(() => { });
+      requireLogin(() => {});
       return;
     }
     guardedNav(() => {
@@ -288,7 +283,7 @@ const App: React.FC = () => {
   const renderNavPage = () => {
     if (screen.type === 'sellPage') return <SellPage onBack={goHome} onDirtyChange={setFormDirty} />;
     if (screen.type === 'sellerProfile') return <SellerProfilePage seller={screen.seller} onBack={goHome} onProductClick={handleProductClick} />;
-    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goHome} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => { })} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
+    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goHome} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => {})} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
     if (screen.type === 'productDetail') return (
       <ProductDetailPage
         productId={screen.id}
@@ -333,54 +328,54 @@ const App: React.FC = () => {
 
   return (
     <>
-      <PCLayout
-        mainTab={mainTab}
-        navTab={navTab}
-        onMainTabChange={handleMainTabChange}
-        onNavTabChange={goNav}
-        onSellClick={() => requireLogin(() => setScreen({ type: 'sellPage' }))}
-        onSearch={handleSearch}
-        notificationCount={3}
-        isLoggedIn={isLoggedIn || isAdmin}
-        loggedInUserName={isAdmin ? '관리자' : loggedInUserName}
-        onAuthClick={isAdmin ? logoutAdmin : (isLoggedIn ? logout : () => { setIsGuest(false); setAuthScreen('login'); })}
-        isAdmin={isAdmin}
-        onSwitchToAdmin={switchToAdmin}
-        onTermsClick={() => { setTermsInitialTab('이용약관'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}
-        onPrivacyClick={() => { setTermsInitialTab('개인정보처리방침'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}
-      >
-        {isHomePage ? (
-          <>
-            {showSharedCategoryRow && (
-              <CategoryRow categories={CATEGORIES} selectedLabel={selectedCategory} onSelect={handleCategorySelect} />
-            )}
-            {showSharedCategoryRow && selectedCategory && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0 0', padding: '8px 14px', background: 'var(--primary-light)', borderRadius: '10px', fontSize: '13px' }}>
-                <span><strong style={{ color: 'var(--primary)' }}>{selectedCategory}</strong> 카테고리 필터 중</span>
-                <button onClick={() => setSelectedCategory(null)} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: "'Noto Sans KR', sans-serif" }}>전체보기 ✕</button>
-              </div>
-            )}
-            {renderMainPage()}
-          </>
-        ) : (
-          renderNavPage()
-        )}
-      </PCLayout>
-      {pendingNav && (
-        <LeaveConfirmModal
-          onConfirm={() => { const action = pendingNav; setPendingNav(null); setFormDirty(false); action(); }}
-          onCancel={() => setPendingNav(null)}
-        />
+    <PCLayout
+      mainTab={mainTab}
+      navTab={navTab}
+      onMainTabChange={handleMainTabChange}
+      onNavTabChange={goNav}
+      onSellClick={() => requireLogin(() => setScreen({ type: 'sellPage' }))}
+      onSearch={handleSearch}
+      notificationCount={3}
+      isLoggedIn={isLoggedIn || isAdmin}
+      loggedInUserName={isAdmin ? '관리자' : loggedInUserName}
+      onAuthClick={isAdmin ? logoutAdmin : (isLoggedIn ? logout : () => { setIsGuest(false); setAuthScreen('login'); })}
+      isAdmin={isAdmin}
+      onSwitchToAdmin={switchToAdmin}
+      onTermsClick={() => { setTermsInitialTab('이용약관'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}
+      onPrivacyClick={() => { setTermsInitialTab('개인정보처리방침'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}
+    >
+      {isHomePage ? (
+        <>
+          {showSharedCategoryRow && (
+            <CategoryRow categories={CATEGORIES} selectedLabel={selectedCategory} onSelect={handleCategorySelect} />
+          )}
+          {showSharedCategoryRow && selectedCategory && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0 0', padding: '8px 14px', background: 'var(--primary-light)', borderRadius: '10px', fontSize: '13px' }}>
+              <span><strong style={{ color: 'var(--primary)' }}>{selectedCategory}</strong> 카테고리 필터 중</span>
+              <button onClick={() => setSelectedCategory(null)} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: "'Noto Sans KR', sans-serif" }}>전체보기 ✕</button>
+            </div>
+          )}
+          {renderMainPage()}
+        </>
+      ) : (
+        renderNavPage()
       )}
-      {alertMsg && (
-        <AlertModal
-          message={alertMsg}
-          confirmLabel="로그인하기"
-          cancelLabel="취소"
-          onConfirm={() => closeAlert(true)}
-          onCancel={alertCancelCb !== null ? () => closeAlert(false) : undefined}
-        />
-      )}
+    </PCLayout>
+    {pendingNav && (
+      <LeaveConfirmModal
+        onConfirm={() => { const action = pendingNav; setPendingNav(null); setFormDirty(false); action(); }}
+        onCancel={() => setPendingNav(null)}
+      />
+    )}
+    {alertMsg && (
+      <AlertModal
+        message={alertMsg}
+        confirmLabel="로그인하기"
+        cancelLabel="취소"
+        onConfirm={() => closeAlert(true)}
+        onCancel={alertCancelCb !== null ? () => closeAlert(false) : undefined}
+      />
+    )}
     </>
   );
 };

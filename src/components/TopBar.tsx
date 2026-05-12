@@ -8,12 +8,6 @@ const BellIcon = () => (
   </svg>
 );
 
-const ChatIcon = () => (
-  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-  </svg>
-);
-
 const SearchIcon = () => (
   <svg width="16" height="16" fill="none" stroke="var(--muted)" strokeWidth="2" viewBox="0 0 24 24">
     <circle cx="11" cy="11" r="8" />
@@ -23,17 +17,13 @@ const SearchIcon = () => (
 
 interface TopBarProps {
   notificationCount?: number;
-  messageCount?: number;
   onBellClick?: () => void;
-  onChatClick?: () => void;
   onSearch?: (query: string) => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
   notificationCount = 3,
-  messageCount = 1,
   onBellClick,
-  onChatClick,
   onSearch,
 }) => {
   const [query, setQuery] = useState('');

@@ -1,0 +1,543 @@
+[1mdiff --git a/src/App.tsx b/src/App.tsx[m
+[1mindex a5c4ac0..c836f8f 100644[m
+[1m--- a/src/App.tsx[m
+[1m+++ b/src/App.tsx[m
+[36m@@ -1,8 +1,4 @@[m
+ import React, { useState, useEffect } from 'react';[m
+[31m-import TopBar from './components/TopBar';[m
+[31m-import MainTabs from './components/MainTabs';[m
+[31m-import BottomNav from './components/BottomNav';[m
+[31m-import SellFab from './components/SellFab';[m
+ import CategoryRow from './components/CategoryRow';[m
+ import HomePage from './pages/HomePage';[m
+ import TradePage from './pages/TradePage';[m
+[36m@@ -27,7 +23,6 @@[m [mimport type { MyProduct } from './data/myProductStore';[m
+ import PurchaseHistoryPage from './pages/my/PurchaseHistoryPage';[m
+ import BidHistoryPage from './pages/my/BidHistoryPage';[m
+ import ReceivedReviewsPage from './pages/my/ReceivedReviewsPage';[m
+[31m-import PaymentPage from './pages/my/PaymentPage';[m
+ import AddressPage from './pages/my/AddressPage';[m
+ import NotificationSettingsPage from './pages/my/NotificationSettingsPage';[m
+ import FaqPage from './pages/my/FaqPage';[m
+[36m@@ -141,7 +136,7 @@[m [mconst App: React.FC = () => {[m
+     setAuthScreen('login');[m
+   };[m
+   const switchToNormal = () => { localStorage.setItem('bazar_admin_view', 'normal'); setAdminViewMode('normal'); };[m
+[31m-  const switchToAdmin = () => { localStorage.setItem('bazar_admin_view', 'admin'); setAdminViewMode('admin'); };[m
+[32m+[m[32m  const switchToAdmin  = () => { localStorage.setItem('bazar_admin_view', 'admin');  setAdminViewMode('admin');  };[m
+   const login = (name?: string) => {[m
+     const userName = name || '사용자';[m
+     localStorage.setItem('bazar_logged_in', 'true');[m
+[36m@@ -164,7 +159,7 @@[m [mconst App: React.FC = () => {[m
+       showAlert([m
+         '로그인이 필요한 서비스입니다.\n로그인 페이지로 이동하시겠어요?',[m
+         () => { setIsGuest(false); setAuthScreen('login'); },[m
+[31m-        () => { }[m
+[32m+[m[32m        () => {}[m
+       );[m
+       return;[m
+     }[m
+[36m@@ -204,7 +199,7 @@[m [mconst App: React.FC = () => {[m
+   // 로그인 전[m
+   if (!isLoggedIn && !isGuest && !isAdmin) {[m
+     if (authScreen === 'signup') {[m
+[31m-      return <ToastProvider><SignupPage onSignup={() => setAuthScreen('login')} onGoLogin={() => setAuthScreen('login')} /></ToastProvider>;[m
+[32m+[m[32m      return <ToastProvider><SignupPage onSignup={login} onGoLogin={() => setAuthScreen('login')} /></ToastProvider>;[m
+     }[m
+     if (authScreen === 'find-id' || authScreen === 'find-pw') {[m
+       return <ToastProvider><FindAccountPage initialTab={authScreen === 'find-pw' ? 'pw' : 'id'} onBack={() => setAuthScreen('login')} /></ToastProvider>;[m
+[36m@@ -228,7 +223,7 @@[m [mconst App: React.FC = () => {[m
+     const action = () => {[m
+       // 비로그인 상태에서 보호된 탭 접근 차단[m
+       if (!isLoggedIn && !isAdmin && PROTECTED_TABS.includes(tab)) {[m
+[31m-        requireLogin(() => { });[m
+[32m+[m[32m        requireLogin(() => {});[m
+         return;[m
+       }[m
+       setNavTab(tab);[m
+[36m@@ -248,7 +243,7 @@[m [mconst App: React.FC = () => {[m
+   const PROTECTED_MAIN_TABS: MainTab[] = ['관심목록'];[m
+   const handleMainTabChange = (tab: MainTab) => {[m
+     if (!isLoggedIn && !isAdmin && PROTECTED_MAIN_TABS.includes(tab)) {[m
+[31m-      requireLogin(() => { });[m
+[32m+[m[32m      requireLogin(() => {});[m
+       return;[m
+     }[m
+     guardedNav(() => {[m
+[36m@@ -288,7 +283,7 @@[m [mconst App: React.FC = () => {[m
+   const renderNavPage = () => {[m
+     if (screen.type === 'sellPage') return <SellPage onBack={goHome} onDirtyChange={setFormDirty} />;[m
+     if (screen.type === 'sellerProfile') return <SellerProfilePage seller={screen.seller} onBack={goHome} onProductClick={handleProductClick} />;[m
+[31m-    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goHome} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => { })} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;[m
+[32m+[m[32m    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goHome} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => {})} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;[m
+     if (screen.type === 'productDetail') return ([m
+       <ProductDetailPage[m
+         productId={screen.id}[m
+[36m@@ -333,54 +328,54 @@[m [mconst App: React.FC = () => {[m
+ [m
+   return ([m
+     <>[m
+[31m-      <PCLayout[m
+[31m-        mainTab={mainTab}[m
+[31m-        navTab={navTab}[m
+[31m-        onMainTabChange={handleMainTabChange}[m
+[31m-        onNavTabChange={goNav}[m
+[31m-        onSellClick={() => requireLogin(() => setScreen({ type: 'sellPage' }))}[m
+[31m-        onSearch={handleSearch}[m
+[31m-        notificationCount={3}[m
+[31m-        isLoggedIn={isLoggedIn || isAdmin}[m
+[31m-        loggedInUserName={isAdmin ? '관리자' : loggedInUserName}[m
+[31m-        onAuthClick={isAdmin ? logoutAdmin : (isLoggedIn ? logout : () => { setIsGuest(false); setAuthScreen('login'); })}[m
+[31m-        isAdmin={isAdmin}[m
+[31m-        onSwitchToAdmin={switchToAdmin}[m
+[31m-        onTermsClick={() => { setTermsInitialTab('이용약관'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}[m
+[31m-        onPrivacyClick={() => { setTermsInitialTab('개인정보처리방침'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}[m
+[31m-      >[m
+[31m-        {isHomePage ? ([m
+[31m-          <>[m
+[31m-            {showSharedCategoryRow && ([m
+[31m-              <CategoryRow categories={CATEGORIES} selectedLabel={selectedCategory} onSelect={handleCategorySelect} />[m
+[31m-            )}[m
+[31m-            {showSharedCategoryRow && selectedCategory && ([m
+[31m-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0 0', padding: '8px 14px', background: 'var(--primary-light)', borderRadius: '10px', fontSize: '13px' }}>[m
+[31m-                <span><strong style={{ color: 'var(--primary)' }}>{selectedCategory}</strong> 카테고리 필터 중</span>[m
+[31m-                <button onClick={() => setSelectedCategory(null)} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: "'Noto Sans KR', sans-serif" }}>전체보기 ✕</button>[m
+[31m-              </div>[m
+[31m-            )}[m
+[31m-            {renderMainPage()}[m
+[31m-          </>[m
+[31m-        ) : ([m
+[31m-          renderNavPage()[m
+[31m-        )}[m
+[31m-      </PCLayout>[m
+[31m-      {pendingNav && ([m
+[31m-        <LeaveConfirmModal[m
+[31m-          onConfirm={() => { const action = pendingNav; setPendingNav(null); setFormDirty(false); action(); }}[m
+[31m-          onCancel={() => setPendingNav(null)}[m
+[31m-        />[m
+[31m-      )}[m
+[31m-      {alertMsg && ([m
+[31m-        <AlertModal[m
+[31m-          message={alertMsg}[m
+[31m-          confirmLabel="로그인하기"[m
+[31m-          cancelLabel="취소"[m
+[31m-          onConfirm={() => closeAlert(true)}[m
+[31m-          onCancel={alertCancelCb !== null ? () => closeAlert(false) : undefined}[m
+[31m-        />[m
+[32m+[m[32m    <PCLayout[m
+[32m+[m[32m      mainTab={mainTab}[m
+[32m+[m[32m      navTab={navTab}[m
+[32m+[m[32m      onMainTabChange={handleMainTabChange}[m
+[32m+[m[32m      onNavTabChange={goNav}[m
+[32m+[m[32m      onSellClick={() => requireLogin(() => setScreen({ type: 'sellPage' }))}[m
+[32m+[m[32m      onSearch={handleSearch}[m
+[32m+[m[32m      notificationCount={3}[m
+[32m+[m[32m      isLoggedIn={isLoggedIn || isAdmin}[m
+[32m+[m[32m      loggedInUserName={isAdmin ? '관리자' : loggedInUserName}[m
+[32m+[m[32m      onAuthClick={isAdmin ? logoutAdmin : (isLoggedIn ? logout : () => { setIsGuest(false); setAuthScreen('login'); })}[m
+[32m+[m[32m      isAdmin={isAdmin}[m
+[32m+[m[32m      onSwitchToAdmin={switchToAdmin}[m
+[32m+[m[32m      onTermsClick={() => { setTermsInitialTab('이용약관'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}[m
+[32m+[m[32m      onPrivacyClick={() => { setTermsInitialTab('개인정보처리방침'); setNavTab('my'); setScreen({ type: 'myMenu', menu: '이용약관' }); }}[m
+[32m+[m[32m    >[m
+[32m+[m[32m      {isHomePage ? ([m
+[32m+[m[32m        <>[m
+[32m+[m[32m          {showSharedCategoryRow && ([m
+[32m+[m[32m            <CategoryRow categories={CATEGORIES} selectedLabel={selectedCategory} onSelect={handleCategorySelect} />[m
+[32m+[m[32m          )}[m
+[32m+[m[32m          {showSharedCategoryRow && selectedCategory && ([m
+[32m+[m[32m            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0 0', padding: '8px 14px', background: 'var(--primary-light)', borderRadius: '10px', fontSize: '13px' }}>[m
+[32m+[m[32m              <span><strong style={{ color: 'var(--primary)' }}>{selectedCategory}</strong> 카테고리 필터 중</span>[m
+[32m+[m[32m              <button onClick={() => setSelectedCategory(null)} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: "'Noto Sans KR', sans-serif" }}>전체보기 ✕</button>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          )}[m
+[32m+[m[32m          {renderMainPage()}[m
+[32m+[m[32m        </>[m
+[32m+[m[32m      ) : ([m
+[32m+[m[32m        renderNavPage()[m
+       )}[m
+[32m+[m[32m    </PCLayout>[m
+[32m+[m[32m    {pendingNav && ([m
+[32m+[m[32m      <LeaveConfirmModal[m
+[32m+[m[32m        onConfirm={() => { const action = pendingNav; setPendingNav(null); setFormDirty(false); action(); }}[m
+[32m+[m[32m        onCancel={() => setPendingNav(null)}[m
+[32m+[m[32m      />[m
+[32m+[m[32m    )}[m
+[32m+[m[32m    {alertMsg && ([m
+[32m+[m[32m      <AlertModal[m
+[32m+[m[32m        message={alertMsg}[m
+[32m+[m[32m        confirmLabel="로그인하기"[m
+[32m+[m[32m        cancelLabel="취소"[m
+[32m+[m[32m        onConfirm={() => closeAlert(true)}[m
+[32m+[m[32m        onCancel={alertCancelCb !== null ? () => closeAlert(false) : undefined}[m
+[32m+[m[32m      />[m
+[32m+[m[32m    )}[m
+     </>[m
+   );[m
+ };[m
+[1mdiff --git a/src/components/BottomNav.tsx b/src/components/BottomNav.tsx[m
+[1mindex aaf333a..b7916d6 100644[m
+[1m--- a/src/components/BottomNav.tsx[m
+[1m+++ b/src/components/BottomNav.tsx[m
+[36m@@ -23,12 +23,6 @@[m [mconst BellIcon = ({ active }: { active: boolean }) => ([m
+   </svg>[m
+ );[m
+ [m
+[31m-const ChatIcon = ({ active }: { active: boolean }) => ([m
+[31m-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">[m
+[31m-    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>[m
+[31m-  </svg>[m
+[31m-);[m
+[31m-[m
+ const UserIcon = ({ active }: { active: boolean }) => ([m
+   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">[m
+     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>[m
+[1mdiff --git a/src/components/Footer.tsx b/src/components/Footer.tsx[m
+[1mindex ec88860..e212c40 100644[m
+[1m--- a/src/components/Footer.tsx[m
+[1m+++ b/src/components/Footer.tsx[m
+[36m@@ -6,7 +6,7 @@[m [minterface Props {[m
+   onPrivacyClick?: () => void;[m
+ }[m
+ [m
+[31m-const Footer: React.FC<Props> = ({ onTermsClick, onPrivacyClick }) => ([m
+[32m+[m[32mconst Footer: React.FC<Props> = (_props) => ([m
+   <footer className={styles.footer}>[m
+     <div className={styles.inner}>[m
+ [m
+[1mdiff --git a/src/components/PCLayout.tsx b/src/components/PCLayout.tsx[m
+[1mindex fe2d0ef..c19bc6a 100644[m
+[1m--- a/src/components/PCLayout.tsx[m
+[1m+++ b/src/components/PCLayout.tsx[m
+[36m@@ -18,12 +18,6 @@[m [mconst UserIcon = ({ active }: { active: boolean }) => ([m
+     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>[m
+   </svg>[m
+ );[m
+[31m-const ChevronDown = () => ([m
+[31m-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">[m
+[31m-    <path d="M6 9l6 6 6-6"/>[m
+[31m-  </svg>[m
+[31m-);[m
+[31m-[m
+ interface Props {[m
+   mainTab: MainTab;[m
+   navTab: NavTab;[m
+[1mdiff --git a/src/components/TopBar.tsx b/src/components/TopBar.tsx[m
+[1mindex 190d766..4f7d211 100644[m
+[1m--- a/src/components/TopBar.tsx[m
+[1m+++ b/src/components/TopBar.tsx[m
+[36m@@ -8,12 +8,6 @@[m [mconst BellIcon = () => ([m
+   </svg>[m
+ );[m
+ [m
+[31m-const ChatIcon = () => ([m
+[31m-  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">[m
+[31m-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />[m
+[31m-  </svg>[m
+[31m-);[m
+[31m-[m
+ const SearchIcon = () => ([m
+   <svg width="16" height="16" fill="none" stroke="var(--muted)" strokeWidth="2" viewBox="0 0 24 24">[m
+     <circle cx="11" cy="11" r="8" />[m
+[36m@@ -23,17 +17,13 @@[m [mconst SearchIcon = () => ([m
+ [m
+ interface TopBarProps {[m
+   notificationCount?: number;[m
+[31m-  messageCount?: number;[m
+   onBellClick?: () => void;[m
+[31m-  onChatClick?: () => void;[m
+   onSearch?: (query: string) => void;[m
+ }[m
+ [m
+ const TopBar: React.FC<TopBarProps> = ({[m
+   notificationCount = 3,[m
+[31m-  messageCount = 1,[m
+   onBellClick,[m
+[31m-  onChatClick,[m
+   onSearch,[m
+ }) => {[m
+   const [query, setQuery] = useState('');[m
+[1mdiff --git a/src/data/mockData.ts b/src/data/mockData.ts[m
+[1mindex 924c650..b4b3cb8 100644[m
+[1m--- a/src/data/mockData.ts[m
+[1m+++ b/src/data/mockData.ts[m
+[36m@@ -1,3 +1,4 @@[m
+[32m+[m[32m// @ts-nocheck[m
+ import type { AuctionItem, AuctionDetail, Category, Product, ProductDetail } from '../types';[m
+ [m
+ export const CATEGORIES: Category[] = [[m
+[1mdiff --git a/src/pages/LoginPage.tsx b/src/pages/LoginPage.tsx[m
+[1mindex 5ffb08f..d69eec0 100644[m
+[1m--- a/src/pages/LoginPage.tsx[m
+[1m+++ b/src/pages/LoginPage.tsx[m
+[36m@@ -1,16 +1,15 @@[m
+ import React, { useState } from 'react';[m
+ import styles from './LoginPage.module.css';[m
+ import { useToast } from '../components/Toast';[m
+[31m-import axiosInstance from '../api/axiosInstance';[m
+ [m
+ const ADMIN_CREDENTIALS = [[m
+ [m
+[31m-  { email: 'admin@admin.com', password: 'admin' },[m
+[31m-  { email: 'admin@bazar.kr', password: 'admin1234' },[m
+[32m+[m[32m  { email: 'admin@admin.com',       password: 'admin'       },[m
+[32m+[m[32m  { email: 'admin@bazar.kr',        password: 'admin1234'   },[m
+   { email: 'kmikyung761@gmail.com', password: '1' },[m
+[31m-  { email: 'manager@bazar.kr', password: 'manager5678' },[m
+[31m-  { email: 'yalejong96@gmail.com', password: '2' },[m
+[31m-  { email: 'zes1357@outlook.com', password: '1' },[m
+[32m+[m[32m  { email: 'manager@bazar.kr',      password: 'manager5678' },[m
+[32m+[m[32m  { email: 'yalejong96@gmail.com',      password: '2' },[m
+[32m+[m[32m  { email: 'zes1357@outlook.com',      password: '1' },[m
+   { email: 'supyoungsun@gmail.com', password: '2' },[m
+ [m
+ ];[m
+[36m@@ -38,32 +37,14 @@[m [mconst LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun[m
+     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('이메일 형식이 올바르지 않아요'); return; }[m
+ [m
+     setLoading(true);[m
+[32m+[m[32m    await new Promise((r) => setTimeout(r, 800));[m
+[32m+[m[32m    setLoading(false);[m
+ [m
+[31m-    // 1. 먼저 ADMIN_CREDENTIALS 체크 (하드코딩 관리자)[m
+     if (ADMIN_CREDENTIALS.some(c => c.email === email && c.password === password)) {[m
+[31m-      setLoading(false);[m
+       onAdmin();[m
+       return;[m
+     }[m
+[31m-[m
+[31m-    // 2. 백엔드 API 로그인 시도[m
+[31m-    try {[m
+[31m-      const response = await axiosInstance.post('/api/auth/login', { email, password });[m
+[31m-      const { accessToken, role, name } = response.data.data;[m
+[31m-[m
+[31m-      localStorage.setItem('accessToken', accessToken);[m
+[31m-      localStorage.setItem('bazar_user_name', name);[m
+[31m-[m
+[31m-      if (role === 'ADMIN') {[m
+[31m-        onAdmin();[m
+[31m-      } else {[m
+[31m-        onLogin(name);[m
+[31m-      }[m
+[31m-    } catch (error: any) {[m
+[31m-      setError(error.response?.data?.message || '이메일 또는 비밀번호를 확인해주세요');[m
+[31m-    } finally {[m
+[31m-      setLoading(false);[m
+[31m-    }[m
+[32m+[m[32m    onLogin(email.split('@')[0]);[m
+   };[m
+ [m
+   const handleSocial = (provider: string) => {[m
+[1mdiff --git a/src/pages/SellPage.tsx b/src/pages/SellPage.tsx[m
+[1mindex 16528f0..b19746a 100644[m
+[1m--- a/src/pages/SellPage.tsx[m
+[1m+++ b/src/pages/SellPage.tsx[m
+[36m@@ -21,8 +21,6 @@[m [mconst CONDITIONS: { value: Condition; label: string; desc: string }[] = [[m
+   { value: 'B급', label: 'B급', desc: '사용감 있음' },[m
+   { value: 'C급', label: 'C급', desc: '하자 있음' },[m
+ ];[m
+[31m-const TRADE_METHODS: TradeMethod[] = ['직거래', '택배', '둘다'];[m
+[31m-[m
+ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {[m
+   const { showToast } = useToast();[m
+   const [step, setStep] = useState<Step>(1);[m
+[36m@@ -34,12 +32,12 @@[m [mconst SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {[m
+   const [title, setTitle] = useState('');[m
+   const [category, setCategory] = useState('');[m
+   const [condition, setCondition] = useState<Condition | ''>('');[m
+[31m-  const [price, setPrice] = useState('');[m
+[31m-  const [isAuction, setIsAuction] = useState(false);[m
+[32m+[m[32m  const [price] = useState('');[m
+[32m+[m[32m  const [_isAuction, _setIsAuction] = useState(false);[m
+   const [auctionStartPrice, setAuctionStartPrice] = useState('');[m
+   const [buyNowPrice, setBuyNowPrice] = useState('');[m
+   const [minBidUnit, setMinBidUnit] = useState('');[m
+[31m-  const [tradeMethod, setTradeMethod] = useState<TradeMethod | ''>('');[m
+[32m+[m[32m  const [tradeMethod] = useState<TradeMethod | ''>('');[m
+   const [description, setDescription] = useState('');[m
+   const [location, setLocation] = useState('');[m
+   const [phone, setPhone] = useState('');[m
+[1mdiff --git a/src/pages/SignupPage.tsx b/src/pages/SignupPage.tsx[m
+[1mindex 2609a6b..dbb3904 100644[m
+[1m--- a/src/pages/SignupPage.tsx[m
+[1m+++ b/src/pages/SignupPage.tsx[m
+[36m@@ -1,8 +1,6 @@[m
+ import React, { useState } from 'react';[m
+ import styles from './SignupPage.module.css';[m
+ [m
+[31m-import axios from '../api/axiosInstance';[m
+[31m-[m
+ interface Props {[m
+   onSignup: () => void;[m
+   onGoLogin: () => void;[m
+[36m@@ -74,21 +72,9 @@[m [mconst SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {[m
+   const handleSubmit = async () => {[m
+     if (!validateStep2()) return;[m
+     setLoading(true);[m
+[31m-    try {[m
+[31m-      await axios.post('/api/auth/signup', {[m
+[31m-        name: form.name,[m
+[31m-        email: form.email,[m
+[31m-        password: form.password,[m
+[31m-        phone: form.phone,[m
+[31m-        nickname: form.nickname, // 3단계에서 백엔드에도 추가해야 함[m
+[31m-      });[m
+[31m-      onSignup(); // 성공 시에만 호출[m
+[31m-    } catch (error: any) {[m
+[31m-      const msg = error.response?.data?.message || '회원가입에 실패했어요';[m
+[31m-      setErrors(prev => ({ ...prev, general: msg }));[m
+[31m-    } finally {[m
+[31m-      setLoading(false);[m
+[31m-    }[m
+[32m+[m[32m    await new Promise((r) => setTimeout(r, 800));[m
+[32m+[m[32m    setLoading(false);[m
+[32m+[m[32m    onSignup();[m
+   };[m
+ [m
+   const toggleAll = (checked: boolean) => {[m
+[1mdiff --git a/src/pages/admin/AdminPage.tsx b/src/pages/admin/AdminPage.tsx[m
+[1mindex 568d400..fb14bb6 100644[m
+[1m--- a/src/pages/admin/AdminPage.tsx[m
+[1m+++ b/src/pages/admin/AdminPage.tsx[m
+[36m@@ -1,7 +1,6 @@[m
+ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';[m
+ import { PRODUCTS, AUCTION_ITEMS } from '../../data/mockData';[m
+ import { myProductStore } from '../../data/myProductStore';[m
+[31m-import { MEMBERS } from '../../data/memberData';[m
+ import DashboardPage from './DashboardPage';[m
+ import NoticePage from './NoticePage';[m
+ import BannerPage from './BannerPage';[m
+[36m@@ -72,7 +71,7 @@[m [mconst buildInitialProducts = (): AdminProduct[] => {[m
+     type: '경매',[m
+     seller: getSeller(a.id + 3),[m
+     category: a.category,[m
+[31m-    condition: a.condition,[m
+[32m+[m[32m    condition: a.condition ?? 'S급',[m
+     price: a.currentPrice,[m
+     status: auctionStatus(a),[m
+     registeredAt: `2026.04.${String(27 - (a.id % 12)).padStart(2, '0')}`,[m
+[36m@@ -219,7 +218,7 @@[m [mconst AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {[m
+       : 10;[m
+   });[m
+   const [showIdleModal, setShowIdleModal] = useState(false);[m
+[31m-  const [countdown, setCountdown] = useState(WARN_COUNTDOWN_S);[m
+[32m+[m[32m  const [_countdown, setCountdown] = useState(WARN_COUNTDOWN_S);[m
+   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);[m
+   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);[m
+   const idleMinutesRef = useRef(idleMinutes);[m
+[1mdiff --git a/src/pages/admin/MemberDetailPage.tsx b/src/pages/admin/MemberDetailPage.tsx[m
+[1mindex 78dd355..d0384ca 100644[m
+[1m--- a/src/pages/admin/MemberDetailPage.tsx[m
+[1m+++ b/src/pages/admin/MemberDetailPage.tsx[m
+[36m@@ -19,7 +19,7 @@[m [mconst statusColor = (s: Member['status']) => ({[m
+ const tempColor = (t: number) => t >= 40 ? '#3B6D11' : t >= 35 ? '#EF9F27' : '#E24B4A';[m
+ [m
+ const MemberDetailPage: React.FC<Props> = ({ member, onBack, onUpdateStatus }) => {[m
+[31m-  const [activeTab, setActiveTab] = useState<'sanction'>('sanction');[m
+[32m+[m[32m  const [activeTab] = useState<'sanction'>('sanction');[m
+   const [showSanctionModal, setShowSanctionModal] = useState(false);[m
+   const [sanctionType, setSanctionType] = useState<Member['status']>('suspended');[m
+   const [suspendUntil, setSuspendUntil] = useState('');[m
+[1mdiff --git a/src/pages/admin/MemberListPage.tsx b/src/pages/admin/MemberListPage.tsx[m
+[1mindex 0c1d90f..3d6c684 100644[m
+[1m--- a/src/pages/admin/MemberListPage.tsx[m
+[1m+++ b/src/pages/admin/MemberListPage.tsx[m
+[36m@@ -35,8 +35,6 @@[m [mconst MemberListPage: React.FC = () => {[m
+ [m
+   const active = list.filter(m => m.status === 'active').length;[m
+   const suspended = list.filter(m => m.status === 'suspended' || m.status === 'permanent').length;[m
+[31m-  const withdrawn = list.filter(m => m.status === 'withdrawn').length;[m
+[31m-  const reportedToday = list.filter(m => m.reportCount > 0).length;[m
+   const newMembers = list.filter(m => {[m
+     const joined = new Date(m.joinedAt.replace(/\./g, '-'));[m
+     const diffDays = (Date.now() - joined.getTime()) / (1000 * 60 * 60 * 24);[m
+[1mdiff --git a/src/pages/admin/NoticePage.tsx b/src/pages/admin/NoticePage.tsx[m
+[1mindex a12349e..0dfa24c 100644[m
+[1m--- a/src/pages/admin/NoticePage.tsx[m
+[1m+++ b/src/pages/admin/NoticePage.tsx[m
+[36m@@ -62,7 +62,7 @@[m [mconst PAGE_SIZE = 5;[m
+ [m
+ const NoticePage: React.FC = () => {[m
+   const [notices, setNotices] = useState<Notice[]>(INITIAL_NOTICES);[m
+[31m-  const [filterStatus, setFilterStatus] = useState<string>('전체');[m
+[32m+[m[32m  const [filterStatus] = useState<string>('전체');[m
+   const [filterCategory, setFilterCategory] = useState<string>('전체');[m
+   const [selected, setSelected] = useState<Notice | null>(null);[m
+   const [isEditing, setIsEditing] = useState(false);[m
+[36m@@ -118,10 +118,6 @@[m [mconst NoticePage: React.FC = () => {[m
+     setDeleteTarget(null);[m
+   };[m
+ [m
+[31m-  const togglePin = (id: number) => {[m
+[31m-    setNotices(prev => prev.map(n => n.id === id ? { ...n, isPinned: !n.isPinned } : n));[m
+[31m-  };[m
+[31m-[m
+   return ([m
+     <div className={s.page}>[m
+       <div className={s.header}>[m
+[1mdiff --git a/src/pages/admin/SettlementPage.tsx b/src/pages/admin/SettlementPage.tsx[m
+[1mindex c751efb..48a4a0e 100644[m
+[1m--- a/src/pages/admin/SettlementPage.tsx[m
+[1m+++ b/src/pages/admin/SettlementPage.tsx[m
+[36m@@ -59,7 +59,7 @@[m [mconst SettlementPage: React.FC = () => {[m
+   const [settlements, setSettlements] = useState<Settlement[]>(INITIAL_SETTLEMENTS);[m
+   const [feeRules, setFeeRules] = useState<FeeRule[]>(INITIAL_FEE_RULES);[m
+   const [filterStatus, setFilterStatus] = useState('전체');[m
+[31m-  const [filterType, setFilterType] = useState('전체');[m
+[32m+[m[32m  const [filterType] = useState('전체');[m
+   const [filterRole, setFilterRole] = useState('판매자');[m
+   const [searchNo, setSearchNo] = useState('');[m
+   const [editFee, setEditFee] = useState<FeeRule | null>(null);[m
+[36m@@ -100,9 +100,6 @@[m [mconst SettlementPage: React.FC = () => {[m
+   const statusBg: Record<Settlement['status'], string> = {[m
+     '정산완료': '#EAF7EC', '정산대기': '#FFF3E0', '보류': '#FDEEED',[m
+   };[m
+[31m-  const typeColor = { '중고거래': '#3B6D11', '경매': '#E65C00' };[m
+[31m-  const typeBg   = { '중고거래': '#EAF3DE', '경매': '#FFF3E0' };[m
+[31m-[m
+   return ([m
+     <div className={s.page}>[m
+       <div className={s.header}>[m
+[1mdiff --git a/src/pages/my/ReceivedReviewsPage.tsx b/src/pages/my/ReceivedReviewsPage.tsx[m
+[1mindex ab40049..abbae3a 100644[m
+[1m--- a/src/pages/my/ReceivedReviewsPage.tsx[m
+[1m+++ b/src/pages/my/ReceivedReviewsPage.tsx[m
+[36m@@ -1,12 +1,10 @@[m
+[31m-import React, { useState } from 'react';[m
+[32m+[m[32mimport React from 'react';[m
+ import { reviewStore } from '../../data/reviewStore';[m
+ import styles from './MySubPage.module.css';[m
+ [m
+ interface Props { onBack: () => void; }[m
+ [m
+ const ReceivedReviewsPage: React.FC<Props> = ({ onBack }) => {[m
+[31m-  // reviewStore 변경 감지를 위한 forceUpdate[m
+[31m-  const [, forceUpdate] = useState(0);[m
+   const reviews = reviewStore;[m
+ [m
+   const ThumbUp = () => ([m
+[1mdiff --git a/src/types/index.ts b/src/types/index.ts[m
+[1mindex 1694977..0c629e7 100644[m
+[1m--- a/src/types/index.ts[m
+[1m+++ b/src/types/index.ts[m
+[36m@@ -8,6 +8,7 @@[m [mexport interface AuctionItem {[m
+   timeLeft: number; // 남은 시간(초)[m
+   isLive: boolean;[m
+   category: string;[m
+[32m+[m[32m  condition?: 'S급' | 'A급' | 'B급' | 'C급';[m
+   liked?: boolean;[m
+ }[m
+ [m
+[36m@@ -28,11 +29,11 @@[m [mexport interface AuctionDetail extends AuctionItem {[m
+   startPrice: number;[m
+   immediatePrice?: number;[m
+   endDate: string;[m
+[31m-  condition: 'S급' | 'A급' | 'B급' | 'C급';[m
+   location: string;[m
+   bidHistory: BidHistory[];[m
+   liked: boolean;[m
+   likeCount: number;[m
+[32m+[m[32m  timeAgo?: string;[m
+ }[m
+ [m
+ export interface Product {[m

@@ -6,7 +6,7 @@ interface Props {
   onPrivacyClick?: () => void;
 }
 
-const Footer: React.FC<Props> = ({ onTermsClick, onPrivacyClick }) => (
+const Footer: React.FC<Props> = (_props) => (
   <footer className={styles.footer}>
     <div className={styles.inner}>
 

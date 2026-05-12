@@ -62,7 +62,7 @@ const PAGE_SIZE = 5;
 
 const NoticePage: React.FC = () => {
   const [notices, setNotices] = useState<Notice[]>(INITIAL_NOTICES);
-  const [filterStatus, setFilterStatus] = useState<string>('전체');
+  const [filterStatus] = useState<string>('전체');
   const [filterCategory, setFilterCategory] = useState<string>('전체');
   const [selected, setSelected] = useState<Notice | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -116,10 +116,6 @@ const NoticePage: React.FC = () => {
     if (!deleteTarget) return;
     setNotices(prev => prev.filter(n => n.id !== deleteTarget.id));
     setDeleteTarget(null);
-  };
-
-  const togglePin = (id: number) => {
-    setNotices(prev => prev.map(n => n.id === id ? { ...n, isPinned: !n.isPinned } : n));
   };
 
   return (

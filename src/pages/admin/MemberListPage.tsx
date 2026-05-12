@@ -35,8 +35,6 @@ const MemberListPage: React.FC = () => {
 
   const active = list.filter(m => m.status === 'active').length;
   const suspended = list.filter(m => m.status === 'suspended' || m.status === 'permanent').length;
-  const withdrawn = list.filter(m => m.status === 'withdrawn').length;
-  const reportedToday = list.filter(m => m.reportCount > 0).length;
   const newMembers = list.filter(m => {
     const joined = new Date(m.joinedAt.replace(/\./g, '-'));
     const diffDays = (Date.now() - joined.getTime()) / (1000 * 60 * 60 * 24);

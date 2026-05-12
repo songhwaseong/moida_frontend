@@ -1,46 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import CategoryRow from './components/CategoryRow';
-import HomePage from './pages/HomePage';
-import TradePage from './pages/TradePage';
-import AuctionListPage from './pages/AuctionListPage';
-import PopularPage from './pages/PopularPage';
-import WishlistPage from './pages/WishlistPage';
-import AuctionDetailPage from './pages/AuctionDetailPage';
-import ProductDetailPage from './pages/ProductDetailPage';
-import SearchPage from './pages/SearchPage';
-import NotificationPage from './pages/NotificationPage';
-import ChatPage from './pages/ChatPage';
-import MyPage from './pages/MyPage';
-import LoginPage from './pages/LoginPage';
-import FindAccountPage from './pages/FindAccountPage';
-import SellPage from './pages/SellPage';
-import SellerProfilePage from './pages/SellerProfilePage';
-import SignupPage from './pages/SignupPage';
-import SalesHistoryPage from './pages/my/SalesHistoryPage';
-import MyProductsPage from './pages/my/MyProductsPage';
-import EditProductPage from './pages/my/EditProductPage';
 import type { MyProduct } from './data/myProductStore';
-import PurchaseHistoryPage from './pages/my/PurchaseHistoryPage';
-import BidHistoryPage from './pages/my/BidHistoryPage';
-import ReceivedReviewsPage from './pages/my/ReceivedReviewsPage';
-import AddressPage from './pages/my/AddressPage';
-import NotificationSettingsPage from './pages/my/NotificationSettingsPage';
-import FaqPage from './pages/my/FaqPage';
-import CustomerServicePage from './pages/my/CustomerServicePage';
-import TermsPage from './pages/my/TermsPage';
-import EditProfilePage from './pages/my/EditProfilePage';
-import MyWalletPage from './pages/my/MyWalletPage';
-import TrackingPage from './pages/my/TrackingPage';
-import GuidePage from './pages/my/GuidePage';
-import MyInquiryPage from './pages/my/MyInquiryPage';
 import type { MainTab, NavTab, AuctionItem, Product, Category } from './types';
 import { CATEGORIES } from './data/mockData';
 import PCLayout from './components/PCLayout';
 import { ToastProvider } from './components/Toast';
 import LeaveConfirmModal from './components/LeaveConfirmModal';
 import AlertModal from './components/AlertModal';
-import AdminPage from './pages/admin/AdminPage';
 import './styles/global.css';
+
+const HomePage = lazy(() => import('./pages/HomePage'));
+const TradePage = lazy(() => import('./pages/TradePage'));
+const AuctionListPage = lazy(() => import('./pages/AuctionListPage'));
+const PopularPage = lazy(() => import('./pages/PopularPage'));
+const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const AuctionDetailPage = lazy(() => import('./pages/AuctionDetailPage'));
+const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
+const NotificationPage = lazy(() => import('./pages/NotificationPage'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const MyPage = lazy(() => import('./pages/MyPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const FindAccountPage = lazy(() => import('./pages/FindAccountPage'));
+const SellPage = lazy(() => import('./pages/SellPage'));
+const SellerProfilePage = lazy(() => import('./pages/SellerProfilePage'));
+const SignupPage = lazy(() => import('./pages/SignupPage'));
+const SalesHistoryPage = lazy(() => import('./pages/my/SalesHistoryPage'));
+const MyProductsPage = lazy(() => import('./pages/my/MyProductsPage'));
+const EditProductPage = lazy(() => import('./pages/my/EditProductPage'));
+const PurchaseHistoryPage = lazy(() => import('./pages/my/PurchaseHistoryPage'));
+const BidHistoryPage = lazy(() => import('./pages/my/BidHistoryPage'));
+const ReceivedReviewsPage = lazy(() => import('./pages/my/ReceivedReviewsPage'));
+const AddressPage = lazy(() => import('./pages/my/AddressPage'));
+const NotificationSettingsPage = lazy(() => import('./pages/my/NotificationSettingsPage'));
+const FaqPage = lazy(() => import('./pages/my/FaqPage'));
+const CustomerServicePage = lazy(() => import('./pages/my/CustomerServicePage'));
+const TermsPage = lazy(() => import('./pages/my/TermsPage'));
+const EditProfilePage = lazy(() => import('./pages/my/EditProfilePage'));
+const MyWalletPage = lazy(() => import('./pages/my/MyWalletPage'));
+const TrackingPage = lazy(() => import('./pages/my/TrackingPage'));
+const GuidePage = lazy(() => import('./pages/my/GuidePage'));
+const MyInquiryPage = lazy(() => import('./pages/my/MyInquiryPage'));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
 
 type AuthScreen = 'login' | 'signup' | 'find-id' | 'find-pw' | null;
 
@@ -383,7 +384,9 @@ const App: React.FC = () => {
 export default function Root() {
   return (
     <ToastProvider>
-      <App />
+      <Suspense fallback={null}>
+        <App />
+      </Suspense>
     </ToastProvider>
   );
 }

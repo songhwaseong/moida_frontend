@@ -47,8 +47,8 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
   const avgStars = (REVIEWS.reduce((sum, r) => sum + r.stars, 0) / REVIEWS.length).toFixed(1);
   const ThumbUp = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', verticalAlign: 'middle' }}>
-      <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/>
-      <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
+      <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" />
+      <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
     </svg>
   );
 
@@ -58,11 +58,11 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
       <div className={styles.header}>
         <button className={styles.back} onClick={onBack}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
+            <path d="M19 12H5M12 5l-7 7 7 7" />
           </svg>
         </button>
         <span className={styles.title}>판매자 프로필</span>
-        <div style={{ width: 32 }}/>
+        <div style={{ width: 32 }} />
       </div>
 
       <div className={styles.scroll}>
@@ -97,17 +97,17 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
             <span className={styles.statNum}>{seller.sales}</span>
             <span className={styles.statLabel}>거래 횟수</span>
           </div>
-          <div className={styles.statDivider}/>
+          <div className={styles.statDivider} />
           <div className={styles.statItem}>
             <span className={styles.statNum}>{avgStars}</span>
             <span className={styles.statLabel}>평균 평점</span>
           </div>
-          <div className={styles.statDivider}/>
+          <div className={styles.statDivider} />
           <div className={styles.statItem}>
             <span className={styles.statNum}>{displayProducts.length}</span>
             <span className={styles.statLabel}>판매중</span>
           </div>
-          <div className={styles.statDivider}/>
+          <div className={styles.statDivider} />
           <div className={styles.statItem}>
             <span className={styles.statNum}>{REVIEWS.length}</span>
             <span className={styles.statLabel}>후기</span>
@@ -131,9 +131,7 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
           <div className={styles.productList}>
             {displayProducts.length > 0 ? (
               displayProducts.map((p) => (
-                <div key={p.id} onClick={() => onProductClick?.(p)}>
-                  <ProductCard product={p} />
-                </div>
+                <ProductCard key={p.id} product={p} onClick={onProductClick} />
               ))
             ) : (
               <div className={styles.empty}>

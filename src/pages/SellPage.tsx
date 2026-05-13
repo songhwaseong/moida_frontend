@@ -18,6 +18,8 @@ type Step = 1 | 2 | 3;
 const PRODUCT_CATEGORIES = HOME_CATEGORIES
   .map(category => category.label)
   .filter(label => label !== '전체');
+const ADDON_CATEGORIES = ['한정판', '이월상품'];
+const BASE_CATEGORIES = PRODUCT_CATEGORIES.filter(label => !ADDON_CATEGORIES.includes(label));
 const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
   { value: 'S급', label: 'S급', desc: '미사용/새상품' },
   { value: 'A급', label: 'A급', desc: '거의 새것' },
@@ -34,6 +36,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [mainImageIndex, setMainImageIndex] = useState<number>(0);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
+  const [addonCategories, setAddonCategories] = useState<string[]>([]);
   const [condition, setCondition] = useState<Condition | ''>('');
   const [price] = useState('');
   const [_isAuction, _setIsAuction] = useState(false);
@@ -55,7 +58,10 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   // 변경 여부 감지
-  const isDirty = images.length > 0 || title !== '' || category !== '' || condition !== '' ||
+  const selectedCategories = [category, ...addonCategories].filter(Boolean);
+  const categorySummary = selectedCategories.join(', ');
+
+  const isDirty = images.length > 0 || title !== '' || category !== '' || addonCategories.length > 0 || condition !== '' ||
     price !== '' || auctionStartPrice !== '' || buyNowPrice !== '' || minBidUnit !== '' ||
     description !== '' || location !== '' || phone !== '';
 
@@ -70,8 +76,12 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   }, [isDirty]);
 
   const handleBack = () => {
-    if (step > 1) { setStep(prev => (prev - 1) as Step); return; }
     if (isDirty) { setShowLeaveConfirm(true); } else { onBack(); }
+  };
+
+  const handlePrevStep = () => {
+    if (step > 1) { setStep(prev => (prev - 1) as Step); return; }
+    handleBack();
   };
 
   // 이미지 추가 (실제 파일 선택)
@@ -161,7 +171,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
     const e: Record<string, string> = {};
     if (images.length === 0) e.images = '사진을 1장 이상 등록해주세요';
     if (!title.trim()) e.title = '상품명을 입력해주세요';
-    if (!category) e.category = '카테고리를 선택해주세요';
+    if (selectedCategories.length === 0) e.category = '카테고리를 선택해주세요';
     if (!condition) e.condition = '상품 상태를 선택해주세요';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -208,6 +218,15 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const formatPrice = (val: string) => {
     const num = val.replace(/[^0-9]/g, '');
     return num ? Number(num).toLocaleString() : '';
+  };
+
+  const toggleAddonCategory = (label: string) => {
+    setAddonCategories(prev =>
+      prev.includes(label)
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
+    setErrors(p => ({ ...p, category: '' }));
   };
 
   return (
@@ -313,11 +332,18 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
             <div className={styles.section}>
               <label className={styles.sectionTitle}>카테고리 <span className={styles.required}>*</span></label>
               <div className={styles.chipGrid}>
-                {PRODUCT_CATEGORIES.map(c => (
+                {BASE_CATEGORIES.map(c => (
                   <button
                     key={c}
                     className={`${styles.chip} ${category === c ? styles.chipActive : ''}`}
                     onClick={() => { setCategory(c); setErrors(p => ({ ...p, category: '' })); }}
+                  >{c}</button>
+                ))}
+                {ADDON_CATEGORIES.map(c => (
+                  <button
+                    key={c}
+                    className={`${styles.chip} ${styles.chipAddon} ${addonCategories.includes(c) ? styles.chipActive : ''}`}
+                    onClick={() => toggleAddonCategory(c)}
                   >{c}</button>
                 ))}
               </div>
@@ -492,7 +518,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                 <span className={styles.summaryLabel}>상품명</span>
                 <span className={styles.summaryValue}>{title}</span>
                 <span className={styles.summaryLabel}>카테고리</span>
-                <span className={styles.summaryValue}>{category}</span>
+                <span className={styles.summaryValue}>{categorySummary}</span>
                 <span className={styles.summaryLabel}>상태</span>
                 <span className={styles.summaryValue}>{condition}</span>
                 <span className={styles.summaryLabel}>지역</span>
@@ -510,7 +536,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
 
         {/* 하단 버튼 — 스크롤 영역 안에 포함 */}
         <div className={styles.bottomAction} ref={bottomRef}>
-          <button className={styles.prevBtn} onClick={handleBack}>
+          <button className={styles.prevBtn} onClick={handlePrevStep}>
             {step === 1 ? '취소' : '이전'}
           </button>
           {step < 3 ? (
@@ -530,7 +556,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
 
     {showPreview && (
       <ProductPreviewModal
-        data={{ images, mainImageIndex, title, category, condition, auctionStartPrice, buyNowPrice, minBidUnit, tradeMethod, description, location }}
+        data={{ images, mainImageIndex, title, category: categorySummary, condition, auctionStartPrice, buyNowPrice, minBidUnit, tradeMethod, description, location }}
         onClose={() => setShowPreview(false)}
       />
     )}

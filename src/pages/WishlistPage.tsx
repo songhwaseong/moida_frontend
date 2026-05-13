@@ -27,21 +27,17 @@ const WishlistPage: React.FC<Props> = ({ onProductClick, onAuctionClick, onBack 
 
   return (
     <main className={styles.main}>
-      <div className={onBack ? subStyles.header : styles.header}>
-        {onBack ? (
-          <>
-            <button className={subStyles.back} onClick={onBack}>
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M19 12H5M12 5l-7 7 7 7"/>
-              </svg>
-            </button>
-            <span className={subStyles.title}>관심 목록</span>
-            <div style={{ width: 32 }}/>
-          </>
-        ) : (
-          <h1 className={styles.title}>관심 목록</h1>
-        )}
-      </div>
+      {onBack && (
+        <div className={subStyles.header}>
+          <button className={subStyles.back} onClick={onBack}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <span className={subStyles.title}>관심 목록</span>
+          <div style={{ width: 32 }} />
+        </div>
+      )}
 
       <div className={styles.tabs}>
         <button
@@ -59,9 +55,7 @@ const WishlistPage: React.FC<Props> = ({ onProductClick, onAuctionClick, onBack 
           likedProducts.length > 0 ? (
             <div className={styles.productGrid}>
               {likedProducts.map((p) => (
-                <div key={p.id} onClick={() => onProductClick?.(p)}>
-                  <ProductCard product={p} />
-                </div>
+                <ProductCard key={p.id} product={p} onClick={onProductClick} />
               ))}
             </div>
           ) : (

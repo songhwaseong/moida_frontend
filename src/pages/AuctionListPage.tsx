@@ -85,9 +85,7 @@ const AuctionListPage: React.FC<Props> = ({ onItemClick, onProductClick, selecte
         {sorted.length > 0 ? (
           <div className={styles.grid}>
             {sorted.map((item) => (
-              <div key={item.id} onClick={() => onItemClick(item)}>
-                <AuctionCard item={item} />
-              </div>
+              <AuctionCard key={item.id} item={item} onClick={onItemClick} />
             ))}
           </div>
         ) : (
@@ -109,9 +107,7 @@ const AuctionListPage: React.FC<Props> = ({ onItemClick, onProductClick, selecte
           </div>
           <div className={styles.productGrid}>
             {upcomingVisible.map((p) => (
-              <div key={p.id} onClick={() => onProductClick?.(p)}>
-                <ProductCard product={p} />
-              </div>
+              <ProductCard key={p.id} product={p} onClick={onProductClick} />
             ))}
           </div>
           <div className={styles.loaderArea}>

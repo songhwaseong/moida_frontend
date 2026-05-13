@@ -115,6 +115,7 @@
   flex-shrink: 0; white-space: nowrap;
 }
 .chipActive { background: var(--primary); color: #fff; border-color: var(--primary); }
+.chipAddon { border-style: dashed; }
 .chipSm { padding: 4px 12px; font-size: 12px; }
 
 /* 상태 버튼 */

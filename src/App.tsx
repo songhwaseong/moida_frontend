@@ -7,6 +7,7 @@ import PCLayout from './components/PCLayout';
 import { ToastProvider } from './components/Toast';
 import LeaveConfirmModal from './components/LeaveConfirmModal';
 import AlertModal from './components/AlertModal';
+import styles from './App.module.css';
 import './styles/global.css';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -128,9 +129,48 @@ const App: React.FC = () => {
   // 폼 이탈 확인 상태
   const [formDirty, setFormDirty] = useState(false);
   const [pendingNav, setPendingNav] = useState<null | (() => void)>(null);
+  const [adminViewMode, setAdminViewMode] = useState<'admin' | 'normal'>(
+    () => (localStorage.getItem('bazar_admin_view') as 'admin' | 'normal') ?? 'admin'
+  );
 
   // 현재 폼 화면인지 여부
   const isFormScreen = screen.type === 'sellPage' || editingProduct !== null;
+  const formDirtyRef = useRef(formDirty);
+  const isFormScreenRef = useRef(isFormScreen);
+  const currentHistoryViewRef = useRef<AppHistoryView | null>(null);
+
+  const restoreHistoryView = (view: AppHistoryView, clearDirty = true) => {
+    isRestoringHistoryRef.current = true;
+    setScreen(view.screen);
+    setMainTab(view.mainTab);
+    setNavTab(view.navTab);
+    setSelectedCategory(view.selectedCategory);
+    setSearchQuery(view.searchQuery);
+    setTermsInitialTab(view.termsInitialTab);
+    setAuthScreen(view.authScreen);
+    setIsGuest(view.isGuest);
+    setEditingProduct(view.editingProduct);
+    setAdminViewMode(view.adminViewMode);
+    if (clearDirty) setFormDirty(false);
+    setPendingNav(null);
+  };
+
+  useEffect(() => {
+    formDirtyRef.current = formDirty;
+    isFormScreenRef.current = isFormScreen;
+    currentHistoryViewRef.current = {
+      screen,
+      mainTab,
+      navTab,
+      selectedCategory,
+      searchQuery,
+      termsInitialTab,
+      authScreen,
+      isGuest,
+      editingProduct,
+      adminViewMode,
+    };
+  }, [screen, mainTab, navTab, selectedCategory, searchQuery, termsInitialTab, authScreen, isGuest, editingProduct, adminViewMode, formDirty, isFormScreen]);
 
   // 탭/네비 클릭 시 dirty면 컨펌, 아니면 바로 이동
   const guardedNav = (action: () => void) => {
@@ -140,10 +180,6 @@ const App: React.FC = () => {
       action();
     }
   };
-
-  const [adminViewMode, setAdminViewMode] = useState<'admin' | 'normal'>(
-    () => (localStorage.getItem('bazar_admin_view') as 'admin' | 'normal') ?? 'admin'
-  );
 
   const loginAsAdmin = () => {
     localStorage.setItem('bazar_is_admin', 'true');
@@ -200,19 +236,21 @@ const App: React.FC = () => {
       if (!isAppHistoryState(event.state)) return;
 
       const { view } = event.state;
-      isRestoringHistoryRef.current = true;
-      setScreen(view.screen);
-      setMainTab(view.mainTab);
-      setNavTab(view.navTab);
-      setSelectedCategory(view.selectedCategory);
-      setSearchQuery(view.searchQuery);
-      setTermsInitialTab(view.termsInitialTab);
-      setAuthScreen(view.authScreen);
-      setIsGuest(view.isGuest);
-      setEditingProduct(view.editingProduct);
-      setAdminViewMode(view.adminViewMode);
-      setFormDirty(false);
-      setPendingNav(null);
+      if (isFormScreenRef.current && formDirtyRef.current) {
+        const currentView = currentHistoryViewRef.current;
+        if (currentView) {
+          const currentState: AppHistoryState = { source: 'moida-app', view: currentView };
+          window.history.pushState(currentState, '');
+          lastHistoryViewKeyRef.current = getHistoryViewKey(currentView);
+        }
+        setPendingNav(() => () => {
+          window.history.replaceState({ source: 'moida-app', view }, '');
+          restoreHistoryView(view);
+        });
+        return;
+      }
+
+      restoreHistoryView(view);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -424,9 +462,15 @@ const App: React.FC = () => {
             <CategoryRow categories={CATEGORIES} selectedLabel={selectedCategory} onSelect={handleCategorySelect} />
           )}
           {showSharedCategoryRow && selectedCategory && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0 0', padding: '8px 14px', background: 'var(--primary-light)', borderRadius: '10px', fontSize: '13px' }}>
-              <span><strong style={{ color: 'var(--primary)' }}>{selectedCategory}</strong> 카테고리 필터 중</span>
-              <button onClick={() => setSelectedCategory(null)} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: "'Noto Sans KR', sans-serif" }}>전체보기 ✕</button>
+            <div className={styles.categoryBannerSection}>
+              <div className={styles.categoryBanner}>
+                <span className={styles.categoryBannerText}>
+                  <strong>{selectedCategory}</strong> 카테고리 필터 중
+                </span>
+                <button className={styles.categoryBannerClear} onClick={() => setSelectedCategory(null)}>
+                  전체보기
+                </button>
+              </div>
             </div>
           )}
           {renderMainPage()}

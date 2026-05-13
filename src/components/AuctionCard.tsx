@@ -25,18 +25,30 @@ const useCountdown = (initialSeconds: number) => {
     : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 
   const isUrgent = seconds > 0 && seconds <= 60;
-  const isEnded  = seconds <= 0;
+  const isEnded = seconds <= 0;
 
   return { display, isUrgent, isEnded };
 };
 
 const AuctionCard: React.FC<AuctionCardProps> = ({ item, onClick }) => {
   const { display, isUrgent, isEnded } = useCountdown(item.timeLeft);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [item.image]);
+
+  if (imageFailed) return null;
 
   return (
     <div className={styles.card} onClick={() => onClick?.(item)}>
       <div className={styles.imgWrapper}>
-        <img src={item.image} alt={item.name} className={styles.img} />
+        <img
+          src={item.image}
+          alt={item.name}
+          className={styles.img}
+          onError={() => setImageFailed(true)}
+        />
         {item.isLive && !isEnded && (
           <div className={styles.liveBadge}>
             <span className={styles.liveDot} />LIVE

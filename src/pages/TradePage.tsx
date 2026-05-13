@@ -54,9 +54,7 @@ const TradePage: React.FC<Props> = ({ onProductClick, selectedCategory }) => {
       <div className={styles.list}>
         {sorted.length > 0 ? (
           sorted.map((p) => (
-            <div key={p.id} onClick={() => onProductClick(p)}>
-              <ProductCard product={p} />
-            </div>
+            <ProductCard key={p.id} product={p} onClick={onProductClick} />
           ))
         ) : (
           <div className={styles.empty}>

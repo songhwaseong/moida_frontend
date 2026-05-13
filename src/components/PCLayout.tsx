@@ -86,7 +86,7 @@ const PCLayout: React.FC<Props> = ({
             <SearchIcon />
             <input
               type="text"
-              placeholder="상품명, 상품번호로 검색"
+              placeholder="상품명, 상품번호 또는 경매번호로 검색"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}

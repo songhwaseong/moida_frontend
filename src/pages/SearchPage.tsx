@@ -28,19 +28,19 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
   const q = query.trim().toLowerCase();
   const filteredProducts = q
     ? PRODUCTS.filter((p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.id.toString().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.location.includes(q)
-      )
+      p.name.toLowerCase().includes(q) ||
+      p.id.toString().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      p.location.includes(q)
+    )
     : [];
 
   const filteredAuctions = q
     ? AUCTION_ITEMS.filter((a) =>
-        a.name.toLowerCase().includes(q) ||
-        a.auctionNo.toLowerCase().includes(q) ||
-        a.category.toLowerCase().includes(q)
-      )
+      a.name.toLowerCase().includes(q) ||
+      a.auctionNo.toLowerCase().includes(q) ||
+      a.category.toLowerCase().includes(q)
+    )
     : [];
 
   const visibleProducts = activeTab === '경매' ? [] : filteredProducts;
@@ -63,12 +63,12 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
       {/* 검색바 */}
       <div className={styles.searchBar}>
         <svg width="16" height="16" fill="none" stroke="var(--muted)" strokeWidth="2" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
         </svg>
         <input
           autoFocus
           type="text"
-          placeholder="상품명, 상품번호로 검색"
+          placeholder="상품명, 상품번호 또는 경매번호로 검색"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
@@ -90,7 +90,7 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
                   <div key={r} className={styles.recentRow}>
                     <button className={styles.recentItem} onClick={() => handleSearch(r)}>
                       <svg width="14" height="14" fill="none" stroke="var(--muted)" strokeWidth="2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                       </svg>
                       {r}
                     </button>
@@ -110,9 +110,7 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
             </div>
             <div className={styles.productGrid}>
               {PRODUCTS.slice(0, 2).map((p) => (
-                <div key={p.id} onClick={() => onProductClick?.(p)}>
-                  <ProductCard product={p} />
-                </div>
+                <ProductCard key={p.id} product={p} onClick={onProductClick} />
               ))}
             </div>
           </section>
@@ -143,9 +141,7 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
                   {activeTab === '전체' && <p className={styles.resultLabel}>경매예정 상품 {visibleProducts.length}개</p>}
                   <div className={styles.productGrid}>
                     {visibleProducts.map((p) => (
-                      <div key={p.id} onClick={() => onProductClick?.(p)}>
-                        <ProductCard product={p} />
-                      </div>
+                      <ProductCard key={p.id} product={p} onClick={onProductClick} />
                     ))}
                   </div>
                 </>

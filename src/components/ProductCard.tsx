@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Product, ProductTag } from '../types';
 import styles from './ProductCard.module.css';
 
@@ -16,10 +16,23 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, hideLike = false }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [product.image]);
+
+  if (imageFailed) return null;
+
   return (
     <div className={styles.card} onClick={() => onClick?.(product)}>
       <div className={styles.imgWrapper}>
-        <img src={product.image} alt={product.name} className={styles.img} />
+        <img
+          src={product.image}
+          alt={product.name}
+          className={styles.img}
+          onError={() => setImageFailed(true)}
+        />
         <span className={styles.condition}>{product.condition}</span>
       </div>
       <div className={styles.body}>

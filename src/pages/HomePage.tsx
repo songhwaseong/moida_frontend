@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import CategoryRow from '../components/CategoryRow';
 import Banner from '../components/Banner';
 import AuctionCard from '../components/AuctionCard';
@@ -28,9 +28,12 @@ const HomePage: React.FC<Props> = ({
   selectedCategory, onCategorySelect,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const loadTimerRef = useRef<number | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [page, setPage] = useState(1);
+  const [visibleProductCount, setVisibleProductCount] = useState(PAGE_SIZE);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const filteredProducts = selectedCategory
     ? PRODUCTS.filter((p) => p.category === selectedCategory)
@@ -41,8 +44,19 @@ const HomePage: React.FC<Props> = ({
     : AUCTION_ITEMS;
 
   const totalSlides = Math.ceil(filteredAuctions.length / CARDS_PER_SLIDE);
-  const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
-  const pagedProducts = filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const visibleProducts = filteredProducts.slice(0, visibleProductCount);
+  const hasMoreProducts = visibleProductCount < filteredProducts.length;
+
+  const scheduleLoadMore = useCallback(() => {
+    if (loadTimerRef.current !== null || visibleProductCount >= filteredProducts.length) return;
+
+    setIsLoadingMore(true);
+    loadTimerRef.current = window.setTimeout(() => {
+      setVisibleProductCount((count) => Math.min(count + PAGE_SIZE, filteredProducts.length));
+      setIsLoadingMore(false);
+      loadTimerRef.current = null;
+    }, 700);
+  }, [filteredProducts.length, visibleProductCount]);
 
   const goToSlide = (idx: number) => {
     const el = scrollRef.current;
@@ -69,10 +83,53 @@ const HomePage: React.FC<Props> = ({
   // 카테고리 변경 시 초기화
   useEffect(() => {
     setActiveSlide(0);
-    setPage(1);
+    setVisibleProductCount(PAGE_SIZE);
+    setIsLoadingMore(false);
+    if (loadTimerRef.current !== null) {
+      window.clearTimeout(loadTimerRef.current);
+      loadTimerRef.current = null;
+    }
     const el = scrollRef.current;
     if (el) el.scrollTo({ left: 0, behavior: 'instant' });
   }, [selectedCategory]);
+
+  useEffect(() => {
+    if (!hasMoreProducts) return;
+
+    const root = document.getElementById('main-scroll');
+    if (!root) return;
+
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const distances: number[] = [];
+
+      if (root.scrollHeight > root.clientHeight + 1) {
+        distances.push(root.scrollHeight - root.scrollTop - root.clientHeight);
+      }
+      if (doc.scrollHeight > window.innerHeight + 1) {
+        distances.push(doc.scrollHeight - window.scrollY - window.innerHeight);
+      }
+
+      if (distances.some((distance) => distance < 220)) scheduleLoadMore();
+    };
+
+    root.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      root.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreProducts, scheduleLoadMore]);
+
+  useEffect(() => {
+    return () => {
+      if (loadTimerRef.current !== null) {
+        window.clearTimeout(loadTimerRef.current);
+        loadTimerRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <main className={styles.main}>
@@ -166,43 +223,18 @@ const HomePage: React.FC<Props> = ({
         {filteredProducts.length > 0 ? (
           <>
             <div className={styles.productGrid}>
-              {pagedProducts.map((product) => (
-                <div key={product.id} onClick={() => onProductClick?.(product)}>
-                  <ProductCard product={product} />
-                </div>
+              {visibleProducts.map((product) => (
+                <ProductCard key={product.id} product={product} onClick={onProductClick} />
               ))}
             </div>
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button
-                  className={styles.pageBtn}
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M15 18l-6-6 6-6"/>
-                  </svg>
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                  <button
-                    key={n}
-                    className={`${styles.pageNum} ${page === n ? styles.pageNumActive : ''}`}
-                    onClick={() => setPage(n)}
-                  >
-                    {n}
-                  </button>
-                ))}
-                <button
-                  className={styles.pageBtn}
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M9 18l6-6-6-6"/>
-                  </svg>
-                </button>
-              </div>
-            )}
+            <div ref={loadMoreRef} className={styles.loadMoreSentinel} aria-hidden={!hasMoreProducts && !isLoadingMore}>
+              {isLoadingMore && (
+                <div className={styles.loadingMore}>
+                  <span className={styles.spinner} />
+                  <span>불러오는 중</span>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className={styles.empty}><p>해당 카테고리의 매물이 없어요</p></div>

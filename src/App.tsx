@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import CategoryRow from './components/CategoryRow';
 import type { MyProduct } from './data/myProductStore';
 import type { MainTab, NavTab, AuctionItem, Product, Category } from './types';
@@ -66,6 +66,30 @@ type MyMenuKey =
   | '자주 묻는 질문' | '고객센터' | '이용약관' | '이용 가이드' | '내 등록 상품'
   | '내 문의';
 
+interface AppHistoryView {
+  screen: Screen;
+  mainTab: MainTab;
+  navTab: NavTab;
+  selectedCategory: string | null;
+  searchQuery: string;
+  termsInitialTab: string;
+  authScreen: AuthScreen;
+  isGuest: boolean;
+  editingProduct: MyProduct | null;
+  adminViewMode: 'admin' | 'normal';
+}
+
+interface AppHistoryState {
+  source: 'moida-app';
+  view: AppHistoryView;
+}
+
+const isAppHistoryState = (state: unknown): state is AppHistoryState => {
+  return typeof state === 'object' && state !== null && (state as AppHistoryState).source === 'moida-app';
+};
+
+const getHistoryViewKey = (view: AppHistoryView) => JSON.stringify(view);
+
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('bazar_is_admin') === 'true');
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('bazar_logged_in') === 'true');
@@ -77,6 +101,9 @@ const App: React.FC = () => {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertConfirmCb, setAlertConfirmCb] = useState<(() => void) | null>(null);
   const [alertCancelCb, setAlertCancelCb] = useState<(() => void) | null>(null);
+  const hasInitializedHistoryRef = useRef(false);
+  const isRestoringHistoryRef = useRef(false);
+  const lastHistoryViewKeyRef = useRef('');
 
   const showAlert = (msg: string, onConfirm?: () => void, onCancel?: () => void) => {
     setAlertMsg(msg);
@@ -167,26 +194,69 @@ const App: React.FC = () => {
     action();
   };
 
-  // ── 브라우저 뒤로가기 차단 ──
+  // 앱 화면 상태를 브라우저 history와 동기화
   useEffect(() => {
-    for (let i = 0; i < 50; i++) {
-      window.history.pushState({ page: 'app', index: i }, '');
-    }
-    const handlePopState = () => {
-      window.history.pushState({ page: 'app' }, '');
-      setScreen(prev => {
-        if (prev.type !== 'home') {
-          setNavTab('home');
-          setFormDirty(false);
-          setEditingProduct(null);
-          return { type: 'home' };
-        }
-        return prev;
-      });
+    const handlePopState = (event: PopStateEvent) => {
+      if (!isAppHistoryState(event.state)) return;
+
+      const { view } = event.state;
+      isRestoringHistoryRef.current = true;
+      setScreen(view.screen);
+      setMainTab(view.mainTab);
+      setNavTab(view.navTab);
+      setSelectedCategory(view.selectedCategory);
+      setSearchQuery(view.searchQuery);
+      setTermsInitialTab(view.termsInitialTab);
+      setAuthScreen(view.authScreen);
+      setIsGuest(view.isGuest);
+      setEditingProduct(view.editingProduct);
+      setAdminViewMode(view.adminViewMode);
+      setFormDirty(false);
+      setPendingNav(null);
     };
+
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  useEffect(() => {
+    const state: AppHistoryState = {
+      source: 'moida-app',
+      view: {
+        screen,
+        mainTab,
+        navTab,
+        selectedCategory,
+        searchQuery,
+        termsInitialTab,
+        authScreen,
+        isGuest,
+        editingProduct,
+        adminViewMode,
+      },
+    };
+
+    if (!hasInitializedHistoryRef.current) {
+      window.history.replaceState(state, '');
+      lastHistoryViewKeyRef.current = getHistoryViewKey(state.view);
+      hasInitializedHistoryRef.current = true;
+      return;
+    }
+
+    if (isRestoringHistoryRef.current) {
+      lastHistoryViewKeyRef.current = getHistoryViewKey(state.view);
+      isRestoringHistoryRef.current = false;
+      return;
+    }
+
+    const nextHistoryViewKey = getHistoryViewKey(state.view);
+    if (lastHistoryViewKeyRef.current === nextHistoryViewKey) {
+      return;
+    }
+
+    window.history.pushState(state, '');
+    lastHistoryViewKeyRef.current = nextHistoryViewKey;
+  }, [screen, mainTab, navTab, selectedCategory, searchQuery, termsInitialTab, authScreen, isGuest, editingProduct, adminViewMode]);
 
   // 관리자 화면
   if (isAdmin && adminViewMode === 'admin') {
@@ -218,7 +288,10 @@ const App: React.FC = () => {
     );
   }
 
-  const goHome = () => { setScreen({ type: 'home' }); setNavTab('home'); setFormDirty(false); setEditingProduct(null); };
+  const goBack = () => {
+    setFormDirty(false);
+    window.history.back();
+  };
   const PROTECTED_TABS: NavTab[] = ['notification', 'chat', 'my'];
   const goNav = (tab: NavTab) => {
     const action = () => {
@@ -282,21 +355,21 @@ const App: React.FC = () => {
   };
 
   const renderNavPage = () => {
-    if (screen.type === 'sellPage') return <SellPage onBack={goHome} onDirtyChange={setFormDirty} />;
-    if (screen.type === 'sellerProfile') return <SellerProfilePage seller={screen.seller} onBack={goHome} onProductClick={handleProductClick} />;
-    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goHome} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => {})} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
+    if (screen.type === 'sellPage') return <SellPage onBack={goBack} onDirtyChange={setFormDirty} />;
+    if (screen.type === 'sellerProfile') return <SellerProfilePage seller={screen.seller} onBack={goBack} onProductClick={handleProductClick} />;
+    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goBack} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => {})} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
     if (screen.type === 'productDetail') return (
       <ProductDetailPage
         productId={screen.id}
-        onBack={goHome}
+        onBack={goBack}
         onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })}
         onAuctionClick={() => setScreen({ type: 'auctionDetail', id: Math.min(screen.id, 4) })}
         onChatClick={() => goNav('chat')}
       />
     );
-    if (screen.type === 'editProfile') return <EditProfilePage onBack={() => setScreen({ type: 'navMy' })} />;
+    if (screen.type === 'editProfile') return <EditProfilePage onBack={goBack} />;
     if (screen.type === 'myMenu') {
-      const backToMy = () => setScreen({ type: 'navMy' });
+      const backToMy = goBack;
       const menuMap: Record<MyMenuKey, React.ReactNode> = {
         '판매 내역': <SalesHistoryPage onBack={backToMy} />,
         '내 등록 상품': <MyProductsPage onBack={backToMy} onEdit={(p) => setEditingProduct(p)} />,
@@ -315,7 +388,7 @@ const App: React.FC = () => {
         '이용 가이드': <GuidePage onBack={backToMy} />,
       };
       return editingProduct
-        ? <EditProductPage product={editingProduct} onBack={() => setEditingProduct(null)} onSaved={() => { setEditingProduct(null); setFormDirty(false); }} onDirtyChange={setFormDirty} />
+        ? <EditProductPage product={editingProduct} onBack={goBack} onSaved={() => { setEditingProduct(null); setFormDirty(false); }} onDirtyChange={setFormDirty} />
         : menuMap[screen.menu];
     }
     if (screen.type === 'navSearch') return <SearchPage onProductClick={handleProductClick} onAuctionClick={handleAuctionClick} initialQuery={searchQuery} onQueryClear={() => setSearchQuery('')} />;

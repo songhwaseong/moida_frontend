@@ -41,6 +41,11 @@ button {
   font-family: 'Noto Sans KR', sans-serif;
 }
 
+button[class*="back"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 input {
   font-family: 'Noto Sans KR', sans-serif;
 }

@@ -34,7 +34,7 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
 
-        const isLoginRequest = error.config?.url?.includes("/api/auth/login");
+        const isLoginRequest = error.config?.url?.includes("/auth/login");
 
         if (error.response?.status === 401 && !isLoginRequest) {
             localStorage.removeItem("accessToken");

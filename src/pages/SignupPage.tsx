@@ -75,7 +75,7 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
     if (!validateStep2()) return;
     setLoading(true);
     try {
-      await axios.post('/api/auth/signup', {
+      await axios.post('/auth/signup', {
         name: form.name,
         email: form.email,
         password: form.password,

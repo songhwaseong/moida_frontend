@@ -13,9 +13,9 @@ import SanctionPage from './SanctionPage';
 import ChatLogPage from './ChatLogPage';
 import MemberListPage from './MemberListPage';
 import WithdrawnMemberPage from './WithdrawnMemberPage';
-import AdminSettingsPage, { IDLE_OPTIONS } from './AdminSettingsPage';
+import AdminSettingsPage from './AdminSettingsPage';
 import AuctionManagePage from './AuctionManagePage';
-import type { IdleMinutes } from './AdminSettingsPage';
+import { IDLE_OPTIONS, type IdleMinutes } from './adminSettingsOptions';
 import styles from './AdminPage.module.css';
 
 // ─── 관리자용 통합 상품 타입 ───────────────────────────────────────────
@@ -218,7 +218,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
       : 10;
   });
   const [showIdleModal, setShowIdleModal] = useState(false);
-  const [_countdown, setCountdown] = useState(WARN_COUNTDOWN_S);
+  const [, setCountdown] = useState(WARN_COUNTDOWN_S);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const idleMinutesRef = useRef(idleMinutes);

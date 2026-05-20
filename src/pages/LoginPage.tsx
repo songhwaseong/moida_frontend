@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './LoginPage.module.css';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/ToastContext';
 import axiosInstance from '../api/axiosInstance';
 
 const ADMIN_CREDENTIALS = [
@@ -20,6 +20,11 @@ interface Props {
   onFindAccount: (tab?: 'id' | 'pw') => void;
   onGuest?: () => void;
 }
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const response = (error as { response?: { data?: { message?: string } } })?.response;
+  return response?.data?.message || fallback;
+};
 
 const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccount, onGuest }) => {
   const { showToast } = useToast();
@@ -57,8 +62,8 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
       } else {
         onLogin(name);
       }
-    } catch (error: any) {
-      setError(error.response?.data?.message || '이메일 또는 비밀번호를 확인해주세요');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, '이메일 또는 비밀번호를 확인해주세요'));
     } finally {
       setLoading(false);
     }

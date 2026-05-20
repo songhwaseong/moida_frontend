@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { PRODUCT_DETAILS } from '../data/mockData';
-import { useInquiries, addInquiry } from '../data/inquiries';
+import React, { useEffect, useState } from 'react';
+import { getProduct, toProductDetail } from '../api/products';
+import { toggleLike } from '../api/likes';
+import { createProductInquiry, getProductInquiries, type InquiryView } from '../api/inquiries';
+import { useToast } from '../components/ToastContext';
+import type { ProductDetail } from '../types';
 import styles from './ProductDetailPage.module.css';
 import View360Modal from '../components/View360Modal';
 
@@ -10,32 +13,128 @@ interface Props {
   onSellerClick?: (seller: { name: string; temp: number; sales: number; location: string }) => void;
   onAuctionClick?: () => void;
   onChatClick?: () => void;
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => void;
 }
 
-const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick }) => {
-  const item = PRODUCT_DETAILS.find((p) => p.id === productId) ?? PRODUCT_DETAILS[0];
-  const [liked, setLiked] = useState(item.liked);
-  const [likeCount, setLikeCount] = useState(item.likeCount);
+const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, isLoggedIn = false, onRequireLogin }) => {
+  const [item, setItem] = useState<ProductDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const { showToast } = useToast();
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const [activeImg, setActiveImg] = useState(0);
   const [show360, setShow360] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'inquiry'>('desc');
   const [showAskModal, setShowAskModal] = useState(false);
   const [newInquiry, setNewInquiry] = useState('');
-  const allInquiries = useInquiries();
-  const inquiries = allInquiries.filter(q => q.kind === 'product' && q.itemId === item.id);
+  const [inquiries, setInquiries] = useState<InquiryView[]>([]);
 
   const TAG_LABEL: Record<string, string> = {
     new: '거의새것', auction: '경매가능', free: '나눔', good: '상태양호',
   };
 
-  const handleSubmitInquiry = () => {
+  const handleSubmitInquiry = async () => {
+    if (!item) return;
+    if (!isLoggedIn) { onRequireLogin?.(); return; }
     const text = newInquiry.trim();
     if (!text) return;
-    addInquiry('product', item.id, '나', text);
-    setNewInquiry('');
-    setShowAskModal(false);
-    setActiveTab('inquiry');
+    try {
+      // Persist the inquiry first, then prepend the saved row to keep the tab in sync.
+      const created = await createProductInquiry(item.id, text);
+      setInquiries(prev => [created, ...prev]);
+      setNewInquiry('');
+      setShowAskModal(false);
+      setActiveTab('inquiry');
+      showToast('문의가 등록되었습니다.', 'success');
+    } catch (error) {
+      console.error('Failed to create product inquiry', error);
+      showToast('문의 등록에 실패했습니다.', 'error');
+    }
   };
+
+  // 상세 화면 진입 시 productId 기준으로 DB 상품을 조회한다.
+  // 기존 문의/찜 UI 상태는 조회 성공 후 응답값으로 초기화한다.
+  useEffect(() => {
+    let ignore = false;
+
+    const loadProduct = async () => {
+      setIsLoading(true);
+      setLoadError('');
+
+      try {
+        const data = await getProduct(productId);
+        if (ignore) return;
+
+        const product = toProductDetail(data);
+        setItem(product);
+        setLiked(product.liked);
+        setLikeCount(product.likeCount);
+        setActiveImg(0);
+
+        try {
+          // Inquiries are loaded separately so product detail can still render if this call fails.
+          const inquiryList = await getProductInquiries(productId);
+          if (!ignore) setInquiries(inquiryList);
+        } catch (inquiryError) {
+          console.error('Failed to load product inquiries', inquiryError);
+          if (!ignore) setInquiries([]);
+        }
+      } catch (error) {
+        if (ignore) return;
+        console.error('Failed to load product detail', error);
+        setItem(null);
+        setLoadError('상품 정보를 불러오지 못했어요.');
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    };
+
+    loadProduct();
+
+    return () => {
+      ignore = true;
+    };
+  }, [productId]);
+
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <button className={styles.back} onClick={onBack}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <span className={styles.headerTitle}>상품 상세</span>
+          <div style={{ width: 20 }} />
+        </div>
+        <div className={styles.scroll}>
+          <p className={styles.qnaEmpty}>상품 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <button className={styles.back} onClick={onBack}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <span className={styles.headerTitle}>상품 상세</span>
+          <div style={{ width: 20 }} />
+        </div>
+        <div className={styles.scroll}>
+          <p className={styles.qnaEmpty}>{loadError || '상품을 찾을 수 없어요.'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -98,7 +197,22 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick }
             {/* 상품명 + 좋아요 */}
             <div className={styles.nameRow}>
               <h1 className={styles.name}>{item.name}</h1>
-              <button className={styles.likeBtn} onClick={() => { setLiked(p => !p); setLikeCount(p => liked ? p - 1 : p + 1); }}>
+              <button className={styles.likeBtn} onClick={async () => {
+                if (!item) return;
+                const prevLiked = liked;
+                const prevCount = likeCount;
+                setLiked(!prevLiked);
+                setLikeCount(prevLiked ? prevCount - 1 : prevCount + 1);
+                try {
+                  const result = await toggleLike(item.id);
+                  setLiked(result.liked);
+                  setLikeCount(result.likeCount);
+                } catch {
+                  setLiked(prevLiked);
+                  setLikeCount(prevCount);
+                  showToast('좋아요 처리에 실패했어요', 'error');
+                }
+              }}>
                 <span className={styles.likeHeart}>{liked ? '❤️' : '🤍'}</span>
                 <span className={styles.likeCnt}>{likeCount}</span>
               </button>
@@ -156,8 +270,15 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick }
                     <span className={styles.tabCount}>{inquiries.length}</span>
                   </button>
                 </div>
-                {activeTab === 'inquiry' && (
-                  <button className={styles.askBtn} onClick={() => setShowAskModal(true)}>
+                {/* Sellers can read existing inquiries, but cannot ask questions on their own product. */}
+                {activeTab === 'inquiry' && !item.ownedByMe && (
+                  <button
+                    className={styles.askBtn}
+                    onClick={() => {
+                      if (!isLoggedIn) { onRequireLogin?.(); return; }
+                      setShowAskModal(true);
+                    }}
+                  >
                     <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path d="M12 5v14M5 12h14" />
                     </svg>
@@ -209,9 +330,10 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick }
             <div className={styles.section}>
               <p className={styles.sectionTitle}>거래 정보</p>
               <div className={styles.infoGrid}>
-                <div className={styles.infoItem}><span className={styles.infoLabel}>상품번호</span><span className={styles.infoValue}>{`${String(new Date().getFullYear()).slice(2)}${String(item.id).padStart(5, '0')}`}</span></div>
+                <div className={styles.infoItem}><span className={styles.infoLabel}>상품번호</span><span className={styles.infoValue}>{item.productNo ?? '-'}</span></div>
                 <div className={styles.infoItem}><span className={styles.infoLabel}>지역</span><span className={styles.infoValue}>{item.location}</span></div>
                 <div className={styles.infoItem}><span className={styles.infoLabel}>경매 예정일</span><span className={styles.infoValue}>{item.auctionDate ?? '미정'}</span></div>
+                <div className={styles.infoItem}><span className={styles.infoLabel}>조회수</span><span className={styles.infoValue}>{(item.viewCount ?? 0).toLocaleString()}회</span></div>
               </div>
             </div>
 

@@ -1,21 +1,12 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import styles from './Toast.module.css';
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
+import { ToastContext, type ToastType } from './ToastContext';
 
 interface Toast {
   id: number;
   message: string;
   type: ToastType;
 }
-
-interface ToastContextValue {
-  showToast: (message: string, type?: ToastType) => void;
-}
-
-const ToastContext = createContext<ToastContextValue>({ showToast: () => {} });
-
-export const useToast = () => useContext(ToastContext);
 
 const ICONS: Record<ToastType, string> = {
   success: '✅',

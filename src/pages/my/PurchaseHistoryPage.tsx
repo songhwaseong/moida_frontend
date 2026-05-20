@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { PRODUCTS } from '../../data/mockData';
 import { addReview } from '../../data/reviewStore';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../components/ToastContext';
 import styles from './MySubPage.module.css';
 import modalStyles from './ReviewModal.module.css';
 
 const TABS = ['구매완료', '진행중'];
+const STAR_LABELS = ['', '별로예요', '그저 그래요', '보통이에요', '좋아요', '최고예요!'];
 interface Props { onBack: () => void; }
 
 const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
@@ -102,7 +103,7 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
                   ))}
                 </div>
                 <p className={modalStyles.starLabel}>
-                  {[,'별로예요','그저 그래요','보통이에요','좋아요','최고예요! 🎉'][(hoverStar||stars)] ?? '평가를 선택해주세요'}
+                  {STAR_LABELS[hoverStar || stars] || '평가를 선택해주세요'}
                 </p>
                 <textarea
                   className={modalStyles.textarea}

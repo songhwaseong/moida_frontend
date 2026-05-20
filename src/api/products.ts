@@ -1,0 +1,149 @@
+import customAxios from './axiosInstance';
+import type { AuctionDetail, AuctionItem, BidHistory, Product, ProductDetail } from '../types';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  errorCode?: string;
+}
+
+export interface ProductSummaryDto {
+  id: number;
+  productNo: string;
+  name: string;
+  image: string;
+  location: string;
+  timeAgo: string;
+  price: number;
+  condition: Product['condition'];
+  tags: Product['tags'];
+  likeCount: number;
+  viewCount: number;
+  liked: boolean;
+  canAuction: boolean;
+  auctionDate?: string | null;
+  category: string;
+  type: 'AUCTION';
+  auctionNo?: string | null;
+  currentPrice?: number | null;
+  bidCount?: number | null;
+  timeLeft?: number | null;
+  isLive?: boolean | null;
+}
+
+export interface ProductDetailDto extends ProductSummaryDto {
+  images: string[];
+  description: string;
+  seller: string;
+  sellerTemp: number;
+  sellerSales: number;
+  ownedByMe?: boolean | null;
+  immediatePrice?: number | null;
+  startPrice?: number | null;
+  minBidUnit?: number | null;
+  endDate?: string | null;
+  bidHistory?: BidHistory[];
+}
+
+const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
+
+// 백엔드 상품 조회 응답을 기존 카드 컴포넌트가 쓰는 타입으로 변환한다.
+// 화면 컴포넌트 쪽 변경 범위를 줄이기 위해 API DTO와 UI 타입을 여기서 분리한다.
+export type ProductStatusFilter =
+  | 'SCHEDULED'
+  | 'PENDING'
+  | 'LIVE'
+  | 'SOLD'
+  | 'FAILED';
+
+// 인기 정렬은 백엔드에서 viewCount DESC, id DESC 순으로 처리한다.
+export type ProductSortKey = 'popular';
+
+export const getProducts = async (params?: {
+  category?: string | null;
+  status?: ProductStatusFilter;
+  sort?: ProductSortKey;
+  size?: number;
+}) => {
+  const response = await customAxios.get<ApiResponse<ProductSummaryDto[]>>('/products', {
+    params: {
+      category: params?.category || undefined,
+      status: params?.status,
+      sort: params?.sort,
+      size: params?.size,
+    },
+  });
+  return unwrap(response);
+};
+
+export const getProduct = async (productId: number) => {
+  const response = await customAxios.get<ApiResponse<ProductDetailDto>>(`/products/${productId}`);
+  return unwrap(response);
+};
+
+export const toProduct = (item: ProductSummaryDto): Product => ({
+  id: item.id,
+  productNo: item.productNo,
+  name: item.name,
+  image: item.image,
+  location: item.location,
+  timeAgo: item.timeAgo,
+  price: item.price,
+  condition: item.condition,
+  tags: item.tags,
+  likeCount: item.likeCount,
+  viewCount: item.viewCount,
+  liked: item.liked,
+  canAuction: item.canAuction,
+  auctionDate: item.auctionDate ?? undefined,
+  category: item.category,
+});
+
+export const toAuctionItem = (item: ProductSummaryDto): AuctionItem => ({
+  id: item.id,
+  productNo: item.productNo,
+  auctionNo: item.auctionNo ?? item.productNo,
+  name: item.name,
+  image: item.image,
+  currentPrice: item.currentPrice ?? item.price,
+  bidCount: item.bidCount ?? 0,
+  timeLeft: item.timeLeft ?? 0,
+  isLive: item.isLive ?? false,
+  category: item.category,
+  condition: item.condition,
+  liked: item.liked,
+  viewCount: item.viewCount,
+});
+
+export const toProductDetail = (item: ProductDetailDto): ProductDetail => ({
+  ...toProduct(item),
+  images: item.images.length > 0 ? item.images : [item.image],
+  description: item.description,
+  seller: item.seller,
+  sellerTemp: item.sellerTemp,
+  sellerSales: item.sellerSales,
+  ownedByMe: item.ownedByMe ?? false,
+  immediatePrice: item.immediatePrice ?? undefined,
+});
+
+// 경매 상세 화면은 상품 상세 API를 재사용하되, 경매 전용 필드를 AuctionDetail 형태로 맞춰준다.
+// 백엔드에 경매 row가 없는 상품도 화면이 깨지지 않도록 기본값을 보정한다.
+export const toAuctionDetail = (item: ProductDetailDto): AuctionDetail => ({
+  ...toAuctionItem(item),
+  images: item.images.length > 0 ? item.images : [item.image],
+  description: item.description,
+  seller: item.seller,
+  sellerTemp: item.sellerTemp,
+  sellerSales: item.sellerSales,
+  ownedByMe: item.ownedByMe ?? false,
+  startPrice: item.startPrice ?? item.price,
+  minBidUnit: item.minBidUnit ?? 1000,
+  immediatePrice: item.immediatePrice ?? undefined,
+  endDate: item.endDate ?? item.auctionDate ?? '미정',
+  location: item.location,
+  bidHistory: item.bidHistory ?? [],
+  liked: item.liked,
+  likeCount: item.likeCount,
+  timeAgo: item.timeAgo,
+});

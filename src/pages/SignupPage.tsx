@@ -4,11 +4,16 @@ import styles from './SignupPage.module.css';
 import axios from '../api/axiosInstance';
 
 interface Props {
-  onSignup: () => void;
+  onSignup: (name?: string) => void;
   onGoLogin: () => void;
 }
 
 type Step = 1 | 2;
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const response = (error as { response?: { data?: { message?: string } } })?.response;
+  return response?.data?.message || fallback;
+};
 
 const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
   const [step, setStep] = useState<Step>(1);
@@ -82,9 +87,15 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
         phone: form.phone,
         nickname: form.nickname, // 3단계에서 백엔드에도 추가해야 함
       });
-      onSignup(); // 성공 시에만 호출
-    } catch (error: any) {
-      const msg = error.response?.data?.message || '회원가입에 실패했어요';
+      const loginResponse = await axios.post('/auth/login', {
+        email: form.email,
+        password: form.password,
+      });
+      const { accessToken, name } = loginResponse.data.data;
+      localStorage.setItem('accessToken', accessToken);
+      onSignup(name); // 성공 시에만 호출
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error, '회원가입에 실패했어요');
       setErrors(prev => ({ ...prev, general: msg }));
     } finally {
       setLoading(false);

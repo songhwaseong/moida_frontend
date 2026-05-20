@@ -7,12 +7,9 @@ interface PreviewData {
   title: string;
   category: string;
   condition: string;
-  type?: 'AUCTION' | 'TRADE';  // ← 추가
-  auctionStartPrice: string;   // 경매: 시작가 / 중고거래: previewPrice
+  auctionStartPrice: string;
   buyNowPrice?: string;
   minBidUnit?: string;
-  tradeMethod: string;
-  isPriceNegotiable?: boolean; // ← 추가
   description: string;
   location: string;
   auctionDate?: string;
@@ -37,20 +34,10 @@ const ProductPreviewModal: React.FC<Props> = ({ data, onClose }) => {
   const displayImages = data.images.length > 0 ? data.images : [];
   const total = displayImages.length;
 
-  // 경매/중고거래 여부 (type이 없으면 기존 경매 방식으로 동작)
-  const isAuction = !data.type || data.type === 'AUCTION';
-
-  // 가격 표시 텍스트
-  const priceLabel = isAuction ? '경매 시작가' : '판매가';
-  const priceDisplay = isAuction
-    ? (data.auctionStartPrice
-      ? `₩ ${Number(data.auctionStartPrice.replace(/,/g, '')).toLocaleString()}`
-      : '₩ 0')
-    : (data.isPriceNegotiable
-      ? '가격 협의'
-      : (data.auctionStartPrice
-        ? `₩ ${Number(data.auctionStartPrice.replace(/,/g, '')).toLocaleString()}`
-        : '-'));
+  const priceLabel = '경매 시작가';
+  const priceDisplay = data.auctionStartPrice
+    ? `₩ ${Number(data.auctionStartPrice.replace(/,/g, '')).toLocaleString()}`
+    : '₩ 0';
 
   useEffect(() => { activeImgRef.current = activeImg; }, [activeImg]);
 
@@ -212,10 +199,6 @@ const ProductPreviewModal: React.FC<Props> = ({ data, onClose }) => {
             {data.category && (
               <div className={styles.tagRow}>
                 <span className={styles.categoryTag}>{data.category}</span>
-                {/* ── 거래 방식 뱃지 추가 ── */}
-                <span className={styles.categoryTag}>
-                  {isAuction ? '🔨 경매' : '🤝 중고거래'}
-                </span>
               </div>
             )}
             <h2 className={styles.name}>{data.title || '(상품명 미입력)'}</h2>
@@ -247,48 +230,27 @@ const ProductPreviewModal: React.FC<Props> = ({ data, onClose }) => {
                 <span className={styles.infoValue}>{data.condition || '-'}</span>
               </div>
 
-              {/* ── 경매 전용 정보 ── */}
-              {isAuction && (
-                <>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>경매 시작가</span>
-                    <span className={styles.infoValue}>₩ {data.auctionStartPrice || '-'}</span>
-                  </div>
-                  {data.buyNowPrice && (
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>즉시낙찰가</span>
-                      <span className={styles.infoValue}>₩ {data.buyNowPrice}</span>
-                    </div>
-                  )}
-                  {data.minBidUnit && (
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>최소 호가</span>
-                      <span className={styles.infoValue}>₩ {data.minBidUnit}</span>
-                    </div>
-                  )}
-                  {data.auctionDate && (
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>경매 예정일</span>
-                      <span className={styles.infoValue}>{data.auctionDate}</span>
-                    </div>
-                  )}
-                </>
+              <div className={styles.infoItem}>
+                <span className={styles.infoLabel}>경매 시작가</span>
+                <span className={styles.infoValue}>₩ {data.auctionStartPrice || '-'}</span>
+              </div>
+              {data.buyNowPrice && (
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>즉시낙찰가</span>
+                  <span className={styles.infoValue}>₩ {data.buyNowPrice}</span>
+                </div>
               )}
-
-              {/* ── 중고거래 전용 정보 ── */}
-              {!isAuction && (
-                <>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>판매가</span>
-                    <span className={styles.infoValue}>
-                      {data.isPriceNegotiable ? '협의' : `₩ ${data.auctionStartPrice || '-'}`}
-                    </span>
-                  </div>
-                  <div className={styles.infoItem}>
-                    <span className={styles.infoLabel}>거래 방법</span>
-                    <span className={styles.infoValue}>{data.tradeMethod || '-'}</span>
-                  </div>
-                </>
+              {data.minBidUnit && (
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>최소 호가</span>
+                  <span className={styles.infoValue}>₩ {data.minBidUnit}</span>
+                </div>
+              )}
+              {data.auctionDate && (
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>경매 예정일</span>
+                  <span className={styles.infoValue}>{data.auctionDate}</span>
+                </div>
               )}
 
               <div className={styles.infoItem}>

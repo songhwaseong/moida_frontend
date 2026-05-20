@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styles from './MyWalletPage.module.css';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../components/ToastContext';
 
 interface Props { onBack: () => void; }
 

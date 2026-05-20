@@ -14,6 +14,7 @@ const statusColor = (s: Member['status']) => ({
 }[s]);
 
 const tempColor = (t: number) => t >= 40 ? '#3B6D11' : t >= 35 ? '#EF9F27' : '#E24B4A';
+const NOW_TIME = Date.now();
 
 const MemberListPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -37,7 +38,7 @@ const MemberListPage: React.FC = () => {
   const suspended = list.filter(m => m.status === 'suspended' || m.status === 'permanent').length;
   const newMembers = list.filter(m => {
     const joined = new Date(m.joinedAt.replace(/\./g, '-'));
-    const diffDays = (Date.now() - joined.getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays = (NOW_TIME - joined.getTime()) / (1000 * 60 * 60 * 24);
     return diffDays <= 30;
   }).length;
 

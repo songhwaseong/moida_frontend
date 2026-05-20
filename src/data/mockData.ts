@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { AuctionItem, AuctionDetail, Category, Product, ProductDetail } from '../types';
 
 export const CATEGORIES: Category[] = [
@@ -34,7 +33,7 @@ export const AUCTION_ITEMS: AuctionItem[] = [
   { id: 15, auctionNo: 'A2600015', name: '나이키 줌 페가수스 40', image: 'https://images.unsplash.com/photo-1600269452121-4f2416e55c28?w=400&q=80', currentPrice: 89000, bidCount: 5, timeLeft: 38*60, isLive: true, category: '신발' },
   { id: 16, auctionNo: 'A2600016', name: '나이키 테크 플리스 집업 후디', image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80', currentPrice: 95000, bidCount: 12, timeLeft: 1*60*60+10*60, isLive: true, category: '패션/의류' },
 ];
-export const AUCTION_DETAILS: AuctionDetail[] = [
+export const AUCTION_DETAILS: (AuctionDetail | ProductDetail)[] = [
   {
     id: 1, auctionNo: 'A2600001', name: '나이키 에어맥스 90',
     image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80',

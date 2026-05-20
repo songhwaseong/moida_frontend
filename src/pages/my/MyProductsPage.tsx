@@ -4,7 +4,7 @@ import type { MyProduct } from '../../data/myProductStore';
 import styles from './MySubPage.module.css';
 import editStyles from './MyProductsPage.module.css';
 import LeaveConfirmModal from '../../components/LeaveConfirmModal';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../components/ToastContext';
 
 const TABS = ['전체', '경매예정', '승인요청중', '경매중', '낙찰', '유찰', '숨김'];
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/ToastContext';
 import { CATEGORIES as HOME_CATEGORIES } from '../data/mockData';
 import ProductPreviewModal from '../components/ProductPreviewModal';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
@@ -13,9 +13,11 @@ interface Props {
 }
 
 type Condition = 'S급' | 'A급' | 'B급' | 'C급';
-type TradeMethod = '직거래' | '택배' | '둘다';
 type Step = 1 | 2 | 3;
-type ProductType = 'AUCTION' | 'TRADE'; // ← 추가된 타입
+
+const getApiError = (error: unknown) => {
+  return (error as { response?: { status?: number; data?: { message?: string } } })?.response;
+};
 
 const PRODUCT_CATEGORIES = HOME_CATEGORIES
   .map(category => category.label)
@@ -34,9 +36,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [step, setStep] = useState<Step>(1);
   const [showPreview, setShowPreview] = useState(false);
 
-  // ── 거래 타입 선택 (추가된 state) ──
-  const [productType, setProductType] = useState<ProductType>('AUCTION');
-
   // ── 폼 데이터 (공통) ──
   const [images, setImages] = useState<string[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState<number>(0);
@@ -46,16 +45,11 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [condition, setCondition] = useState<Condition | ''>('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
-  const [tradeMethod, setTradeMethod] = useState<TradeMethod | ''>('');
 
   // ── 경매 전용 필드 ──
   const [auctionStartPrice, setAuctionStartPrice] = useState('');
   const [buyNowPrice, setBuyNowPrice] = useState('');
   const [minBidUnit, setMinBidUnit] = useState('');
-
-  // ── 중고거래 전용 필드 ──
-  const [tradePrice, setTradePrice] = useState('');
-  const [isPriceNegotiable, setIsPriceNegotiable] = useState(false);
 
   // ── 인증 관련 ──
   const [phone, setPhone] = useState('');
@@ -71,18 +65,20 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const bottomRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── 변경 여부 감지 ──
   const selectedCategories = [category, ...addonCategories].filter(Boolean);
   const categorySummary = selectedCategories.join(', ');
 
-  const isDirty =
+  const isDirty = !isSubmitting && (
     images.length > 0 || title !== '' || category !== '' ||
     addonCategories.length > 0 || condition !== '' ||
     auctionStartPrice !== '' || buyNowPrice !== '' || minBidUnit !== '' ||
-    tradePrice !== '' || description !== '' || location !== '' || phone !== '';
+    description !== '' || location !== '' || phone !== ''
+  );
 
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty]);
+  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -90,20 +86,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
-
-  // ── 타입 변경 시 해당 타입의 가격 필드 초기화 ──
-  const handleTypeChange = (type: ProductType) => {
-    setProductType(type);
-    setErrors({});
-    if (type === 'AUCTION') {
-      setTradePrice('');
-      setIsPriceNegotiable(false);
-    } else {
-      setAuctionStartPrice('');
-      setBuyNowPrice('');
-      setMinBidUnit('');
-    }
-  };
 
   // ── 이미지 처리 ──
   const handleAddImage = () => { if (images.length >= 10) return; fileInputRef.current?.click(); };
@@ -218,8 +200,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
 
   const validateStep2 = () => {
     const e: Record<string, string> = {};
-
-    if (productType === 'AUCTION') {
       // 경매 유효성
       if (!auctionStartPrice.trim()) e.auctionStartPrice = '경매 시작가를 입력해주세요';
       if (buyNowPrice.trim() && auctionStartPrice.trim()) {
@@ -228,11 +208,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
         if (buyNow <= start) e.buyNowPrice = '즉시낙찰가는 경매 시작가보다 높게 입력해주세요';
       }
       if (!minBidUnit.trim()) e.minBidUnit = '최소 호가 단위를 입력해주세요';
-    } else {
-      // 중고거래 유효성
-      if (!tradePrice.trim()) e.tradePrice = '가격을 입력해주세요';
-      if (!tradeMethod) e.tradeMethod = '거래 방법을 선택해주세요';
-    }
 
     if (!description.trim()) e.description = '상품 설명을 입력해주세요';
     if (!location.trim()) e.location = '거래 희망 지역을 입력해주세요';
@@ -266,6 +241,8 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   // ── 등록 제출 ──
   const handleSubmit = async () => {
     if (!validateStep3()) return;
+    setIsSubmitting(true);
+    onDirtyChange?.(false);
     setLoading(true);
 
     try {
@@ -275,40 +252,37 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
         description,
         category,
         condition,
-        type: productType,
-        price: productType === 'AUCTION'
-          ? Number(auctionStartPrice.replace(/,/g, ''))
-          : isPriceNegotiable
-            ? 0
-            : Number(tradePrice.replace(/,/g, '')),
+        type: 'AUCTION',
+        price: Number(auctionStartPrice.replace(/,/g, '')),
         location,
         image: images[mainImageIndex],
+        images,
+        mainImageIndex,
 
-        // 경매 전용 (TRADE일 때는 null)
-        buyNowPrice: productType === 'AUCTION' && buyNowPrice
+        // 경매 전용 
+        buyNowPrice: buyNowPrice
           ? Number(buyNowPrice.replace(/,/g, ''))
           : null,
-        minBidUnit: productType === 'AUCTION' && minBidUnit
+        minBidUnit: minBidUnit
           ? Number(minBidUnit.replace(/,/g, ''))
           : null,
-
-        // 중고거래 전용 (AUCTION일 때는 null)
-        tradeMethod: productType === 'TRADE' ? tradeMethod : null,
-        isPriceNegotiable: productType === 'TRADE' ? isPriceNegotiable : null,
       };
 
       // 백엔드로 전송 (customAxios가 JWT 토큰 자동 첨부)
       const response = await customAxios.post(`/products`, payload) // ← response로 받기
       const productId = response.data.data; // ← productId 추출
+      onDirtyChange?.(false);
       onSubmit?.(productId);
 
       showToast('상품이 등록됐어요! 🎉', 'success');
-      onBack();
-
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const response = getApiError(err);
+      if (response?.status !== 401) {
+        setIsSubmitting(false);
+      }
       // 401: 로그인 만료 → axiosInstance가 자동으로 로그인 페이지로 이동
       // 그 외 에러: 토스트 메시지
-      const message = err.response?.data?.message || '상품 등록에 실패했어요. 다시 시도해주세요.';
+      const message = response?.data?.message || '상품 등록에 실패했어요. 다시 시도해주세요.';
       showToast(message, 'error');
 
     } finally {
@@ -334,21 +308,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
           <button className={styles.previewBtn} onClick={() => setShowPreview(true)}>미리보기</button>
         </div>
 
-        {/* ── 거래 타입 선택 탭 (추가된 UI) ── */}
-        <div className={styles.typeTabWrap}>
-          <button
-            className={`${styles.typeTab} ${productType === 'AUCTION' ? styles.typeTabActive : ''}`}
-            onClick={() => handleTypeChange('AUCTION')}
-          >
-            🔨 경매
-          </button>
-          <button
-            className={`${styles.typeTab} ${productType === 'TRADE' ? styles.typeTabActive : ''}`}
-            onClick={() => handleTypeChange('TRADE')}
-          >
-            🤝 중고거래
-          </button>
-        </div>
 
         {/* 스텝 인디케이터 */}
         <div className={styles.stepWrap}>
@@ -377,7 +336,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
 
         <div className={styles.scroll}>
 
-          {/* ── STEP 1: 기본 정보 (공통 — 경매/중고거래 동일) ── */}
+          {/* STEP 1: 기본 정보 */}
           {step === 1 && (
             <div className={styles.form}>
 
@@ -474,13 +433,9 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
             </div>
           )}
 
-          {/* ── STEP 2: 거래 정보 (경매 / 중고거래 분기) ── */}
+          {/* STEP 2: 경매 정보 */}
           {step === 2 && (
             <div className={styles.form}>
-
-              {/* ═══ 경매 전용 필드 ═══ */}
-              {productType === 'AUCTION' && (
-                <>
                   {/* 경매 시작가 */}
                   <div className={styles.section}>
                     <label className={styles.sectionTitle}>경매 시작가 <span className={styles.required}>*</span></label>
@@ -529,61 +484,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                     </div>
                     {errors.minBidUnit && <p className={styles.fieldError}>{errors.minBidUnit}</p>}
                   </div>
-                </>
-              )}
-
-              {/* ═══ 중고거래 전용 필드 ═══ */}
-              {productType === 'TRADE' && (
-                <>
-                  {/* 판매 가격 */}
-                  <div className={styles.section}>
-                    <label className={styles.sectionTitle}>판매 가격 <span className={styles.required}>*</span></label>
-                    <div className={styles.priceWrap}>
-                      <span className={styles.pricePrefix}>₩</span>
-                      <input
-                        className={`${styles.input} ${styles.priceInput} ${errors.tradePrice ? styles.inputError : ''}`}
-                        placeholder={isPriceNegotiable ? '가격 협의' : '가격을 입력해주세요'}
-                        value={isPriceNegotiable ? '' : tradePrice}
-                        onChange={e => { setTradePrice(formatPrice(e.target.value)); setErrors(p => ({ ...p, tradePrice: '' })); }}
-                        inputMode="numeric"
-                        disabled={isPriceNegotiable}
-                      />
-                    </div>
-                    {/* 가격 협의 체크박스 */}
-                    <label className={styles.negotiableWrap}>
-                      <input
-                        type="checkbox"
-                        checked={isPriceNegotiable}
-                        onChange={e => {
-                          setIsPriceNegotiable(e.target.checked);
-                          if (e.target.checked) { setTradePrice(''); setErrors(p => ({ ...p, tradePrice: '' })); }
-                        }}
-                      />
-                      <span className={styles.negotiableLabel}>가격 협의 가능</span>
-                    </label>
-                    {errors.tradePrice && <p className={styles.fieldError}>{errors.tradePrice}</p>}
-                  </div>
-
-                  {/* 거래 방법 */}
-                  <div className={styles.section}>
-                    <label className={styles.sectionTitle}>거래 방법 <span className={styles.required}>*</span></label>
-                    <div className={styles.tradeMethodWrap}>
-                      {(['직거래', '택배', '둘다'] as TradeMethod[]).map(m => (
-                        <button
-                          key={m}
-                          className={`${styles.methodBtn} ${tradeMethod === m ? styles.methodBtnActive : ''}`}
-                          onClick={() => { setTradeMethod(m); setErrors(p => ({ ...p, tradeMethod: '' })); }}
-                        >
-                          {m === '직거래' ? '🤝 직거래' : m === '택배' ? '📦 택배' : '✅ 둘 다'}
-                        </button>
-                      ))}
-                    </div>
-                    {errors.tradeMethod && <p className={styles.fieldError}>{errors.tradeMethod}</p>}
-                  </div>
-                </>
-              )}
-
-              {/* ═══ 공통 필드 (경매 / 중고거래 동일) ═══ */}
 
               {/* 상품 설명 */}
               <div className={styles.section}>
@@ -618,7 +518,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                 <p className={styles.summaryTitle}>등록 정보 확인</p>
                 <div className={styles.summaryGrid}>
                   <span className={styles.summaryLabel}>거래 방식</span>
-                  <span className={styles.summaryValue}>{productType === 'AUCTION' ? '🔨 경매' : '🤝 중고거래'}</span>
+                  <span className={styles.summaryValue}>경매</span>
                   <span className={styles.summaryLabel}>상품명</span>
                   <span className={styles.summaryValue}>{title}</span>
                   <span className={styles.summaryLabel}>카테고리</span>
@@ -627,23 +527,12 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                   <span className={styles.summaryValue}>{condition}</span>
                   <span className={styles.summaryLabel}>지역</span>
                   <span className={styles.summaryValue}>{location}</span>
-                  {productType === 'AUCTION' ? (
-                    <>
-                      <span className={styles.summaryLabel}>경매시작가</span>
-                      <span className={styles.summaryValue}>₩ {auctionStartPrice}</span>
-                      <span className={styles.summaryLabel}>즉시낙찰가</span>
-                      <span className={styles.summaryValue}>{buyNowPrice ? `₩ ${buyNowPrice}` : '-'}</span>
-                      <span className={styles.summaryLabel}>최소호가단위</span>
-                      <span className={styles.summaryValue}>₩ {minBidUnit}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={styles.summaryLabel}>판매가격</span>
-                      <span className={styles.summaryValue}>{isPriceNegotiable ? '협의' : `₩ ${tradePrice}`}</span>
-                      <span className={styles.summaryLabel}>거래방법</span>
-                      <span className={styles.summaryValue}>{tradeMethod}</span>
-                    </>
-                  )}
+                  <span className={styles.summaryLabel}>경매시작가</span>
+                  <span className={styles.summaryValue}>₩ {auctionStartPrice}</span>
+                  <span className={styles.summaryLabel}>즉시낙찰가</span>
+                  <span className={styles.summaryValue}>{buyNowPrice ? `₩ ${buyNowPrice}` : '-'}</span>
+                  <span className={styles.summaryLabel}>최소호가단위</span>
+                  <span className={styles.summaryValue}>₩ {minBidUnit}</span>
                 </div>
               </div>
             </div>
@@ -710,7 +599,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                 <p className={styles.summaryTitle}>등록 정보 확인</p>
                 <div className={styles.summaryGrid}>
                   <span className={styles.summaryLabel}>거래 방식</span>
-                  <span className={styles.summaryValue}>{productType === 'AUCTION' ? '🔨 경매' : '🤝 중고거래'}</span>
+                  <span className={styles.summaryValue}>경매</span>
                   <span className={styles.summaryLabel}>상품명</span>
                   <span className={styles.summaryValue}>{title}</span>
                   <span className={styles.summaryLabel}>카테고리</span>
@@ -721,7 +610,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                   <span className={styles.summaryValue}>{location}</span>
                   <span className={styles.summaryLabel}>가격</span>
                   <span className={styles.summaryValue}>
-                    {productType === 'AUCTION' ? `₩ ${auctionStartPrice} (시작가)` : isPriceNegotiable ? '협의' : `₩ ${tradePrice}`}
+                    {`₩ ${auctionStartPrice} (시작가)`}
                   </span>
                 </div>
               </div>
@@ -756,10 +645,9 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
             title,
             category: categorySummary,
             condition,
-            auctionStartPrice: productType === 'AUCTION' ? auctionStartPrice : tradePrice,
-            buyNowPrice: productType === 'AUCTION' ? buyNowPrice : '',
-            minBidUnit: productType === 'AUCTION' ? minBidUnit : '',
-            tradeMethod,
+            auctionStartPrice,
+            buyNowPrice,
+            minBidUnit,
             description,
             location,
           }}
@@ -768,7 +656,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
       )}
       {showLeaveConfirm && (
         <LeaveConfirmModal
-          onConfirm={() => { setShowLeaveConfirm(false); onBack(); }}
+          onConfirm={() => { setShowLeaveConfirm(false); onDirtyChange?.(false); onBack(); }}
           onCancel={() => setShowLeaveConfirm(false)}
         />
       )}

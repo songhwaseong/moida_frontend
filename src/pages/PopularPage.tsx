@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ProductCard from '../components/ProductCard';
-import { PRODUCTS, AUCTION_ITEMS } from '../data/mockData';
+import { getProducts, toAuctionItem, toProduct } from '../api/products';
 import type { AuctionItem, Product } from '../types';
 import styles from './PopularPage.module.css';
 
+// 기간 셀렉터 UI는 유지하되 백엔드는 시간 윈도우 집계가 없어 정렬은 누적 viewCount 기준으로 동일하게 동작한다.
+// 이벤트 로그 테이블이 도입되면 이 부분에서 기간별 호출 분기를 추가한다.
 const PERIODS = ['오늘', '이번주', '이번달'] as const;
 type Period = typeof PERIODS[number];
 
@@ -19,57 +21,48 @@ interface Props {
   onAuctionClick?: (item: AuctionItem) => void;
 }
 
-// 기간별 정렬 및 라벨 설정
-const PERIOD_CONFIG: Record<Period, {
-  productSort: (a: Product, b: Product) => number;
-  auctionSort: (a: AuctionItem, b: AuctionItem) => number;
-  productLabel: string;
-  auctionLabel: string;
-  badge: string;
-}> = {
-  '오늘': {
-    productSort: (a, b) => b.likeCount - a.likeCount,
-    auctionSort: (a, b) => b.bidCount - a.bidCount,
-    productLabel: '오늘 관심 많은 중고',
-    auctionLabel: '오늘 입찰 많은 경매',
-    badge: '🔥 HOT',
-  },
-  '이번주': {
-    productSort: (a, b) => a.price - b.price,
-    auctionSort: (a, b) => a.timeLeft - b.timeLeft,
-    productLabel: '이번주 가성비 중고',
-    auctionLabel: '이번주 마감 임박 경매',
-    badge: '📈 WEEKLY',
-  },
-  '이번달': {
-    productSort: (a, b) => b.price - a.price,
-    auctionSort: (a, b) => b.currentPrice - a.currentPrice,
-    productLabel: '이번달 프리미엄 중고',
-    auctionLabel: '이번달 고가 경매',
-    badge: '👑 TOP',
-  },
-};
-
 const PopularPage: React.FC<Props> = ({ selectedCategory, onProductClick, onAuctionClick }) => {
   const [period, setPeriod] = useState<Period>('오늘');
   const [activeTab, setActiveTab] = useState<'product' | 'auction'>('product');
 
-  const config = PERIOD_CONFIG[period];
+  const [scheduledProducts, setScheduledProducts] = useState<Product[]>([]);
+  const [liveAuctions, setLiveAuctions] = useState<AuctionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  const baseProducts = selectedCategory
-    ? PRODUCTS.filter((p) => p.category === selectedCategory)
-    : PRODUCTS;
+  // 인기 정렬은 백엔드에서 viewCount 기준으로 처리한다.
+  // 카테고리 필터는 같은 API 호출에서 함께 적용한다.
+  useEffect(() => {
+    let ignore = false;
 
-  const baseAuctions = selectedCategory
-    ? AUCTION_ITEMS.filter((a) => a.category === selectedCategory)
-    : AUCTION_ITEMS;
+    const loadPopularProducts = async () => {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const [scheduled, live] = await Promise.all([
+          getProducts({ status: 'SCHEDULED', sort: 'popular', category: selectedCategory ?? undefined, size: 100 }),
+          getProducts({ status: 'LIVE', sort: 'popular', category: selectedCategory ?? undefined, size: 100 }),
+        ]);
+        if (ignore) return;
+        setScheduledProducts(scheduled.map(toProduct));
+        setLiveAuctions(live.map(toAuctionItem));
+      } catch (err) {
+        if (ignore) return;
+        console.error('Failed to load popular products', err);
+        setLoadError('인기 상품을 불러오지 못했어요');
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    };
 
-  const sortedProducts = [...baseProducts].sort(config.productSort);
-  const sortedAuctions = [...baseAuctions].sort(config.auctionSort);
+    loadPopularProducts();
+
+    return () => { ignore = true; };
+  }, [selectedCategory]);
 
   return (
     <main className={styles.main}>
-      {/* 기간 선택 */}
+      {/* 기간 선택 — 현재 데이터로는 동일 결과이나 UI 자리는 유지 */}
       <div className={styles.periodRow}>
         {PERIODS.map((p) => (
           <button
@@ -86,7 +79,7 @@ const PopularPage: React.FC<Props> = ({ selectedCategory, onProductClick, onAuct
           className={`${styles.tab} ${activeTab === 'product' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('product')}
         >
-          인기 중고
+          인기 중고(예정)
           {selectedCategory && <span className={styles.categoryBadge}>{selectedCategory}</span>}
         </button>
         <button
@@ -98,11 +91,18 @@ const PopularPage: React.FC<Props> = ({ selectedCategory, onProductClick, onAuct
         </button>
       </div>
 
-      {/* 인기 중고 */}
-      {activeTab === 'product' && (
-        sortedProducts.length > 0 ? (
+      {isLoading ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyText}>불러오는 중...</p>
+        </div>
+      ) : loadError ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyText}>{loadError}</p>
+        </div>
+      ) : activeTab === 'product' ? (
+        scheduledProducts.length > 0 ? (
           <div className={styles.rankList}>
-            {sortedProducts.map((p, i) => (
+            {scheduledProducts.map((p, i) => (
               <div key={p.id} className={styles.rankItem} onClick={() => onProductClick?.(p)}>
                 <div className={styles.rankBadge}>
                   <span className={`${styles.rank} ${i < 3 ? styles.rankTop : ''}`}>{i + 1}위</span>
@@ -114,16 +114,13 @@ const PopularPage: React.FC<Props> = ({ selectedCategory, onProductClick, onAuct
         ) : (
           <div className={styles.empty}>
             <p style={{ fontSize: 36 }}>📦</p>
-            <p className={styles.emptyText}>{selectedCategory} 카테고리 인기 중고가 없어요</p>
+            <p className={styles.emptyText}>{selectedCategory} 카테고리 인기 중고(예정)가 없어요</p>
           </div>
         )
-      )}
-
-      {/* 인기 경매 */}
-      {activeTab === 'auction' && (
-        sortedAuctions.length > 0 ? (
+      ) : (
+        liveAuctions.length > 0 ? (
           <div className={styles.rankList}>
-            {sortedAuctions.map((item, i) => (
+            {liveAuctions.map((item, i) => (
               <div
                 key={item.id}
                 className={styles.rankItem}

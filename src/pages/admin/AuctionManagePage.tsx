@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AUCTION_ITEMS, AUCTION_DETAILS } from '../../data/mockData';
+import type { BidHistory } from '../../types';
 import styles from './AuctionManagePage.module.css';
 
 type AuctionStatus = '경매중' | '낙찰' | '유찰' | '취소';
@@ -66,8 +67,9 @@ const AuctionManagePage: React.FC = () => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r));
   };
 
-  const getBidHistory = (id: number) => {
-    return AUCTION_DETAILS.find(d => d.id === id)?.bidHistory ?? [];
+  const getBidHistory = (id: number): BidHistory[] => {
+    const detail = AUCTION_DETAILS.find(d => d.id === id);
+    return detail && 'bidHistory' in detail ? detail.bidHistory : [];
   };
 
   const statusColor: Record<AuctionStatus, string> = {

@@ -16,9 +16,10 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem("accessToken");
+        const isAuthRequest = config.url?.includes("/auth/");
         console.log("interceptors.request 토큰 확인 : ", token);
 
-        if (token) { // token가 undefined일 수 있으므로...
+        if (token && !isAuthRequest) { // token가 undefined일 수 있으므로...
             config.headers = config.headers || {};
             // Bearer 단어 대소문자 주의 바람
             config.headers.Authorization = `Bearer ${token}`; // 토큰을 들고 간다
@@ -34,14 +35,17 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
 
-        const isLoginRequest = error.config?.url?.includes("/auth/login");
+        const isAuthRequest = error.config?.url?.includes("/auth/");
 
-        if (error.response?.status === 401 && !isLoginRequest) {
+        if (error.response?.status === 401 && !isAuthRequest) {
+            // 토큰과 함께 App.tsx가 로그인 상태로 판단하는 플래그도 같이 정리.
+            // 둘 중 하나만 지우면 새로고침 후에도 홈으로 들어가 무한 401 루프가 발생한다.
             localStorage.removeItem("accessToken");
+            localStorage.removeItem("bazar_logged_in");
 
-            // window.location.href 사용시 React Router 사용 중이면 
-            // 페이지 전체 리로드 발생할 수 있으므로 replace() 메소드 사용 바람
-            window.location.replace("/member/login");
+            // 라우터를 쓰지 않는 SPA라서 별도 경로는 의미가 없고, '/' 로 리로드하면
+            // 위 플래그가 비어있어 App.tsx 가 자동으로 로그인 화면을 보여준다.
+            window.location.replace("/");
         }
 
         return Promise.reject(error);

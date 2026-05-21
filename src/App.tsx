@@ -91,12 +91,32 @@ const isAppHistoryState = (state: unknown): state is AppHistoryState => {
 
 const getHistoryViewKey = (view: AppHistoryView) => JSON.stringify(view);
 
+const getInitialScreen = (): Screen => {
+  const detailMatch = window.location.pathname.match(/^\/(products?|auctions?)\/(\d+)\/?$/);
+  if (!detailMatch) return { type: 'home' };
+
+  const id = Number(detailMatch[2]);
+  if (!Number.isFinite(id)) return { type: 'home' };
+
+  return detailMatch[1].startsWith('auction')
+    ? { type: 'auctionDetail', id }
+    : { type: 'productDetail', id };
+};
+
+const getHistoryPath = (view: AppHistoryView) => {
+  if (view.screen.type === 'productDetail') return `/products/${view.screen.id}`;
+  if (view.screen.type === 'auctionDetail') return `/auctions/${view.screen.id}`;
+  return '/';
+};
+
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('bazar_is_admin') === 'true');
-  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('bazar_logged_in') === 'true');
+  const [isLoggedIn, setIsLoggedIn] = useState(() =>
+    localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken')
+  );
   const [loggedInUserName, setLoggedInUserName] = useState(() => localStorage.getItem('bazar_user_name') || '');
   const [authScreen, setAuthScreen] = useState<AuthScreen>(() =>
-    localStorage.getItem('bazar_logged_in') === 'true' ? null : 'login'
+    localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken') ? null : 'login'
   );
   const [isGuest, setIsGuest] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
@@ -118,7 +138,7 @@ const App: React.FC = () => {
     setAlertCancelCb(null);
     cb?.();
   };
-  const [screen, setScreen] = useState<Screen>({ type: 'home' });
+  const [screen, setScreen] = useState<Screen>(() => getInitialScreen());
   const [termsInitialTab, setTermsInitialTab] = useState('이용약관');
   const [editingProduct, setEditingProduct] = useState<MyProduct | null>(null);
   const [mainTab, setMainTab] = useState<MainTab>('홈');
@@ -241,11 +261,11 @@ const App: React.FC = () => {
         const currentView = currentHistoryViewRef.current;
         if (currentView) {
           const currentState: AppHistoryState = { source: 'moida-app', view: currentView };
-          window.history.pushState(currentState, '');
+          window.history.pushState(currentState, '', getHistoryPath(currentView));
           lastHistoryViewKeyRef.current = getHistoryViewKey(currentView);
         }
         setPendingNav(() => () => {
-          window.history.replaceState({ source: 'moida-app', view }, '');
+          window.history.replaceState({ source: 'moida-app', view }, '', getHistoryPath(view));
           restoreHistoryView(view);
         });
         return;
@@ -276,7 +296,7 @@ const App: React.FC = () => {
     };
 
     if (!hasInitializedHistoryRef.current) {
-      window.history.replaceState(state, '');
+      window.history.replaceState(state, '', getHistoryPath(state.view));
       lastHistoryViewKeyRef.current = getHistoryViewKey(state.view);
       hasInitializedHistoryRef.current = true;
       return;
@@ -293,7 +313,7 @@ const App: React.FC = () => {
       return;
     }
 
-    window.history.pushState(state, '');
+    window.history.pushState(state, '', getHistoryPath(state.view));
     lastHistoryViewKeyRef.current = nextHistoryViewKey;
   }, [screen, mainTab, navTab, selectedCategory, searchQuery, termsInitialTab, authScreen, isGuest, editingProduct, adminViewMode]);
 
@@ -405,7 +425,7 @@ const App: React.FC = () => {
       />
     );
     if (screen.type === 'sellerProfile') return <SellerProfilePage seller={screen.seller} onBack={goBack} onProductClick={handleProductClick} />;
-    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goBack} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => { })} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
+    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goBack} isLoggedIn={isLoggedIn} onRequireLogin={() => requireLogin(() => { })} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
     if (screen.type === 'productDetail') return (
       <ProductDetailPage
         productId={screen.id}
@@ -413,6 +433,8 @@ const App: React.FC = () => {
         onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })}
         onAuctionClick={() => setScreen({ type: 'auctionDetail', id: Math.min(screen.id, 4) })}
         onChatClick={() => goNav('chat')}
+        isLoggedIn={isLoggedIn}
+        onRequireLogin={() => requireLogin(() => { })}
       />
     );
     if (screen.type === 'editProfile') return <EditProfilePage onBack={goBack} />;

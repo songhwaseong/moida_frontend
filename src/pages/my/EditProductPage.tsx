@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { updateMyProduct } from '../../data/myProductStore';
 import type { MyProduct } from '../../data/myProductStore';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../components/ToastContext';
 import styles from '../SellPage.module.css';
 import headerStyles from './MySubPage.module.css';
 import ProductPreviewModal from '../../components/ProductPreviewModal';
@@ -16,7 +16,6 @@ interface Props {
 }
 
 type Condition = 'S급' | 'A급' | 'B급' | 'C급';
-type TradeMethod = '직거래' | '택배' | '둘다';
 
 const PRODUCT_CATEGORIES = HOME_CATEGORIES
   .map(category => category.label)
@@ -27,7 +26,6 @@ const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
   { value: 'B급', label: 'B급', desc: '사용감 있음' },
   { value: 'C급', label: 'C급', desc: '하자 있음' },
 ];
-const TRADE_METHODS: TradeMethod[] = ['직거래', '택배', '둘다'];
 const STATUS_OPTIONS: MyProduct['status'][] = ['경매예정', '낙찰', '숨김'];
 
 const formatPrice = (v: string) => v.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -44,7 +42,6 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
   const [condition, setCondition] = useState<Condition | ''>(product.condition as Condition);
   const [auctionStartPrice, setAuctionStartPrice] = useState(product.auctionStartPrice);
   const [minBidUnit, setMinBidUnit] = useState(product.minBidUnit);
-  const [tradeMethod, setTradeMethod] = useState<TradeMethod | ''>(product.tradeMethod as TradeMethod);
   const [description, setDescription] = useState(product.description);
   const [location, setLocation] = useState(product.location);
   const [auctionDate, setAuctionDate] = useState(product.auctionDate);
@@ -62,7 +59,6 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
     condition !== product.condition ||
     auctionStartPrice !== product.auctionStartPrice ||
     minBidUnit !== product.minBidUnit ||
-    tradeMethod !== product.tradeMethod ||
     description !== product.description ||
     location !== product.location ||
     auctionDate !== product.auctionDate ||
@@ -72,7 +68,7 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
     if (isDirty) { setShowLeaveConfirm(true); } else { onBack(); }
   };
 
-  React.useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty]);
+  React.useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
   // 브라우저 탭 닫기 / 새로고침 감지
   useEffect(() => {
@@ -111,7 +107,6 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
     if (!condition) e.condition = '상품 상태를 선택해주세요';
     if (!auctionStartPrice.trim()) e.auctionStartPrice = '경매 시작가를 입력해주세요';
     if (!minBidUnit.trim()) e.minBidUnit = '최소 호가 단위를 입력해주세요';
-    if (!tradeMethod) e.tradeMethod = '거래 방식을 선택해주세요';
     if (!description.trim()) e.description = '상품 설명을 입력해주세요';
     if (!location.trim()) e.location = '거래 희망 지역을 입력해주세요';
     setErrors(e);
@@ -131,7 +126,7 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
       condition,
       auctionStartPrice,
       minBidUnit,
-      tradeMethod,
+      tradeMethod: product.tradeMethod,
       description,
       location,
       auctionDate,
@@ -265,18 +260,6 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
               onChange={e => setAuctionDate(e.target.value)}/>
           </div>
 
-          {/* 거래 방식 */}
-          <div className={styles.section}>
-            <label className={styles.sectionTitle}>거래 방식 <span className={styles.required}>*</span></label>
-            <div className={styles.chipRow}>
-              {TRADE_METHODS.map(m => (
-                <button key={m} className={`${styles.chip} ${tradeMethod === m ? styles.chipActive : ''}`}
-                  onClick={() => { setTradeMethod(m); setErrors(p => ({ ...p, tradeMethod: '' })); }}>{m}</button>
-              ))}
-            </div>
-            {errors.tradeMethod && <p className={styles.fieldError}>{errors.tradeMethod}</p>}
-          </div>
-
           {/* 상품 설명 */}
           <div className={styles.section}>
             <label className={styles.sectionTitle}>상품 설명 <span className={styles.required}>*</span></label>
@@ -318,7 +301,7 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
 
     {showPreview && (
       <ProductPreviewModal
-        data={{ images, mainImageIndex, title, category, condition, auctionStartPrice, minBidUnit, tradeMethod, description, location, auctionDate }}
+        data={{ images, mainImageIndex, title, category, condition, auctionStartPrice, minBidUnit, description, location, auctionDate }}
         onClose={() => setShowPreview(false)}
       />
     )}

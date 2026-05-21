@@ -16,7 +16,13 @@ const AlertModal: React.FC<Props> = ({
   onConfirm,
   onCancel,
 }) => {
-  const handleOverlayClick = () => { onCancel ? onCancel() : onConfirm(); };
+  const handleOverlayClick = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      onConfirm();
+    }
+  };
 
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>

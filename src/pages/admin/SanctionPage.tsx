@@ -20,12 +20,29 @@ const SANCTION_TYPES: { value: Sanction['type']; label: string }[] = [
   { value: 'permanent', label: '영구 정지' },
 ];
 
+type SanctionForm = {
+  memberNo: string;
+  memberName: string;
+  type: Sanction['type'];
+  reason: string;
+  adminNote: string;
+};
+
+type SanctionTextField = Exclude<keyof SanctionForm, 'type'>;
+
+const SANCTION_TEXT_FIELDS: { label: string; key: SanctionTextField; placeholder: string }[] = [
+  { label: '회원번호', key: 'memberNo', placeholder: '예: 2024031500001' },
+  { label: '이름', key: 'memberName', placeholder: '회원 이름' },
+  { label: '사유', key: 'reason', placeholder: '제재 사유' },
+  { label: '관리자 메모', key: 'adminNote', placeholder: '내부 메모 (선택)' },
+];
+
 const PAGE_SIZE = 5;
 
 const SanctionPage: React.FC = () => {
   const [list, setList] = useState<Sanction[]>(SANCTIONS);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ memberNo: '', memberName: '', type: 'warning' as Sanction['type'], reason: '', adminNote: '' });
+  const [form, setForm] = useState<SanctionForm>({ memberNo: '', memberName: '', type: 'warning', reason: '', adminNote: '' });
   const [page, setPage] = useState(1);
 
   const totalPages = Math.ceil(list.length / PAGE_SIZE);
@@ -121,18 +138,13 @@ const SanctionPage: React.FC = () => {
               <h2 className={styles.modalTitle}>제재 추가</h2>
               <button className={styles.modalClose} onClick={() => setShowAdd(false)}>✕</button>
             </div>
-            {[
-              { label: '회원번호', key: 'memberNo', placeholder: '예: 2024031500001' },
-              { label: '이름', key: 'memberName', placeholder: '회원 이름' },
-              { label: '사유', key: 'reason', placeholder: '제재 사유' },
-              { label: '관리자 메모', key: 'adminNote', placeholder: '내부 메모 (선택)' },
-            ].map(f => (
+            {SANCTION_TEXT_FIELDS.map(f => (
               <div key={f.key} style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#8B8FA8', display: 'block', marginBottom: 4 }}>{f.label}</label>
                 <input
                   style={{ width: '100%', border: '1px solid #E0E0E0', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontFamily: 'Noto Sans KR, sans-serif', boxSizing: 'border-box' }}
                   placeholder={f.placeholder}
-                  value={(form as any)[f.key]}
+                  value={form[f.key]}
                   onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                 />
               </div>

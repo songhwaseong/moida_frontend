@@ -12,6 +12,32 @@ interface Address {
   isDefault: boolean;
 }
 
+interface DaumPostcodeData {
+  zonecode: string;
+  roadAddress: string;
+  jibunAddress: string;
+}
+
+interface DaumPostcode {
+  embed: (element: HTMLElement) => void;
+}
+
+interface DaumPostcodeConstructor {
+  new (options: {
+    oncomplete: (data: DaumPostcodeData) => void;
+    width: string;
+    height: string;
+  }): DaumPostcode;
+}
+
+declare global {
+  interface Window {
+    daum?: {
+      Postcode: DaumPostcodeConstructor;
+    };
+  }
+}
+
 const INIT: Address[] = [
   { id:1, name:'집', zonecode:'06236', address:'서울특별시 강남구 테헤란로 123', detail:'101동 1001호', phone:'010-1234-5678', isDefault:true },
   { id:2, name:'회사', zonecode:'03925', address:'서울특별시 마포구 월드컵북로 56', detail:'위워크 5층', phone:'010-9876-5432', isDefault:false },
@@ -40,8 +66,9 @@ const AddressPage: React.FC<Props> = ({ onBack }) => {
     script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
     script.onload = () => {
       if (!postcodeRef.current) return;
-      new (window as any).daum.Postcode({
-        oncomplete: (data: any) => {
+      if (!window.daum?.Postcode) return;
+      new window.daum.Postcode({
+        oncomplete: (data: DaumPostcodeData) => {
           setModal(p => p && ({
             ...p,
             zonecode: data.zonecode,
@@ -54,7 +81,7 @@ const AddressPage: React.FC<Props> = ({ onBack }) => {
       }).embed(postcodeRef.current);
     };
     // 이미 로드된 경우
-    if ((window as any).daum?.Postcode) {
+    if (window.daum?.Postcode) {
       script.onload?.(new Event('load'));
     } else {
       document.head.appendChild(script);

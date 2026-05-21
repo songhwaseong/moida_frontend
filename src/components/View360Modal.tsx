@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import styles from './View360Modal.module.css';
 
 interface Props {
@@ -9,9 +9,11 @@ interface Props {
 
 const View360Modal: React.FC<Props> = ({ images, productName, onClose }) => {
   // 이미지가 1장이면 같은 이미지를 36장으로 복제해 프레임처럼 사용
-  const frames = images.length < 3
-    ? Array.from({ length: 36 }, (_, i) => images[i % images.length])
-    : images;
+  const frames = useMemo(() => (
+    images.length < 3
+      ? Array.from({ length: 36 }, (_, i) => images[i % images.length])
+      : images
+  ), [images]);
 
   const total = frames.length;
   const [frameIndex, setFrameIndex] = useState(0);
@@ -38,7 +40,7 @@ const View360Modal: React.FC<Props> = ({ images, productName, onClose }) => {
       };
       img.src = src;
     });
-  }, []);
+  }, [frames]);
 
   // 자동 회전
   const stopAuto = useCallback(() => {
@@ -57,10 +59,10 @@ const View360Modal: React.FC<Props> = ({ images, productName, onClose }) => {
   useEffect(() => () => {
     stopAuto();
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
-  }, []);
+  }, [stopAuto]);
 
   // 관성
-  const applyInertia = useCallback((vel: number) => {
+  const applyInertia = useCallback(function run(vel: number) {
     if (Math.abs(vel) < 0.3) return;
     const next = vel * 0.88;
     velRef.current = next;
@@ -68,7 +70,7 @@ const View360Modal: React.FC<Props> = ({ images, productName, onClose }) => {
       const delta = Math.round(vel / 3);
       return ((p - delta) % total + total) % total;
     });
-    rafRef.current = requestAnimationFrame(() => applyInertia(next));
+    rafRef.current = requestAnimationFrame(() => run(next));
   }, [total]);
 
   // 마우스

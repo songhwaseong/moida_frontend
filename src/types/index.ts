@@ -1,5 +1,6 @@
 export interface AuctionItem {
   id: number;
+  productNo?: string;
   auctionNo: string;
   name: string;
   image: string;
@@ -10,6 +11,7 @@ export interface AuctionItem {
   category: string;
   condition?: 'S급' | 'A급' | 'B급' | 'C급';
   liked?: boolean;
+  viewCount?: number;
 }
 
 export interface BidHistory {
@@ -26,10 +28,16 @@ export interface AuctionDetail extends AuctionItem {
   seller: string;
   sellerTemp: number;
   sellerSales: number;
+  ownedByMe?: boolean;
+  price?: number;
   startPrice: number;
+  minBidUnit?: number;
   immediatePrice?: number;
   endDate: string;
   location: string;
+  tags?: ProductTag[];
+  canAuction?: boolean;
+  auctionDate?: string;
   bidHistory: BidHistory[];
   liked: boolean;
   likeCount: number;
@@ -38,6 +46,7 @@ export interface AuctionDetail extends AuctionItem {
 
 export interface Product {
   id: number;
+  productNo?: string;
   name: string;
   image: string;
   location: string;
@@ -46,6 +55,7 @@ export interface Product {
   condition: 'S급' | 'A급' | 'B급' | 'C급';
   tags: ProductTag[];
   likeCount: number;
+  viewCount?: number;
   liked: boolean;
   canAuction: boolean;
   auctionDate?: string;
@@ -58,6 +68,7 @@ export interface ProductDetail extends Product {
   seller: string;
   sellerTemp: number;
   sellerSales: number;
+  ownedByMe?: boolean;
   immediatePrice?: number;
 }
 

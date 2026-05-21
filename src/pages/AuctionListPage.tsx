@@ -1,130 +1,184 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AuctionCard from '../components/AuctionCard';
 import ProductCard from '../components/ProductCard';
-import { AUCTION_ITEMS, PRODUCTS } from '../data/mockData';
+import { getProducts, toAuctionItem, toProduct } from '../api/products';
 import type { AuctionItem, Product } from '../types';
 import styles from './AuctionListPage.module.css';
 
-const PAGE_SIZE = 9;
-
 interface Props {
   onItemClick: (item: AuctionItem) => void;
-  onProductClick?: (product: Product) => void;
+  onProductClick: (product: Product) => void;
   selectedCategory?: string | null;
 }
 
-const AuctionListPage: React.FC<Props> = ({ onItemClick, onProductClick, selectedCategory }) => {
+const INITIAL_VISIBLE_COUNT = 12;
+const LOAD_MORE_COUNT = 12;
+
+function AuctionListPage({ onItemClick, onProductClick, selectedCategory }: Props) {
   const [sortByTime, setSortByTime] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [isLoading, setIsLoading] = useState(false);
+  const [visibleState, setVisibleState] = useState({ category: selectedCategory ?? null, count: INITIAL_VISIBLE_COUNT });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [auctions, setAuctions] = useState<AuctionItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const filtered = selectedCategory
-    ? AUCTION_ITEMS.filter((item) => item.category === selectedCategory)
-    : AUCTION_ITEMS;
+  // 상단 카테고리가 바뀔 때마다 실제 상품 API에서 경매 상태별 목록을 다시 가져온다.
+  useEffect(() => {
+    let ignore = false;
 
-  const sorted = [...filtered].sort((a, b) =>
-    sortByTime ? a.timeLeft - b.timeLeft : b.bidCount - a.bidCount
-  );
+    const loadAuctionProducts = async () => {
+      setIsInitialLoading(true);
 
-  const upcomingAll = selectedCategory
-    ? PRODUCTS.filter((p) => p.canAuction && p.category === selectedCategory)
-    : PRODUCTS.filter((p) => p.canAuction);
+      try {
+        const category = selectedCategory ?? undefined;
+        const [liveProducts, scheduledProducts] = await Promise.all([
+          getProducts({ status: 'LIVE', category, size: 100 }),
+          getProducts({ status: 'SCHEDULED', category, size: 100 }),
+        ]);
 
-  const upcomingVisible = upcomingAll.slice(0, visibleCount);
+        if (ignore) return;
+
+        // 경매 탭은 실제 상품 API의 LIVE/SCHEDULED 상태를 나눠서 보여준다.
+        setAuctions(liveProducts.map(toAuctionItem));
+        setProducts(scheduledProducts.map(toProduct));
+      } catch (error) {
+        if (ignore) return;
+        console.error('Failed to load auction tab products', error);
+        setAuctions([]);
+        setProducts([]);
+      } finally {
+        if (!ignore) {
+          setIsInitialLoading(false);
+        }
+      }
+    };
+
+    loadAuctionProducts();
+
+    return () => {
+      ignore = true;
+    };
+  }, [selectedCategory]);
+
+  // 진행중인 경매는 사용자가 고른 정렬 기준에 맞춰 마감임박순 또는 입찰많은순으로 보여준다.
+  const filtered = useMemo(() => {
+    return [...auctions].sort((a, b) =>
+      sortByTime ? a.timeLeft - b.timeLeft : b.bidCount - a.bidCount,
+    );
+  }, [auctions, sortByTime]);
+
+  // 경매 예정 매물은 SCHEDULED 상품 중 경매 가능 상품만 대상으로 무한스크롤 처리한다.
+  const upcomingAll = products.filter((product) => product.canAuction);
+  const selectedCategoryKey = selectedCategory ?? null;
+  const visibleCount = visibleState.category === selectedCategoryKey ? visibleState.count : INITIAL_VISIBLE_COUNT;
+  const visibleUpcoming = upcomingAll.slice(0, visibleCount);
   const hasMore = visibleCount < upcomingAll.length;
 
-  // #main-scroll 컨테이너 스크롤 감지
+  // 하단 근처까지 스크롤하면 다음 묶음을 추가로 노출한다.
   useEffect(() => {
-    const container = document.getElementById('main-scroll');
-    if (!container) return;
-
     const handleScroll = () => {
-      if (isLoading || !hasMore) return;
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      if (scrollTop + clientHeight >= scrollHeight - 120) {
-        setIsLoading(true);
+      if (isInitialLoading || isLoadingMore || !hasMore) return;
+
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+
+      if (scrollTop + windowHeight >= documentHeight - 200) {
+        setIsLoadingMore(true);
+
         setTimeout(() => {
-          setVisibleCount((prev) => prev + PAGE_SIZE);
-          setIsLoading(false);
+          setVisibleState((prev) => ({
+            category: selectedCategoryKey,
+            count: Math.min((prev.category === selectedCategoryKey ? prev.count : INITIAL_VISIBLE_COUNT) + LOAD_MORE_COUNT, upcomingAll.length),
+          }));
+          setIsLoadingMore(false);
         }, 500);
       }
     };
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [hasMore, isLoading]);
-
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [selectedCategory]);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, isInitialLoading, isLoadingMore, selectedCategoryKey, upcomingAll.length]);
 
   return (
-    <main className={styles.main}>
+    <div className={styles.main}>
       <div className={styles.topBar}>
         <div className={styles.sortToggle}>
           <button
             className={`${styles.toggleBtn} ${sortByTime ? styles.toggleActive : ''}`}
             onClick={() => setSortByTime(true)}
-          >마감임박순</button>
+          >
+            마감임박순
+          </button>
           <button
             className={`${styles.toggleBtn} ${!sortByTime ? styles.toggleActive : ''}`}
             onClick={() => setSortByTime(false)}
-          >입찰많은순</button>
+          >
+            입찰많은순
+          </button>
         </div>
       </div>
 
-      {/* 진행중인 경매 */}
-      <div className={styles.section}>
+      <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <span className={styles.liveLabel}><span className={styles.liveDot} />LIVE</span>
-          <span className={styles.sectionTitle}>
-            진행중인 경매 {sorted.length}건
-            {selectedCategory && <span className={styles.categoryBadge}>{selectedCategory}</span>}
+          <span className={styles.liveLabel}>
+            <span className={styles.liveDot} />
+            LIVE
           </span>
+          <h2 className={styles.sectionTitle}>진행중인 경매</h2>
         </div>
-        {sorted.length > 0 ? (
+
+        {isInitialLoading ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyText}>경매 상품을 불러오는 중입니다.</p>
+          </div>
+        ) : filtered.length > 0 ? (
           <div className={styles.grid}>
-            {sorted.map((item) => (
+            {filtered.map((item) => (
               <AuctionCard key={item.id} item={item} onClick={onItemClick} />
             ))}
           </div>
         ) : (
           <div className={styles.empty}>
-            <p style={{ fontSize: 36 }}>🔨</p>
-            <p className={styles.emptyText}>{selectedCategory} 카테고리 경매가 없어요</p>
+            <p className={styles.emptyText}>진행중인 경매가 없습니다.</p>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* 경매예정 매물 */}
-      {upcomingAll.length > 0 && (
-        <div className={styles.section}>
+      {!isInitialLoading && (
+        <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <span className={styles.upcomingLabel}>예정</span>
-            <span className={styles.sectionTitle}>
-              경매예정 매물 {upcomingAll.length}건
-            </span>
+            <h2 className={styles.sectionTitle}>경매 예정 매물</h2>
           </div>
-          <div className={styles.productGrid}>
-            {upcomingVisible.map((p) => (
-              <ProductCard key={p.id} product={p} onClick={onProductClick} />
-            ))}
-          </div>
-          <div className={styles.loaderArea}>
-            {isLoading && (
-              <div className={styles.loadingSpinner}>
-                <div className={styles.spinner} />
-                <span>불러오는 중...</span>
+
+          {upcomingAll.length > 0 ? (
+            <>
+              <div className={styles.productGrid}>
+                {visibleUpcoming.map((product) => (
+                  <ProductCard key={product.id} product={product} onClick={onProductClick} />
+                ))}
               </div>
-            )}
-            {!hasMore && upcomingAll.length > PAGE_SIZE && (
-              <p className={styles.noMore}>모든 경매예정 매물을 불러왔어요 ✓</p>
-            )}
-          </div>
-        </div>
+
+              <div className={styles.loaderArea}>
+                {isLoadingMore ? (
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.spinner} />
+                    <span>더 많은 상품을 불러오는 중...</span>
+                  </div>
+                ) : !hasMore ? (
+                  <p className={styles.noMore}>모든 경매 예정 매물을 불러왔습니다.</p>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <div className={styles.empty}>
+              <p className={styles.emptyText}>경매 예정 매물이 없습니다.</p>
+            </div>
+          )}
+        </section>
       )}
-    </main>
+    </div>
   );
-};
+}
 
 export default AuctionListPage;

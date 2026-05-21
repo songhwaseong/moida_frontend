@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { AUCTION_DETAILS } from '../data/mockData';
-import { useInquiries, addInquiry } from '../data/inquiries';
+import { getProduct, toAuctionDetail } from '../api/products';
+import { toggleLike } from '../api/likes';
+import { buyNowProduct, placeProductBid, type BidType } from '../api/bids';
+import { createProductInquiry, getProductInquiries, type InquiryView } from '../api/inquiries';
+import type { AuctionDetail } from '../types';
 import styles from './AuctionDetailPage.module.css';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/ToastContext';
 import View360Modal from '../components/View360Modal';
 
 interface Props {
@@ -14,37 +17,97 @@ interface Props {
 }
 
 const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false, onRequireLogin, onSellerClick }) => {
-  const item = AUCTION_DETAILS.find((a) => a.id === itemId) ?? AUCTION_DETAILS[0];
+  const [item, setItem] = useState<AuctionDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const { showToast } = useToast();
 
-  const [liked, setLiked] = useState(item.liked);
-  const [likeCount, setLikeCount] = useState(item.likeCount);
-  const [currentPrice, setCurrentPrice] = useState(item.currentPrice);
-  const [bidCount, setBidCount] = useState(item.bidCount);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [currentPrice, setCurrentPrice] = useState(0);
+  const [bidCount, setBidCount] = useState(0);
   const [bidInput, setBidInput] = useState('');
   const [showBidHistory, setShowBidHistory] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
   const [showInstantModal, setShowInstantModal] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(item.timeLeft); // 초(seconds)
+  const [isBidding, setIsBidding] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0); // seconds
   const [activeImg, setActiveImg] = useState(0);
   const [show360, setShow360] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'inquiry'>('desc');
   const [showAskModal, setShowAskModal] = useState(false);
   const [newInquiry, setNewInquiry] = useState('');
-  const allInquiries = useInquiries();
-  const inquiries = allInquiries.filter(q => q.kind === 'auction' && q.itemId === item.id);
+  const [inquiries, setInquiries] = useState<InquiryView[]>([]);
 
-  const handleSubmitInquiry = () => {
+  const handleSubmitInquiry = async () => {
+    if (!item) return;
+    if (!isLoggedIn) { onRequireLogin?.(); return; }
     const text = newInquiry.trim();
     if (!text) return;
-    addInquiry('auction', item.id, '나', text);
-    setNewInquiry('');
-    setShowAskModal(false);
-    setActiveTab('inquiry');
+    try {
+      // Auction inquiries use the same product inquiry endpoint because auctions are product-backed.
+      const created = await createProductInquiry(item.id, text);
+      setInquiries(prev => [created, ...prev]);
+      setNewInquiry('');
+      setShowAskModal(false);
+      setActiveTab('inquiry');
+      showToast('문의가 등록되었습니다.', 'success');
+    } catch (error) {
+      console.error('Failed to create auction inquiry', error);
+      showToast('문의 등록에 실패했습니다.', 'error');
+    }
   };
 
-  const { showToast } = useToast();
   const USER_BALANCE = 267000;
 
+  // 경매 상세도 목업 대신 DB 상품 상세 API를 사용한다.
+  // API 응답을 기존 AuctionDetail UI 타입으로 변환해 입찰/타이머 UI는 그대로 재사용한다.
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAuction = async () => {
+      setIsLoading(true);
+      setLoadError('');
+
+      try {
+        const data = await getProduct(itemId);
+        if (ignore) return;
+
+        const auction = toAuctionDetail(data);
+        setItem(auction);
+        setLiked(auction.liked);
+        setLikeCount(auction.likeCount);
+        setCurrentPrice(auction.currentPrice);
+        setBidCount(auction.bidCount);
+        setTimeLeft(auction.timeLeft);
+        setActiveImg(0);
+
+        try {
+          // Keep inquiry loading isolated from the main auction detail request.
+          const inquiryList = await getProductInquiries(itemId);
+          if (!ignore) setInquiries(inquiryList);
+        } catch (inquiryError) {
+          console.error('Failed to load auction inquiries', inquiryError);
+          if (!ignore) setInquiries([]);
+        }
+      } catch (error) {
+        if (ignore) return;
+        console.error('Failed to load auction detail', error);
+        setItem(null);
+        setLoadError('경매 정보를 불러오지 못했어요.');
+      } finally {
+        if (!ignore) setIsLoading(false);
+      }
+    };
+
+    loadAuction();
+
+    return () => {
+      ignore = true;
+    };
+  }, [itemId]);
+
+  // DB에서 받은 남은 시간(timeLeft)을 기준으로 상세 화면 타이머를 매초 갱신한다.
   useEffect(() => {
     if (timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -54,34 +117,111 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [timeLeft]);
 
-  const h = Math.floor(timeLeft / 3600);
+  const days = Math.floor(timeLeft / 86400);
+  const h = Math.floor((timeLeft % 86400) / 3600);
   const m = Math.floor((timeLeft % 3600) / 60);
   const s = timeLeft % 60;
-  const timeDisplay = h > 0
+  // Match auction cards: show a live countdown under 24h, otherwise show days/hours.
+  const timeDisplay = days >= 1
+    ? (h > 0 ? `${days}일 ${h}시간` : `${days}일`)
+    : h > 0
     ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   const isUrgent = timeLeft > 0 && timeLeft < 300;
   const isEnded  = timeLeft <= 0;
 
+  const getApiErrorMessage = (error: unknown, fallback: string) => {
+    const response = (error as { response?: { data?: { message?: string } } })?.response;
+    return response?.data?.message || fallback;
+  };
+
+  const submitBid = async (amount: number, bidType: BidType) => {
+    if (!item) return;
+    setIsBidding(true);
+    try {
+      const result = bidType === 'IMMEDIATE'
+        ? await buyNowProduct(item.id)
+        : await placeProductBid(item.id, amount);
+      setCurrentPrice(result.currentPrice);
+      setBidCount(result.bidCount);
+      setItem(prev => prev && ({
+        ...prev,
+        currentPrice: result.currentPrice,
+        bidCount: result.bidCount,
+        isLive: result.isLive,
+        bidHistory: result.bidHistory,
+      }));
+      if (!result.isLive) setTimeLeft(0);
+      setBidInput('');
+      setShowBidModal(false);
+      setShowInstantModal(false);
+      showToast(`${amount.toLocaleString()} 입찰 완료!`, 'success');
+    } catch (error: unknown) {
+      showToast(getApiErrorMessage(error, '입찰 등록에 실패했습니다.'), 'error');
+    } finally {
+      setIsBidding(false);
+    }
+  };
+
   const handleBid = () => {
+    if (!item) return;
     const amount = parseInt(bidInput.replace(/,/g, ''), 10);
+    const minBid = currentPrice + (item.minBidUnit ?? 1000);
     if (isNaN(amount) || amount <= currentPrice) {
       showToast(`현재가(${currentPrice.toLocaleString()})보다 높게 입찰하세요`, 'error');
+      return;
+    }
+    if (amount < minBid) {
+      showToast(`최소 입찰가는 ${minBid.toLocaleString()}원입니다.`, 'error');
       return;
     }
     if (amount > USER_BALANCE) {
       showToast(`잔액 부족\n보유: ${USER_BALANCE.toLocaleString()} / 입찰: ${amount.toLocaleString()}`, 'error');
       return;
     }
-    setCurrentPrice(amount);
-    setBidCount((p) => p + 1);
-    setBidInput('');
-    setShowBidModal(false);
-    showToast(`${amount.toLocaleString()} 입찰 완료!`, 'success');
+    void submitBid(amount, 'NORMAL');
   };
 
+
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <button className={styles.back} onClick={onBack}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <span className={styles.headerTitle}>경매 상세</span>
+          <div style={{ width: 20 }} />
+        </div>
+        <div className={styles.scroll}>
+          <p className={styles.qnaEmpty}>경매 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <button className={styles.back} onClick={onBack}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <span className={styles.headerTitle}>경매 상세</span>
+          <div style={{ width: 20 }} />
+        </div>
+        <div className={styles.scroll}>
+          <p className={styles.qnaEmpty}>{loadError || '경매를 찾을 수 없어요.'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -95,10 +235,23 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
         <span className={styles.headerTitle}>경매 상세</span>
         <button
           className={`${styles.likeBtn} ${liked ? styles.likeBtnActive : ''}`}
-          onClick={() => {
+          onClick={async () => {
             if (!isLoggedIn) { onRequireLogin?.(); return; }
-            setLiked(p => !p);
-            setLikeCount(p => liked ? p - 1 : p + 1);
+            if (!item) return;
+            // 낙관적 업데이트: 토글 즉시 UI 반영 후, 실패 시 원복
+            const prevLiked = liked;
+            const prevCount = likeCount;
+            setLiked(!prevLiked);
+            setLikeCount(prevLiked ? prevCount - 1 : prevCount + 1);
+            try {
+              const result = await toggleLike(item.id);
+              setLiked(result.liked);
+              setLikeCount(result.likeCount);
+            } catch {
+              setLiked(prevLiked);
+              setLikeCount(prevCount);
+              showToast('좋아요 처리에 실패했어요', 'error');
+            }
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
@@ -266,8 +419,15 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                     <span className={styles.tabCount}>{inquiries.length}</span>
                   </button>
                 </div>
-                {activeTab === 'inquiry' && (
-                  <button className={styles.askBtn} onClick={() => setShowAskModal(true)}>
+                {/* Sellers can read existing inquiries, but cannot ask questions on their own auction. */}
+                {activeTab === 'inquiry' && !item.ownedByMe && (
+                  <button
+                    className={styles.askBtn}
+                    onClick={() => {
+                      if (!isLoggedIn) { onRequireLogin?.(); return; }
+                      setShowAskModal(true);
+                    }}
+                  >
                     <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path d="M12 5v14M5 12h14" />
                     </svg>
@@ -319,11 +479,12 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
             <div className={styles.section}>
               <p className={styles.sectionTitle}>거래 정보</p>
               <div className={styles.infoGrid}>
-                <div className={styles.infoItem}><span className={styles.infoLabel}>상품번호</span><span className={styles.infoValue} style={{ fontFamily: 'monospace', fontSize: 12 }}>{`26${String(item.id).padStart(5, '0')}`}</span></div>
+                <div className={styles.infoItem}><span className={styles.infoLabel}>상품번호</span><span className={styles.infoValue} style={{ fontFamily: 'monospace', fontSize: 12 }}>{item.productNo ?? item.auctionNo}</span></div>
                 <div className={styles.infoItem}><span className={styles.infoLabel}>경매번호</span><span className={styles.infoValue}>{item.auctionNo}</span></div>
                 <div className={styles.infoItem}><span className={styles.infoLabel}>지역</span><span className={styles.infoValue}>{item.location}</span></div>
                 <div className={styles.infoItem}><span className={styles.infoLabel}>카테고리</span><span className={styles.infoValue}>{item.category}</span></div>
                 <div className={styles.infoItem}><span className={styles.infoLabel}>마감일</span><span className={styles.infoValue}>{item.endDate}</span></div>
+                <div className={styles.infoItem}><span className={styles.infoLabel}>조회수</span><span className={styles.infoValue}>{(item.viewCount ?? 0).toLocaleString()}회</span></div>
               </div>
             </div>
 
@@ -335,7 +496,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
       {showBidModal && (() => {
         const bidAmount = parseInt(bidInput.replace(/,/g, ''), 10);
         const isInsufficient = !isNaN(bidAmount) && bidAmount > USER_BALANCE;
-        const minBid = currentPrice + 1000;
+        const minBid = currentPrice + (item.minBidUnit ?? 1000);
         return (
           <div className={styles.modalOverlay} onClick={() => setShowBidModal(false)}>
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -365,8 +526,8 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 <button
                   className={styles.modalConfirm}
                   onClick={handleBid}
-                  disabled={isInsufficient}
-                  style={isInsufficient ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                  disabled={isInsufficient || isBidding}
+                  style={(isInsufficient || isBidding) ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
                 >입찰 확정</button>
               </div>
             </div>
@@ -404,13 +565,10 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 <button
                   className={styles.modalConfirm}
                   onClick={() => {
-                    setCurrentPrice(item.immediatePrice!);
-                    setBidCount(p => p + 1);
-                    setShowInstantModal(false);
-                    showToast(`${item.immediatePrice!.toLocaleString()} 즉시낙찰 완료!`, 'success');
+                    void submitBid(item.immediatePrice!, 'IMMEDIATE');
                   }}
-                  disabled={isInsufficient}
-                  style={isInsufficient ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                  disabled={isInsufficient || isBidding}
+                  style={(isInsufficient || isBidding) ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
                 >낙찰 확정</button>
               </div>
             </div>

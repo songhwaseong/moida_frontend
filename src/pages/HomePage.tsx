@@ -1,10 +1,12 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import CategoryRow from '../components/CategoryRow';
 import Banner from '../components/Banner';
 import AuctionCard from '../components/AuctionCard';
 import ProductCard from '../components/ProductCard';
 import SectionHeader from '../components/SectionHeader';
-import { CATEGORIES, AUCTION_ITEMS, PRODUCTS } from '../data/mockData';
+import { CATEGORIES as FALLBACK_CATEGORIES } from '../data/mockData';
+import { getProducts, toAuctionItem, toProduct } from '../api/products';
+import { fetchCategories } from '../api/categories';
 import type { AuctionItem, Category, Product } from '../types';
 import styles from './HomePage.module.css';
 
@@ -21,6 +23,7 @@ const CARD_WIDTH = 190 + 14;
 const CARDS_PER_SLIDE = 3;
 const PAGE_SIZE = 9;
 const AUTO_INTERVAL = 3000;
+const uncategorizedOrder = Number.MAX_SAFE_INTEGER;
 
 const HomePage: React.FC<Props> = ({
   onAuctionClick, onProductClick,
@@ -34,29 +37,52 @@ const HomePage: React.FC<Props> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [visibleProductCount, setVisibleProductCount] = useState(PAGE_SIZE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [auctions, setAuctions] = useState<AuctionItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  const filteredProducts = selectedCategory
-    ? PRODUCTS.filter((p) => p.category === selectedCategory)
-    : PRODUCTS;
+  // 카테고리는 DB displayOrder 순으로 받아서 표시. 실패 시 mock으로 폴백.
+  useEffect(() => {
+    let ignore = false;
+    fetchCategories()
+      .then((data) => { if (!ignore) setCategories(data); })
+      .catch((error) => { console.error('Failed to load categories', error); });
+    return () => { ignore = true; };
+  }, []);
 
-  const filteredAuctions = selectedCategory
-    ? AUCTION_ITEMS.filter((a) => a.category === selectedCategory)
-    : AUCTION_ITEMS;
+  // Use the visible category row order as the primary sort order for home sections.
+  const categoryOrder = new Map(
+    categories
+      .filter((category) => category.label !== '전체' && category.label !== '?꾩껜')
+      .map((category, index) => [category.label, index])
+  );
+
+  const getCategoryOrder = (category: string) => categoryOrder.get(category) ?? uncategorizedOrder;
+
+  // Upcoming products follow category order first, then newest-looking id order within each category.
+  const filteredProducts = (selectedCategory
+    ? products.filter((p) => p.category === selectedCategory)
+    : products
+  ).toSorted((a, b) => {
+    const categoryDiff = getCategoryOrder(a.category) - getCategoryOrder(b.category);
+    if (categoryDiff !== 0) return categoryDiff;
+    return b.id - a.id;
+  });
+
+  // Live auctions follow category order first, then deadline-soon order within each category.
+  const filteredAuctions = (selectedCategory
+    ? auctions.filter((a) => a.category === selectedCategory)
+    : auctions
+  ).toSorted((a, b) => {
+    const categoryDiff = getCategoryOrder(a.category) - getCategoryOrder(b.category);
+    if (categoryDiff !== 0) return categoryDiff;
+    return a.timeLeft - b.timeLeft;
+  });
 
   const totalSlides = Math.ceil(filteredAuctions.length / CARDS_PER_SLIDE);
   const visibleProducts = filteredProducts.slice(0, visibleProductCount);
   const hasMoreProducts = visibleProductCount < filteredProducts.length;
-
-  const scheduleLoadMore = useCallback(() => {
-    if (loadTimerRef.current !== null || visibleProductCount >= filteredProducts.length) return;
-
-    setIsLoadingMore(true);
-    loadTimerRef.current = window.setTimeout(() => {
-      setVisibleProductCount((count) => Math.min(count + PAGE_SIZE, filteredProducts.length));
-      setIsLoadingMore(false);
-      loadTimerRef.current = null;
-    }, 700);
-  }, [filteredProducts.length, visibleProductCount]);
 
   const goToSlide = (idx: number) => {
     const el = scrollRef.current;
@@ -65,6 +91,41 @@ const HomePage: React.FC<Props> = ({
     el.scrollTo({ left: next * CARD_WIDTH * CARDS_PER_SLIDE, behavior: 'smooth' });
     setActiveSlide(next);
   };
+
+  // 홈 화면의 상품/경매 목록은 목업 대신 DB 조회 API에서 가져온다.
+  // 응답은 기존 ProductCard/AuctionCard 타입으로 변환해 하위 컴포넌트는 그대로 재사용한다.
+  useEffect(() => {
+    let ignore = false;
+
+    const loadHomeProducts = async () => {
+      setIsInitialLoading(true);
+      try {
+        // 실시간 경매: product.status=LIVE (+ 서버에서 auction.status=LIVE 추가 검증)
+        // 경매 예정 매물: product.status=SCHEDULED
+        const [liveAuctionItems, scheduledItems] = await Promise.all([
+          getProducts({ status: 'LIVE', size: 100 }),
+          getProducts({ status: 'SCHEDULED', size: 100 }),
+        ]);
+
+        if (ignore) return;
+        setAuctions(liveAuctionItems.map(toAuctionItem));
+        setProducts(scheduledItems.map(toProduct));
+      } catch (error) {
+        if (ignore) return;
+        console.error('Failed to load home products', error);
+        setProducts([]);
+        setAuctions([]);
+      } finally {
+        if (!ignore) setIsInitialLoading(false);
+      }
+    };
+
+    loadHomeProducts();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   // 자동 슬라이드
   useEffect(() => {
@@ -82,15 +143,18 @@ const HomePage: React.FC<Props> = ({
 
   // 카테고리 변경 시 초기화
   useEffect(() => {
-    setActiveSlide(0);
-    setVisibleProductCount(PAGE_SIZE);
-    setIsLoadingMore(false);
-    if (loadTimerRef.current !== null) {
-      window.clearTimeout(loadTimerRef.current);
-      loadTimerRef.current = null;
-    }
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ left: 0, behavior: 'instant' });
+    const timer = window.setTimeout(() => {
+      setActiveSlide(0);
+      setVisibleProductCount(PAGE_SIZE);
+      setIsLoadingMore(false);
+      if (loadTimerRef.current !== null) {
+        window.clearTimeout(loadTimerRef.current);
+        loadTimerRef.current = null;
+      }
+      const el = scrollRef.current;
+      if (el) el.scrollTo({ left: 0, behavior: 'instant' });
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [selectedCategory]);
 
   useEffect(() => {
@@ -98,6 +162,17 @@ const HomePage: React.FC<Props> = ({
 
     const root = document.getElementById('main-scroll');
     if (!root) return;
+
+    const scheduleLoadMore = () => {
+      if (loadTimerRef.current !== null || visibleProductCount >= filteredProducts.length) return;
+
+      setIsLoadingMore(true);
+      loadTimerRef.current = window.setTimeout(() => {
+        setVisibleProductCount((count) => Math.min(count + PAGE_SIZE, filteredProducts.length));
+        setIsLoadingMore(false);
+        loadTimerRef.current = null;
+      }, 700);
+    };
 
     const handleScroll = () => {
       const doc = document.documentElement;
@@ -120,7 +195,7 @@ const HomePage: React.FC<Props> = ({
       root.removeEventListener('scroll', handleScroll);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [hasMoreProducts, scheduleLoadMore]);
+  }, [filteredProducts.length, hasMoreProducts, visibleProductCount]);
 
   useEffect(() => {
     return () => {
@@ -134,7 +209,7 @@ const HomePage: React.FC<Props> = ({
   return (
     <main className={styles.main}>
       <CategoryRow
-        categories={CATEGORIES}
+        categories={categories}
         selectedLabel={selectedCategory}
         onSelect={onCategorySelect}
       />
@@ -162,7 +237,9 @@ const HomePage: React.FC<Props> = ({
         <SectionHeader title="🔴 실시간 경매" onMoreClick={onMoreAuction} />
       </div>
 
-      {filteredAuctions.length > 0 ? (
+      {isInitialLoading ? (
+        <div className={styles.empty}><p>경매 상품을 불러오는 중...</p></div>
+      ) : filteredAuctions.length > 0 ? (
         <div
           className={styles.carouselWrap}
           onMouseEnter={() => setIsHovered(true)}
@@ -220,7 +297,9 @@ const HomePage: React.FC<Props> = ({
       {/* 경매 예정 매물 */}
       <section className={styles.section} style={{ paddingTop: 18 }}>
         <SectionHeader title="경매 예정 매물" onMoreClick={onMoreTrade} />
-        {filteredProducts.length > 0 ? (
+        {isInitialLoading ? (
+          <div className={styles.empty}><p>상품을 불러오는 중...</p></div>
+        ) : filteredProducts.length > 0 ? (
           <>
             <div className={styles.productGrid}>
               {visibleProducts.map((product) => (

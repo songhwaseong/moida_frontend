@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ProductCard from '../components/ProductCard';
 import AuctionCard from '../components/AuctionCard';
-import { PRODUCTS, AUCTION_ITEMS } from '../data/mockData';
-import type { Product, AuctionItem } from '../types';
+import { getProducts, toAuctionItem, toProduct } from '../api/products';
+import type { AuctionItem, Product } from '../types';
 import styles from './SearchPage.module.css';
 
-const RECENT = ['나이키 에어맥스', '맥북 프로', '샤넬', 'PS5', '소파'];
+const RECENT_SEARCH_STORAGE_KEY = 'moida_recent_searches';
 
 interface Props {
   onProductClick?: (product: Product) => void;
@@ -16,32 +16,127 @@ interface Props {
 
 type SearchTab = '전체' | '경매예정' | '경매';
 
-const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQuery = '', onQueryClear }) => {
-  const [query, setQuery] = useState(initialQuery);
-  const [recentList, setRecentList] = useState(RECENT);
+const matchesQuery = (value: string | number | undefined | null, query: string) =>
+  String(value ?? '').toLowerCase().includes(query);
+
+const loadRecentSearches = () => {
+  try {
+    const stored = localStorage.getItem(RECENT_SEARCH_STORAGE_KEY);
+    if (!stored) return [];
+
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentSearches = (searches: string[]) => {
+  localStorage.setItem(RECENT_SEARCH_STORAGE_KEY, JSON.stringify(searches));
+};
+
+function SearchPage({ onProductClick, onAuctionClick, initialQuery = '', onQueryClear }: Props) {
+  const [queryState, setQueryState] = useState({ initialQuery, value: initialQuery });
+  const [recentList, setRecentList] = useState<string[]>(loadRecentSearches);
+  const [activeTab, setActiveTab] = useState<SearchTab>('전체');
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
+  const [scheduledProducts, setScheduledProducts] = useState<Product[]>([]);
+  const [liveAuctions, setLiveAuctions] = useState<AuctionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const query = queryState.initialQuery === initialQuery ? queryState.value : initialQuery;
+  const setQuery = (value: string) => setQueryState({ initialQuery, value });
+
+  const addRecentSearch = useCallback((keyword: string) => {
+    const normalizedKeyword = keyword.trim();
+    if (!normalizedKeyword) return;
+
+    setRecentList((prev) => {
+      // 검색 결과가 입력 즉시 바뀌므로 Enter 없이 사용한 검색어도 최근 검색어로 남긴다.
+      const next = [normalizedKeyword, ...prev.filter((recent) => recent !== normalizedKeyword)].slice(0, 8);
+      saveRecentSearches(next);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
-    if (initialQuery) setQuery(initialQuery);
-  }, [initialQuery]);
-  const [activeTab, setActiveTab] = useState<SearchTab>('전체');
+    if (initialQuery) {
+      const timeoutId = window.setTimeout(() => addRecentSearch(initialQuery), 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [addRecentSearch, initialQuery]);
+
+  useEffect(() => {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return;
+
+    const timeoutId = window.setTimeout(() => {
+      addRecentSearch(normalizedQuery);
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [addRecentSearch, query]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadSearchProducts = async () => {
+      setIsLoading(true);
+
+      try {
+        const [recommended, scheduled, live] = await Promise.all([
+          getProducts({ status: 'SCHEDULED', sort: 'popular', size: 6 }),
+          getProducts({ status: 'SCHEDULED', size: 100 }),
+          getProducts({ status: 'LIVE', size: 100 }),
+        ]);
+
+        if (ignore) return;
+
+        // 탐색 탭 추천/검색 목록은 목업 대신 실제 상품 API 응답을 카드 타입으로 변환해 사용한다.
+        setRecommendedProducts(recommended.map(toProduct));
+        setScheduledProducts(scheduled.map(toProduct));
+        setLiveAuctions(live.map(toAuctionItem));
+      } catch (error) {
+        if (ignore) return;
+        console.error('Failed to load search products', error);
+        setRecommendedProducts([]);
+        setScheduledProducts([]);
+        setLiveAuctions([]);
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadSearchProducts();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const q = query.trim().toLowerCase();
-  const filteredProducts = q
-    ? PRODUCTS.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.id.toString().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      p.location.includes(q)
-    )
-    : [];
 
-  const filteredAuctions = q
-    ? AUCTION_ITEMS.filter((a) =>
-      a.name.toLowerCase().includes(q) ||
-      a.auctionNo.toLowerCase().includes(q) ||
-      a.category.toLowerCase().includes(q)
-    )
-    : [];
+  const filteredProducts = useMemo(() => {
+    if (!q) return [];
+
+    return scheduledProducts.filter((product) =>
+      matchesQuery(product.name, q) ||
+      matchesQuery(product.productNo, q) ||
+      matchesQuery(product.category, q) ||
+      matchesQuery(product.location, q),
+    );
+  }, [q, scheduledProducts]);
+
+  const filteredAuctions = useMemo(() => {
+    if (!q) return [];
+
+    return liveAuctions.filter((auction) =>
+      matchesQuery(auction.name, q) ||
+      matchesQuery(auction.auctionNo, q) ||
+      matchesQuery(auction.category, q),
+    );
+  }, [q, liveAuctions]);
 
   const visibleProducts = activeTab === '경매' ? [] : filteredProducts;
   const visibleAuctions = activeTab === '경매예정' ? [] : filteredAuctions;
@@ -49,111 +144,118 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
 
   const handleSearch = (keyword: string) => {
     setQuery(keyword);
-    if (keyword.trim() && !recentList.includes(keyword)) {
-      setRecentList((prev) => [keyword, ...prev].slice(0, 8));
-    }
+    addRecentSearch(keyword);
   };
 
   const removeRecent = (keyword: string) => {
-    setRecentList((prev) => prev.filter((r) => r !== keyword));
+    setRecentList((prev) => {
+      const next = prev.filter((recent) => recent !== keyword);
+      saveRecentSearches(next);
+      return next;
+    });
+  };
+
+  const clearRecent = () => {
+    setRecentList([]);
+    saveRecentSearches([]);
+  };
+
+  const clearQuery = () => {
+    setQuery('');
+    onQueryClear?.();
   };
 
   return (
     <main className={styles.main}>
-      {/* 검색바 */}
-      <div className={styles.searchBar}>
-        <svg width="16" height="16" fill="none" stroke="var(--muted)" strokeWidth="2" viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-        </svg>
-        <input
-          autoFocus
-          type="text"
-          placeholder="상품명, 상품번호 또는 경매번호로 검색"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
-        />
-        {query && <button className={styles.clear} onClick={() => { setQuery(''); onQueryClear?.(); }}>✕</button>}
-      </div>
-
       {!query ? (
         <>
-          {/* 최근 검색어 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>최근 검색어</span>
-              <button className={styles.clearAll} onClick={() => setRecentList([])}>전체 삭제</button>
+              <button className={styles.clearAll} onClick={clearRecent}>전체 삭제</button>
             </div>
             {recentList.length > 0 ? (
               <div className={styles.recentList}>
-                {recentList.map((r) => (
-                  <div key={r} className={styles.recentRow}>
-                    <button className={styles.recentItem} onClick={() => handleSearch(r)}>
+                {recentList.map((recent) => (
+                  <div key={recent} className={styles.recentRow}>
+                    <button className={styles.recentItem} onClick={() => handleSearch(recent)}>
                       <svg width="14" height="14" fill="none" stroke="var(--muted)" strokeWidth="2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
                       </svg>
-                      {r}
+                      {recent}
                     </button>
-                    <button className={styles.removeBtn} onClick={() => removeRecent(r)}>✕</button>
+                    <button className={styles.removeBtn} onClick={() => removeRecent(recent)}>x</button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className={styles.noRecent}>최근 검색어가 없어요</p>
+              <p className={styles.noRecent}>최근 검색어가 없습니다.</p>
             )}
           </section>
 
-          {/* 추천 상품 */}
           <section className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>✨ 추천 상품</span>
+              <span className={styles.sectionTitle}>추천 상품</span>
             </div>
-            <div className={styles.productGrid}>
-              {PRODUCTS.slice(0, 2).map((p) => (
-                <ProductCard key={p.id} product={p} onClick={onProductClick} />
-              ))}
-            </div>
+            {isLoading ? (
+              <p className={styles.noRecent}>추천 상품을 불러오는 중입니다.</p>
+            ) : recommendedProducts.length > 0 ? (
+              <div className={styles.productGrid}>
+                {recommendedProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} onClick={onProductClick} />
+                ))}
+              </div>
+            ) : (
+              <p className={styles.noRecent}>추천 상품이 없습니다.</p>
+            )}
           </section>
         </>
       ) : (
         <section className={styles.resultSection}>
-          {/* 탭 */}
+          <div className={styles.queryHeader}>
+            <span className={styles.queryTitle}>'{query}' 검색 결과</span>
+            <button className={styles.clearAll} onClick={clearQuery}>초기화</button>
+          </div>
+
           <div className={styles.tabs}>
-            {(['전체', '경매예정', '경매'] as SearchTab[]).map((t) => (
+            {(['전체', '경매예정', '경매'] as SearchTab[]).map((tab) => (
               <button
-                key={t}
-                className={`${styles.tab} ${activeTab === t ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab(t)}
+                key={tab}
+                className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab(tab)}
               >
-                {t}
-                {t === '전체' && totalCount > 0 && <span className={styles.tabCount}>{totalCount}</span>}
-                {t === '경매예정' && filteredProducts.length > 0 && <span className={styles.tabCount}>{filteredProducts.length}</span>}
-                {t === '경매' && filteredAuctions.length > 0 && <span className={styles.tabCount}>{filteredAuctions.length}</span>}
+                {tab}
+                {tab === '전체' && totalCount > 0 && <span className={styles.tabCount}>{totalCount}</span>}
+                {tab === '경매예정' && filteredProducts.length > 0 && <span className={styles.tabCount}>{filteredProducts.length}</span>}
+                {tab === '경매' && filteredAuctions.length > 0 && <span className={styles.tabCount}>{filteredAuctions.length}</span>}
               </button>
             ))}
           </div>
 
-          {totalCount > 0 ? (
+          {isLoading ? (
+            <div className={styles.empty}>
+              <p className={styles.emptyText}>검색할 상품을 불러오는 중입니다.</p>
+            </div>
+          ) : totalCount > 0 ? (
             <div className={styles.resultList}>
-              {/* 중고 결과 */}
               {visibleProducts.length > 0 && (
                 <>
                   {activeTab === '전체' && <p className={styles.resultLabel}>경매예정 상품 {visibleProducts.length}개</p>}
                   <div className={styles.productGrid}>
-                    {visibleProducts.map((p) => (
-                      <ProductCard key={p.id} product={p} onClick={onProductClick} />
+                    {visibleProducts.map((product) => (
+                      <ProductCard key={product.id} product={product} onClick={onProductClick} />
                     ))}
                   </div>
                 </>
               )}
 
-              {/* 경매 결과 */}
               {visibleAuctions.length > 0 && (
                 <>
                   {activeTab === '전체' && <p className={styles.resultLabel}>경매 상품 {visibleAuctions.length}개</p>}
                   <div className={styles.productGrid}>
-                    {visibleAuctions.map((a) => (
-                      <AuctionCard key={a.id} item={a} onClick={onAuctionClick} />
+                    {visibleAuctions.map((auction) => (
+                      <AuctionCard key={auction.id} item={auction} onClick={onAuctionClick} />
                     ))}
                   </div>
                 </>
@@ -161,15 +263,14 @@ const SearchPage: React.FC<Props> = ({ onProductClick, onAuctionClick, initialQu
             </div>
           ) : (
             <div className={styles.empty}>
-              <p style={{ fontSize: 36 }}>🔍</p>
-              <p className={styles.emptyText}>'{query}'에 대한 결과가 없어요</p>
-              <p className={styles.emptySubText}>다른 키워드로 검색해보세요</p>
+              <p className={styles.emptyText}>'{query}'에 대한 결과가 없습니다.</p>
+              <p className={styles.emptySubText}>다른 검색어로 검색해보세요.</p>
             </div>
           )}
         </section>
       )}
     </main>
   );
-};
+}
 
 export default SearchPage;

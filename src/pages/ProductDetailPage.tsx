@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { getProduct, toProductDetail } from '../api/products';
 import { toggleLike } from '../api/likes';
 import { createProductInquiry, getProductInquiries, type InquiryView } from '../api/inquiries';
@@ -6,6 +6,7 @@ import { useToast } from '../components/ToastContext';
 import type { ProductDetail } from '../types';
 import styles from './ProductDetailPage.module.css';
 import View360Modal from '../components/View360Modal';
+import ProductLiveChat from '../components/ProductLiveChat';
 
 interface Props {
   productId: number;
@@ -18,6 +19,7 @@ interface Props {
 }
 
 const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, isLoggedIn = false, onRequireLogin }) => {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [item, setItem] = useState<ProductDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -35,13 +37,20 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
     new: '거의새것', auction: '경매가능', free: '나눔', good: '상태양호',
   };
 
+  useEffect(() => {
+    // 이전 상세에서 채팅/입력 영역 근처에 포커스가 있었더라도,
+    // 새 상품 상세로 들어오면 항상 화면을 맨 위에서 시작한다.
+    window.scrollTo({ top: 0, left: 0 });
+    scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [productId]);
+
   const handleSubmitInquiry = async () => {
     if (!item) return;
     if (!isLoggedIn) { onRequireLogin?.(); return; }
     const text = newInquiry.trim();
     if (!text) return;
     try {
-      // Persist the inquiry first, then prepend the saved row to keep the tab in sync.
+      // 문의를 먼저 저장한 뒤, 저장된 행을 목록 앞에 붙여 탭 상태를 맞춘다.
       const created = await createProductInquiry(item.id, text);
       setInquiries(prev => [created, ...prev]);
       setNewInquiry('');
@@ -74,7 +83,7 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
         setActiveImg(0);
 
         try {
-          // Inquiries are loaded separately so product detail can still render if this call fails.
+          // 문의 조회가 실패해도 상품 상세 자체는 보여줄 수 있도록 별도로 불러온다.
           const inquiryList = await getProductInquiries(productId);
           if (!ignore) setInquiries(inquiryList);
         } catch (inquiryError) {
@@ -110,7 +119,7 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
           <span className={styles.headerTitle}>상품 상세</span>
           <div style={{ width: 20 }} />
         </div>
-        <div className={styles.scroll}>
+        <div className={styles.scroll} ref={scrollRef}>
           <p className={styles.qnaEmpty}>상품 정보를 불러오는 중...</p>
         </div>
       </div>
@@ -129,7 +138,7 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
           <span className={styles.headerTitle}>상품 상세</span>
           <div style={{ width: 20 }} />
         </div>
-        <div className={styles.scroll}>
+        <div className={styles.scroll} ref={scrollRef}>
           <p className={styles.qnaEmpty}>{loadError || '상품을 찾을 수 없어요.'}</p>
         </div>
       </div>
@@ -149,7 +158,7 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
         <div style={{ width: 20 }} />
       </div>
 
-      <div className={styles.scroll}>
+      <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.twoCol}>
 
           {/* ── 왼쪽: 이미지 ── */}
@@ -249,6 +258,13 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
               </div>
               <button className={styles.profileBtn} onClick={() => onSellerClick?.({ name: item.seller, temp: item.sellerTemp, sales: item.sellerSales, location: item.location })}>프로필</button>
             </div>
+
+            <ProductLiveChat
+              productId={item.id}
+              isLoggedIn={isLoggedIn}
+              onRequireLogin={onRequireLogin}
+              title="상품 실시간 채팅"
+            />
 
             <div className={styles.divider} />
 

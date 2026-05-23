@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getProduct, toAuctionDetail } from '../api/products';
 import { toggleLike } from '../api/likes';
 import { buyNowProduct, placeProductBid, type BidType } from '../api/bids';
@@ -7,6 +7,7 @@ import type { AuctionDetail } from '../types';
 import styles from './AuctionDetailPage.module.css';
 import { useToast } from '../components/ToastContext';
 import View360Modal from '../components/View360Modal';
+import ProductLiveChat from '../components/ProductLiveChat';
 
 interface Props {
   itemId: number;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false, onRequireLogin, onSellerClick }) => {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [item, setItem] = useState<AuctionDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -31,7 +33,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
   const [showBidModal, setShowBidModal] = useState(false);
   const [showInstantModal, setShowInstantModal] = useState(false);
   const [isBidding, setIsBidding] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0); // seconds
+  const [timeLeft, setTimeLeft] = useState(0); // 초 단위
   const [activeImg, setActiveImg] = useState(0);
   const [show360, setShow360] = useState(false);
   const [activeTab, setActiveTab] = useState<'desc' | 'inquiry'>('desc');
@@ -39,13 +41,20 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
   const [newInquiry, setNewInquiry] = useState('');
   const [inquiries, setInquiries] = useState<InquiryView[]>([]);
 
+  useEffect(() => {
+    // 다른 상세에서 채팅/입력 영역을 사용했더라도,
+    // 새 경매 상세로 들어오면 항상 화면을 맨 위에서 시작한다.
+    window.scrollTo({ top: 0, left: 0 });
+    scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [itemId]);
+
   const handleSubmitInquiry = async () => {
     if (!item) return;
     if (!isLoggedIn) { onRequireLogin?.(); return; }
     const text = newInquiry.trim();
     if (!text) return;
     try {
-      // Auction inquiries use the same product inquiry endpoint because auctions are product-backed.
+      // 경매도 상품을 기반으로 하므로 상품 문의 API를 함께 사용한다.
       const created = await createProductInquiry(item.id, text);
       setInquiries(prev => [created, ...prev]);
       setNewInquiry('');
@@ -83,7 +92,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
         setActiveImg(0);
 
         try {
-          // Keep inquiry loading isolated from the main auction detail request.
+          // 문의 조회가 실패해도 경매 상세 자체는 보여줄 수 있도록 별도로 불러온다.
           const inquiryList = await getProductInquiries(itemId);
           if (!ignore) setInquiries(inquiryList);
         } catch (inquiryError) {
@@ -123,7 +132,8 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
   const h = Math.floor((timeLeft % 86400) / 3600);
   const m = Math.floor((timeLeft % 3600) / 60);
   const s = timeLeft % 60;
-  // Match auction cards: show a live countdown under 24h, otherwise show days/hours.
+  // 경매 카드와 동일하게 24시간 미만은 실시간 카운트다운,
+  // 그 이상은 일/시간 단위로 표시한다.
   const timeDisplay = days >= 1
     ? (h > 0 ? `${days}일 ${h}시간` : `${days}일`)
     : h > 0
@@ -197,7 +207,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
           <span className={styles.headerTitle}>경매 상세</span>
           <div style={{ width: 20 }} />
         </div>
-        <div className={styles.scroll}>
+        <div className={styles.scroll} ref={scrollRef}>
           <p className={styles.qnaEmpty}>경매 정보를 불러오는 중...</p>
         </div>
       </div>
@@ -216,7 +226,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
           <span className={styles.headerTitle}>경매 상세</span>
           <div style={{ width: 20 }} />
         </div>
-        <div className={styles.scroll}>
+        <div className={styles.scroll} ref={scrollRef}>
           <p className={styles.qnaEmpty}>{loadError || '경매를 찾을 수 없어요.'}</p>
         </div>
       </div>
@@ -261,7 +271,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
         </button>
       </div>
 
-      <div className={styles.scroll}>
+      <div className={styles.scroll} ref={scrollRef}>
         <div className={styles.twoCol}>
 
           {/* ── 왼쪽: 이미지 ── */}
@@ -397,6 +407,12 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                   onClick={() => onSellerClick?.({ name: item.seller, temp: item.sellerTemp, sales: item.sellerSales, location: item.location })}
                 >프로필</button>
               </div>
+              <ProductLiveChat
+                productId={item.id}
+                isLoggedIn={isLoggedIn}
+                onRequireLogin={onRequireLogin}
+                title="경매 실시간 채팅"
+              />
             </div>
 
             <div className={styles.divider} />

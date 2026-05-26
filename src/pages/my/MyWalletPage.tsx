@@ -153,7 +153,7 @@ const MyWalletPage: React.FC<Props> = ({ onBack }) => {
       // 충전 완료 시 잔액 변경은 실제 입금 처리 후에 이루어지므로, 화면에서는 이전 잔액으로 유지합니다.
       setBalance(previousBalance);
       setDepositAmount('');
-      showToast(`${amount.toLocaleString()} 입금 요청 완료!\n입금 확인 후 잔액에 반영됩니다.`, 'success');
+      showToast(`${amount.toLocaleString()} 입금 요청 완료!\n송금 확인 후 잔액에 반영됩니다.`, 'success');
     } catch (error) {
       console.error(error);
       showToast('충전에 실패했습니다.', 'error');
@@ -176,7 +176,7 @@ const MyWalletPage: React.FC<Props> = ({ onBack }) => {
       const wallet = await withdrawWallet(amount);
       applyWallet(wallet);
       setWithdrawAmount('');
-      showToast(`${amount.toLocaleString()} 출금 신청 완료!\n영업일 1~2일 내 입금됩니다.`, 'success');
+      showToast(`${amount.toLocaleString()} 출금 신청 완료!\n출금 처리 완료 후 잔액에서 차감됩니다.`, 'success');
     } catch (error) {
       console.error(error);
       showToast('출금 신청에 실패했습니다.', 'error');
@@ -304,7 +304,7 @@ const MyWalletPage: React.FC<Props> = ({ onBack }) => {
                   key={a}
                   className={styles.quickBtn}
                   onClick={() => setDepositAmount(a.toLocaleString())}
-                >+{(a / 10000).toFixed(0)}만원</button>
+                >{(a / 10000).toFixed(0)}만원</button>
               ))}
             </div>
             <div className={styles.inputRow}>
@@ -364,7 +364,7 @@ const MyWalletPage: React.FC<Props> = ({ onBack }) => {
                 <p className={styles.balanceHint}>출금 가능 잔액: {balance.toLocaleString()}</p>
                 <div className={styles.infoBox}>
                   <p className={styles.infoText}>출금 안내</p>
-                  <p className={styles.infoDesc}>출금 신청은 요청 상태로 접수되며, 실제 출금 처리는 별도 확인 후 진행됩니다.</p>
+                  <p className={styles.infoDesc}>출금 신청은 요청 상태로 접수되며, 출금 처리 완료 후 잔액에서 차감됩니다.</p>
                 </div>
                 <button
                   className={`${styles.actionBtn} ${withdrawLoading ? styles.loading : ''}`}

@@ -148,7 +148,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
           </button>
         )}
 
-        {/* 아이디/비밀번호 찾기 */}
+        {/* 아이디/비밀번호 찾아보기 */}
         <div className={styles.findRow}>
           <button className={styles.forgotPw} onClick={() => onFindAccount('id')}>아이디 찾기</button>
           <span className={styles.findDivider}>|</span>

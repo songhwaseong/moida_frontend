@@ -5,6 +5,7 @@ import DashboardPage from './DashboardPage';
 import NoticePage from './NoticePage';
 import BannerPage from './BannerPage';
 import SettlementPage from './SettlementPage';
+import WalletRequestPage from './WalletRequestPage';
 import InquiryPage from './InquiryPage';
 import InquiryProductPage from './InquiryProductPage';
 import { useInquiries } from '../../data/inquiries';
@@ -100,7 +101,7 @@ type MenuKey =
   | '상품 관리' | '상품 문의' | '경매 관리'
   | '허위입찰' | '제재 내역' | '채팅 로그'
   | '회원 목록' | '탈퇴 회원'
-  | '공지사항' | '카테고리/배너' | '정산/수수료' | '고객문의/FAQ'
+  | '공지사항' | '카테고리/배너' | '정산/수수료' | '지갑 요청' | '고객문의/FAQ'
   | '설정';
 
 const IC = (p: React.SVGProps<SVGSVGElement>) => (
@@ -132,6 +133,8 @@ const SIDE_ICONS: Record<MenuKey, React.ReactNode> = {
   '카테고리/배너': <IC><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="2" y1="9" x2="9" y2="9"/><line x1="2" y1="15" x2="9" y2="15"/></IC>,
   /* Receipt */
   '정산/수수료':  <IC><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9.5" x2="16" y2="9.5"/><line x1="8" y1="13.5" x2="14" y2="13.5"/></IC>,
+  /* Wallet */
+  '지갑 요청':    <IC><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 10h5v5h-5a2.5 2.5 0 010-5z"/><path d="M3 9h18"/></IC>,
   /* MessageCircleQuestion */
   '고객문의/FAQ': <IC><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"/><path d="M9.5 9.5a3 3 0 115 2.5c-.5.5-1.5 1-1.5 2"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></IC>,
   /* SlidersHorizontal */
@@ -182,6 +185,7 @@ const SIDE_SECTIONS: { label: string; items: { key: MenuKey; label: string }[] }
     label: 'Operations',
     items: [
       { key: '정산/수수료', label: 'Settlements & Fees' },
+      { key: '지갑 요청', label: 'Wallet Requests' },
       { key: '고객문의/FAQ', label: 'Inquiries & FAQ' },
     ],
   },
@@ -560,6 +564,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
       case '공지사항': return <NoticePage />;
       case '카테고리/배너': return <BannerPage />;
       case '정산/수수료': return <SettlementPage />;
+      case '지갑 요청': return <WalletRequestPage />;
       case '고객문의/FAQ': return <InquiryPage />;
       case '설정': return (
         <AdminSettingsPage

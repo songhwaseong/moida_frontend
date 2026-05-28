@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import styles from './LoginPage.module.css';
+import moidaO from '../assets/moidaO.svg';
+import googleG from '../assets/googleG.svg';
+import kakaoTalk from '../assets/kakaoTalk.svg';
 import axiosInstance from '../api/axiosInstance';
 import { KKO_CLIENT_ID, KKO_REDIRECT_URI, NAV_CLIENT_ID, NAV_REDIRECT_URI, NAV_STATE, GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI } from '../config/config';
 
@@ -71,7 +74,9 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
   return (
     <div className={styles.page}>
       <div className={styles.top}>
-        <div className={styles.logo}>MOIDA</div>
+        <div className={styles.logo}>
+          M<img src={moidaO} alt="O" className={styles.logoMark} /><span className={styles.logoDark}>IDA</span>
+        </div>
         <p className={styles.tagline}>중고거래와 경매를 한번에</p>
       </div>
 
@@ -132,24 +137,20 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
           </button>
         )}
 
-        {/* 아이디/비밀번호 찾아보기 */}
+        {/* 아이디/비밀번호 찾기 · 회원가입 */}
         <div className={styles.findRow}>
           <button className={styles.forgotPw} onClick={() => onFindAccount('id')}>아이디 찾기</button>
           <span className={styles.findDivider}>|</span>
           <button className={styles.forgotPw} onClick={() => onFindAccount('pw')}>비밀번호 찾기</button>
+          <span className={styles.findDivider}>|</span>
+          <button className={styles.signupLink} onClick={onGoSignup}>회원가입</button>
         </div>
       </div>
 
       {/* 소셜 로그인 */}
-      <div className={styles.dividerRow}>
-        <div className={styles.dividerLine} />
-        <span className={styles.dividerText}>또는</span>
-        <div className={styles.dividerLine} />
-      </div>
-
       <div className={styles.socialBtns}>
         <button className={`${styles.socialBtn} ${styles.kakao}`} onClick={handleKakaoLogin}>
-          <span className={styles.socialIcon}>💬</span>
+          <img src={kakaoTalk} alt="" aria-hidden="true" className={styles.socialIconImg} />
           카카오로 로그인
         </button>
         <button className={`${styles.socialBtn} ${styles.naver}`} onClick={handleNaverLogin}>
@@ -157,15 +158,9 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
           네이버로 로그인
         </button>
         <button className={`${styles.socialBtn} ${styles.google}`} onClick={handleGoogleLogin}>
-          <span className={styles.socialIcon}>G</span>
+          <img src={googleG} alt="" aria-hidden="true" className={`${styles.socialIconImg} ${styles.googleIcon}`} />
           구글로 로그인
         </button>
-      </div>
-
-      {/* 회원가입 */}
-      <div className={styles.signupRow}>
-        <span className={styles.signupText}>아직 계정이 없으신가요?</span>
-        <button className={styles.signupLink} onClick={onGoSignup}>회원가입</button>
       </div>
     </div>
   );

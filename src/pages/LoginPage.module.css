@@ -10,15 +10,33 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 0 40px;
+  padding: 56px 0 32px;
 }
 
 .logo {
-  font-family: 'Bebas Neue', sans-serif;
+  font-family: 'Gugi', sans-serif;
   font-size: 52px;
-  color: var(--primary);
+  font-weight: 900;
+  color: #E53935;
   letter-spacing: 2px;
   margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+
+.logoDark {
+  color: #111111;
+}
+
+.logoMark {
+  height: 0.92em;
+  width: 0.92em;
+  object-fit: contain;
+  margin: 0 -0.08em;
+  position: relative;
+  top: 0.02em;
 }
 
 .tagline {
@@ -30,7 +48,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .inputGroup {
@@ -58,7 +76,7 @@
   background: #fff;
 }
 
-.input:focus { border-color: var(--primary); }
+.input:focus { border-color: #1565C0; }
 .inputError { border-color: var(--primary) !important; }
 
 .pwWrap { position: relative; }
@@ -137,7 +155,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 32px;
+  margin-bottom: 0;
 }
 
 .socialBtn {
@@ -160,7 +178,7 @@
 
 .kakao { background: #FEE500; color: #3C1E1E; }
 .naver { background: #03C75A; color: #fff; }
-.google { background: #fff; color: #333; border: 1.5px solid var(--border); }
+.google { background: #d1d0d06b; color: #333; border: 1.5px solid var(--border); }
 
 .socialIcon {
   font-size: 18px;
@@ -168,6 +186,20 @@
   text-align: center;
   font-style: normal;
   font-weight: 700;
+}
+
+.socialIconImg {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+.googleIcon {
+  width: 15px;
+  height: 15px;
+  position: relative;
+  left: -5px;
 }
 
 .signupRow {

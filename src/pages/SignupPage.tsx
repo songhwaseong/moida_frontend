@@ -6,6 +6,9 @@ import axios from '../api/axiosInstance';
 interface Props {
   onSignup: (name?: string) => void;
   onGoLogin: () => void;
+  socialMode?: boolean;
+  socialName?: string;
+  onComplete?: () => void;
 }
 
 type Step = 1 | 2;
@@ -15,15 +18,17 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return response?.data?.message || fallback;
 };
 
-const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
-  const [step, setStep] = useState<Step>(1);
+const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, socialName = '', onComplete }) => {
+  const [step, setStep] = useState<Step>(socialMode ? 2 : 1); // 소셜 로그인은 2단계부터 시작, 그이외는 1단계부터
   const [form, setForm] = useState({
     email: '', password: '', passwordConfirm: '',
-    name: '', nickname: '', phone: '',
+    name: socialMode ? socialName : '', nickname: '', phone: '',
   });
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [nicknameCount, setNicknameCount] = useState<number | null>(null);
+  const [nicknameChecking, setNicknameChecking] = useState(false);
   const [agreed, setAgreed] = useState({ all: false, terms: false, privacy: false, marketing: false });
   const [modalType, setModalType] = useState<'terms' | 'privacy' | 'marketing' | null>(null);
 
@@ -102,6 +107,36 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
     }
   };
 
+  const handleSocialSubmit = async () => {
+    if (!validateStep2()) return;
+    setLoading(true);
+    try {
+      await axios.put('/auth/complete-social-profile', {
+        nickname: form.nickname,
+        phone: form.phone,
+      });
+      onComplete?.();
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error, '프로필 등록에 실패했어요');
+      setErrors(prev => ({ ...prev, general: msg }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckNickname = async () => {
+    if (!form.nickname.trim()) return;
+    setNicknameChecking(true);
+    try {
+      const res = await axios.get(`/auth/check-nickname?value=${encodeURIComponent(form.nickname.trim())}`);
+      setNicknameCount(res.data.data);
+    } catch {
+      setErrors(prev => ({ ...prev, nickname: '중복 확인에 실패했어요' }));
+    } finally {
+      setNicknameChecking(false);
+    }
+  };
+
   const toggleAll = (checked: boolean) => {
     setAgreed({ all: checked, terms: checked, privacy: checked, marketing: checked });
     if (checked) setErrors((p) => ({ ...p, terms: '' }));
@@ -138,12 +173,16 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
       </div>
 
       {/* 스텝 인디케이터 */}
-      <div className={styles.stepRow}>
-        <div className={`${styles.stepDot} ${step >= 1 ? styles.stepActive : ''}`} />
-        <div className={`${styles.stepLine} ${step >= 2 ? styles.stepLineActive : ''}`} />
-        <div className={`${styles.stepDot} ${step >= 2 ? styles.stepActive : ''}`} />
-      </div>
-      <p className={styles.stepLabel}>{step === 1 ? '계정 정보 입력' : '프로필 설정'} ({step}/2)</p>
+      {!socialMode && (
+        <>
+          <div className={styles.stepRow}>
+            <div className={`${styles.stepDot} ${step >= 1 ? styles.stepActive : ''}`} />
+            <div className={`${styles.stepLine} ${step >= 2 ? styles.stepLineActive : ''}`} />
+            <div className={`${styles.stepDot} ${step >= 2 ? styles.stepActive : ''}`} />
+          </div>
+          <p className={styles.stepLabel}>{step === 1 ? '계정 정보 입력' : '프로필 설정'} ({step}/2)</p>
+        </>
+      )}
 
       <div className={styles.form}>
         {step === 1 ? (
@@ -217,6 +256,7 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
                 value={form.name}
                 onChange={(e) => set('name', e.target.value)}
                 maxLength={20}
+                disabled={socialMode}
               />
               {errors.name && <p className={styles.fieldError}>{errors.name}</p>}
             </div>
@@ -224,15 +264,30 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
             {/* 닉네임 */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>닉네임 *</label>
-              <input
-                className={`${styles.input} ${errors.nickname ? styles.inputError : ''}`}
-                type="text"
-                placeholder="사용할 닉네임을 입력해주세요"
-                value={form.nickname}
-                onChange={(e) => set('nickname', e.target.value)}
-                maxLength={12}
-              />
+              <div className={styles.pwWrap}>
+                <input
+                  className={`${styles.input} ${errors.nickname ? styles.inputError : ''}`}
+                  type="text"
+                  placeholder="사용할 닉네임을 입력해주세요"
+                  value={form.nickname}
+                  onChange={(e) => { set('nickname', e.target.value); setNicknameCount(null); }}
+                  maxLength={12}
+                />
+                <button
+                  type="button"
+                  className={styles.pwToggle}
+                  onClick={handleCheckNickname}
+                  disabled={!form.nickname.trim() || nicknameChecking}
+                >
+                  {nicknameChecking ? '확인 중' : '중복 확인'}
+                </button>
+              </div>
               <p className={styles.hint}>{form.nickname.length}/12</p>
+              {nicknameCount !== null && (
+                <p className={nicknameCount === 0 ? styles.matchOk : styles.hint}>
+                  {nicknameCount === 0 ? '사용 가능한 닉네임이에요 ✓' : `${nicknameCount}명이 같은 닉네임을 사용합니다`}
+                </p>
+              )}
               {errors.nickname && <p className={styles.fieldError}>{errors.nickname}</p>}
             </div>
 
@@ -279,13 +334,13 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin }) => {
               ))}
               {errors.terms && <p className={styles.fieldError}>{errors.terms}</p>}
             </div>
-
+            {errors.general && <p className={styles.fieldError}>{errors.general}</p>}
             <button
               className={`${styles.nextBtn} ${loading ? styles.loading : ''}`}
-              onClick={handleSubmit}
+              onClick={socialMode ? handleSocialSubmit : handleSubmit}
               disabled={loading}
             >
-              {loading ? '가입 중...' : '가입 완료'}
+              {loading ? '처리 중...' : '가입 완료'}
             </button>
           </>
         )}

@@ -11,7 +11,6 @@ import styles from './App.module.css';
 import './styles/global.css';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
-const TradePage = lazy(() => import('./pages/TradePage'));
 const AuctionListPage = lazy(() => import('./pages/AuctionListPage'));
 const PopularPage = lazy(() => import('./pages/PopularPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
@@ -26,6 +25,7 @@ const FindAccountPage = lazy(() => import('./pages/FindAccountPage'));
 const SellPage = lazy(() => import('./pages/SellPage'));
 const SellerProfilePage = lazy(() => import('./pages/SellerProfilePage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
+const SocialSignupInfoPage = lazy(() => import('./pages/SocialSignupInfoPage'));
 const SalesHistoryPage = lazy(() => import('./pages/my/SalesHistoryPage'));
 const MyProductsPage = lazy(() => import('./pages/my/MyProductsPage'));
 const EditProductPage = lazy(() => import('./pages/my/EditProductPage'));
@@ -89,23 +89,73 @@ const isAppHistoryState = (state: unknown): state is AppHistoryState => {
   return typeof state === 'object' && state !== null && (state as AppHistoryState).source === 'moida-app';
 };
 
-const getHistoryViewKey = (view: AppHistoryView) => JSON.stringify(view);
-
 const getInitialScreen = (): Screen => {
-  const detailMatch = window.location.pathname.match(/^\/(products?|auctions?)\/(\d+)\/?$/);
-  if (!detailMatch) return { type: 'home' };
+  const path = window.location.pathname;
 
-  const id = Number(detailMatch[2]);
-  if (!Number.isFinite(id)) return { type: 'home' };
+  const detailMatch = path.match(/^\/(products?|auctions?)\/(\d+)\/?$/);
+  if (detailMatch) {
+    const id = Number(detailMatch[2]);
+    if (Number.isFinite(id)) {
+      return detailMatch[1].startsWith('auction')
+        ? { type: 'auctionDetail', id }
+        : { type: 'productDetail', id };
+    }
+  }
 
-  return detailMatch[1].startsWith('auction')
-    ? { type: 'auctionDetail', id }
-    : { type: 'productDetail', id };
+  if (path === '/my') return { type: 'navMy' };
+  if (path === '/my/edit-profile') return { type: 'editProfile' };
+  if (path === '/chat') return { type: 'navChat' };
+  if (path === '/notifications') return { type: 'navNotification' };
+  if (path === '/search') return { type: 'navSearch' };
+  if (path.startsWith('/my/')) {
+    const menu = decodeURIComponent(path.slice(4)) as MyMenuKey;
+    return { type: 'myMenu', menu };
+  }
+
+  return { type: 'home' };
+};
+
+const getInitialMainTab = (): MainTab => {
+  const path = window.location.pathname;
+  if (path === '/auction') return '경매';
+  if (path === '/popular') return '인기';
+  if (path === '/wishlist') return '관심목록';
+  return '홈';
+};
+
+const getInitialAuthScreen = (): AuthScreen => {
+  const loggedIn = localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken');
+  if (loggedIn) return null;
+  const path = window.location.pathname;
+  if (path === '/signup') return 'signup';
+  if (path === '/find-id') return 'find-id';
+  if (path === '/find-pw') return 'find-pw';
+  return 'login';
 };
 
 const getHistoryPath = (view: AppHistoryView) => {
+  // 비로그인 auth 화면은 screen보다 우선해서 처리
+  // (isGuest=true인 소셜 로그인 콜백 중에는 건너뜀)
+  if (!view.isGuest) {
+    if (view.authScreen === 'signup') return '/signup';
+    if (view.authScreen === 'find-id') return '/find-id';
+    if (view.authScreen === 'find-pw') return '/find-pw';
+    if (view.authScreen === 'login') return '/login';
+  }
   if (view.screen.type === 'productDetail') return `/products/${view.screen.id}`;
   if (view.screen.type === 'auctionDetail') return `/auctions/${view.screen.id}`;
+  if (view.screen.type === 'navMy') return '/my';
+  if (view.screen.type === 'editProfile') return '/my/edit-profile';
+  if (view.screen.type === 'navChat') return '/chat';
+  if (view.screen.type === 'navNotification') return '/notifications';
+  if (view.screen.type === 'navSearch') return '/search';
+  if (view.screen.type === 'myMenu') return `/my/${encodeURIComponent(view.screen.menu)}`;
+  if (view.screen.type === 'home') {
+    if (view.mainTab === '경매') return '/auction';
+    if (view.mainTab === '인기') return '/popular';
+    if (view.mainTab === '관심목록') return '/wishlist';
+    return '/';
+  }
   return '/';
 };
 
@@ -115,11 +165,20 @@ const App: React.FC = () => {
     localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken')
   );
   const [loggedInUserName, setLoggedInUserName] = useState(() => localStorage.getItem('bazar_user_name') || '');
-  const [authScreen, setAuthScreen] = useState<AuthScreen>(() =>
-    localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken') ? null : 'login'
-  );
+  const [authScreen, setAuthScreen] = useState<AuthScreen>(() => getInitialAuthScreen());
   const [isGuest, setIsGuest] = useState(() => {
     // 소셜 로그인 콜백 URL이면 임시 guest 모드로 시작 → LoginPage 안 보임
+    const path = window.location.pathname;
+    const code = new URLSearchParams(window.location.search).get('code');
+    return !!(code && (
+      path === '/member/kauth' ||
+      path === '/member/nauth' ||
+      path === '/member/gauth'
+    ));
+  });
+  const [socialSignupStep, setSocialSignupStep] = useState<null | 'info' | 'form'>(null);
+  const [socialSignupName, setSocialSignupName] = useState('');
+  const [isSocialProcessing, setIsSocialProcessing] = useState(() => {
     const path = window.location.pathname;
     const code = new URLSearchParams(window.location.search).get('code');
     return !!(code && (
@@ -133,7 +192,7 @@ const App: React.FC = () => {
   const [alertCancelCb, setAlertCancelCb] = useState<(() => void) | null>(null);
   const hasInitializedHistoryRef = useRef(false);
   const isRestoringHistoryRef = useRef(false);
-  const lastHistoryViewKeyRef = useRef('');
+  const lastHistoryPathRef = useRef('');
 
   const showAlert = (msg: string, onConfirm?: () => void, onCancel?: () => void) => {
     setAlertMsg(msg);
@@ -150,8 +209,15 @@ const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>(() => getInitialScreen());
   const [termsInitialTab, setTermsInitialTab] = useState('이용약관');
   const [editingProduct, setEditingProduct] = useState<MyProduct | null>(null);
-  const [mainTab, setMainTab] = useState<MainTab>('홈');
-  const [navTab, setNavTab] = useState<NavTab>('home');
+  const [mainTab, setMainTab] = useState<MainTab>(() => getInitialMainTab());
+  const [navTab, setNavTab] = useState<NavTab>(() => {
+    const screen = getInitialScreen();
+    if (screen.type === 'navMy' || screen.type === 'editProfile' || screen.type === 'myMenu') return 'my';
+    if (screen.type === 'navChat') return 'chat';
+    if (screen.type === 'navNotification') return 'notification';
+    if (screen.type === 'navSearch') return 'search';
+    return 'home';
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -272,18 +338,28 @@ const App: React.FC = () => {
           body: JSON.stringify(body),
         });
         const data = await res.json();
-        const { accessToken, name, role } = data.data;
+        console.log('소셜 로그인 응답:', data.data);
+        const { accessToken, name, role, newUser: isNewUser } = data.data;
 
         localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('bazar_user_name', name);
-        localStorage.setItem('bazar_logged_in', 'true');
         localStorage.setItem('bazar_user_role', role);
-
         // URL 정리 후 홈으로
         window.history.replaceState({}, '', '/');
-        login(name); // 기존 login 함수 호출
+
+        if (isNewUser) {
+          setSocialSignupName(name);
+          setSocialSignupStep('info');
+          setIsGuest(false);
+          setIsSocialProcessing(false);
+        } else {
+          localStorage.setItem('bazar_user_name', name);
+          localStorage.setItem('bazar_logged_in', 'true');
+          setIsSocialProcessing(false);
+          login(name); // 기존 login 함수 호출
+        }
       } catch (e) {
         console.error('소셜 로그인 실패', e);
+        setIsSocialProcessing(false);
       }
     };
 
@@ -324,7 +400,7 @@ const App: React.FC = () => {
         if (currentView) {
           const currentState: AppHistoryState = { source: 'moida-app', view: currentView };
           window.history.pushState(currentState, '', getHistoryPath(currentView));
-          lastHistoryViewKeyRef.current = getHistoryViewKey(currentView);
+          lastHistoryPathRef.current = getHistoryPath(currentView);
         }
         setPendingNav(() => () => {
           window.history.replaceState({ source: 'moida-app', view }, '', getHistoryPath(view));
@@ -341,44 +417,74 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const state: AppHistoryState = {
-      source: 'moida-app',
-      view: {
-        screen,
-        mainTab,
-        navTab,
-        selectedCategory,
-        searchQuery,
-        termsInitialTab,
-        authScreen,
-        isGuest,
-        editingProduct,
-        adminViewMode,
-      },
+    const view: AppHistoryView = {
+      screen,
+      mainTab,
+      navTab,
+      selectedCategory,
+      searchQuery,
+      termsInitialTab,
+      authScreen,
+      isGuest,
+      editingProduct,
+      adminViewMode,
     };
+    const state: AppHistoryState = { source: 'moida-app', view };
+    const path = getHistoryPath(view);
 
+    // 최초 진입 시에는 replaceState로 현재 URL에 상태만 붙여 둔다.
     if (!hasInitializedHistoryRef.current) {
-      window.history.replaceState(state, '', getHistoryPath(state.view));
-      lastHistoryViewKeyRef.current = getHistoryViewKey(state.view);
+      window.history.replaceState(state, '', path);
+      lastHistoryPathRef.current = path;
       hasInitializedHistoryRef.current = true;
       return;
     }
 
+    // 브라우저 뒤로/앞으로 버튼으로 복원 중에는 pushState를 추가하지 않는다.
     if (isRestoringHistoryRef.current) {
-      lastHistoryViewKeyRef.current = getHistoryViewKey(state.view);
+      lastHistoryPathRef.current = path;
       isRestoringHistoryRef.current = false;
       return;
     }
 
-    const nextHistoryViewKey = getHistoryViewKey(state.view);
-    if (lastHistoryViewKeyRef.current === nextHistoryViewKey) {
-      return;
+    // URL이 바뀌면 pushState, 같은 URL이면 replaceState(상태만 갱신, 항목 추가 없음).
+    if (lastHistoryPathRef.current !== path) {
+      window.history.pushState(state, '', path);
+      lastHistoryPathRef.current = path;
+    } else {
+      window.history.replaceState(state, '', path);
     }
-
-    window.history.pushState(state, '', getHistoryPath(state.view));
-    lastHistoryViewKeyRef.current = nextHistoryViewKey;
   }, [screen, mainTab, navTab, selectedCategory, searchQuery, termsInitialTab, authScreen, isGuest, editingProduct, adminViewMode]);
-
+  if (isSocialProcessing) return null;
+  if (socialSignupStep === 'info') {
+    return (
+      <ToastProvider>
+        <SocialSignupInfoPage
+          name={socialSignupName}
+          onNext={() => setSocialSignupStep('form')}
+        />
+      </ToastProvider>
+    );
+  }
+  // 소셜 로그인 값에 따라 화면인 바뀐다.
+  if (socialSignupStep === 'form') {
+    return (
+      <ToastProvider>
+        <SignupPage
+          onSignup={() => { }}
+          onGoLogin={() => { }}
+          socialMode={true}
+          socialName={socialSignupName}
+          onComplete={() => {
+            localStorage.setItem('bazar_user_name', socialSignupName);
+            localStorage.setItem('bazar_logged_in', 'true');
+            setSocialSignupStep(null);
+            login(socialSignupName);
+          }}
+        />
+      </ToastProvider>
+    );
+  }
   // 관리자 화면
   if (isAdmin && adminViewMode === 'admin') {
     return (
@@ -466,8 +572,7 @@ const App: React.FC = () => {
 
   const renderMainPage = () => {
     switch (mainTab) {
-      case '홈': return <HomePage onAuctionClick={handleAuctionClick} onProductClick={handleProductClick} onMoreAuction={() => handleMainTabChange('경매')} onMoreTrade={() => handleMainTabChange('중고거래')} selectedCategory={selectedCategory} onCategorySelect={handleCategorySelect} />;
-      case '중고거래': return <TradePage onProductClick={handleProductClick} selectedCategory={selectedCategory} />;
+      case '홈': return <HomePage onAuctionClick={handleAuctionClick} onProductClick={handleProductClick} onMoreAuction={() => handleMainTabChange('경매')} selectedCategory={selectedCategory} onCategorySelect={handleCategorySelect} />;
       case '경매': return <AuctionListPage onItemClick={handleAuctionClick} onProductClick={handleProductClick} selectedCategory={selectedCategory} />;
       case '인기': return <PopularPage selectedCategory={selectedCategory} onProductClick={handleProductClick} onAuctionClick={handleAuctionClick} />;
       case '관심목록': return <WishlistPage onProductClick={handleProductClick} onAuctionClick={handleAuctionClick} />;

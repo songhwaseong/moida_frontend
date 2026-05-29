@@ -16,7 +16,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem("accessToken");
-        const isAuthRequest = config.url?.includes("/auth/");
+        const isAuthRequest = config.url?.includes("/auth/") && !config.url?.includes("complete-social-profile");
 
         if (token && !isAuthRequest) { // token가 undefined일 수 있으므로...
             config.headers = config.headers || {};

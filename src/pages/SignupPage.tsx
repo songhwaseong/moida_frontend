@@ -29,6 +29,8 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
   const [loading, setLoading] = useState(false);
   const [nicknameCount, setNicknameCount] = useState<number | null>(null);
   const [nicknameChecking, setNicknameChecking] = useState(false);
+  const [emailChecked, setEmailChecked] = useState<boolean | null>(null);
+  const [emailChecking, setEmailChecking] = useState(false);
   const [agreed, setAgreed] = useState({ all: false, terms: false, privacy: false, marketing: false });
   const [modalType, setModalType] = useState<'terms' | 'privacy' | 'marketing' | null>(null);
 
@@ -56,6 +58,8 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
     const e: Record<string, string> = {};
     if (!form.email) e.email = '이메일을 입력해주세요';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = '이메일 형식이 올바르지 않아요';
+    else if (emailChecked === null) e.email = '이메일 중복 확인을 해주세요';
+    else if (!emailChecked) e.email = '이미 사용 중인 이메일이에요';
     if (!form.password) e.password = '비밀번호를 입력해주세요';
     else if (form.password.length < 8) e.password = '비밀번호는 8자 이상이어야 해요';
     if (!form.passwordConfirm) e.passwordConfirm = '비밀번호를 다시 입력해주세요';
@@ -137,6 +141,19 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
     }
   };
 
+  const handleCheckEmail = async () => {
+    if (!form.email.trim()) return;
+    setEmailChecking(true);
+    try {
+      const res = await axios.get(`/auth/check-email?value=${encodeURIComponent(form.email.trim())}`);
+      setEmailChecked(res.data.data);
+    } catch {
+      setErrors(prev => ({ ...prev, email: '중복 확인에 실패했어요' }));
+    } finally {
+      setEmailChecking(false);
+    }
+  };
+
   const toggleAll = (checked: boolean) => {
     setAgreed({ all: checked, terms: checked, privacy: checked, marketing: checked });
     if (checked) setErrors((p) => ({ ...p, terms: '' }));
@@ -190,13 +207,28 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
             {/* 이메일 */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>이메일 *</label>
-              <input
-                className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
-                type="email"
-                placeholder="example@email.com"
-                value={form.email}
-                onChange={(e) => set('email', e.target.value)}
-              />
+              <div className={styles.pwWrap}>
+                <input
+                  className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+                  type="email"
+                  placeholder="example@email.com"
+                  value={form.email}
+                  onChange={(e) => { set('email', e.target.value); setEmailChecked(null); }}
+                />
+                <button
+                  type="button"
+                  className={styles.pwToggle}
+                  onClick={handleCheckEmail}
+                  disabled={!form.email.trim() || emailChecking}
+                >
+                  {emailChecking ? '확인 중' : '중복 확인'}
+                </button>
+              </div>
+              {emailChecked !== null && (
+                <p className={emailChecked ? styles.matchOk : styles.fieldError}>
+                  {emailChecked ? '사용 가능한 이메일이에요 ✓' : '이미 사용 중인 이메일이에요'}
+                </p>
+              )}
               {errors.email && <p className={styles.fieldError}>{errors.email}</p>}
             </div>
 

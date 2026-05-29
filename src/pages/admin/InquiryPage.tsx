@@ -26,24 +26,25 @@ interface Inquiry {
 
 const FAQ_CATEGORIES = ['거래/배송', '경매', '결제', '계정', '신고/제재'];
 
+const getFaqCategoryClass = (category: string) => {
+  if (category === '거래/배송') return s.faqCategoryShipping;
+  if (category === '결제') return s.faqCategoryPayment;
+  if (category === '경매') return s.faqCategoryAuction;
+  if (category === '계정') return s.faqCategoryAccount;
+  return s.faqCategoryDefault;
+};
+
 const INITIAL_FAQS: Faq[] = [
-  { id: 1,  category: '거래/배송', question: '거래 후 취소는 어떻게 하나요?',               answer: '거래 전 취소는 마이페이지 > 거래내역에서 가능합니다. 거래 완료 후에는 취소가 불가하며, 문제 발생 시 고객센터로 문의해주세요.',                      order: 1, visible: true },
-  { id: 2,  category: '거래/배송', question: '배송 추적은 어디서 확인하나요?',               answer: '마이페이지 > 배송조회에서 실시간 배송 현황을 확인할 수 있습니다. 운송장 번호는 판매자가 발송 처리 시 자동으로 입력됩니다.',                          order: 2, visible: true },
-  { id: 3,  category: '경매',      question: '경매 입찰 후 취소가 가능한가요?',               answer: '경매 입찰 후에는 취소가 불가합니다. 낙찰 이후 구매를 거부할 경우 불이익이 발생할 수 있으니 신중하게 입찰해주세요.',                                  order: 1, visible: true },
-  { id: 4,  category: '경매',      question: '경매 낙찰 후 결제 기한은 얼마나 되나요?',       answer: '낙찰 후 24시간 이내에 결제를 완료해야 합니다. 기한 내 미결제 시 낙찰이 취소되고 입찰 제한 페널티가 부과됩니다.',                                   order: 2, visible: true },
-  { id: 5,  category: '결제',      question: '사용 가능한 결제 수단은 무엇인가요?',           answer: '신용/체크카드, 카카오페이, 네이버페이, 계좌이체를 지원합니다. 직거래의 경우 현금 거래도 가능합니다.',                                               order: 1, visible: true },
-  { id: 6,  category: '계정',      question: '탈퇴 후 재가입이 가능한가요?',                 answer: '탈퇴 후 30일이 경과하면 동일 이메일로 재가입이 가능합니다. 단, 이전 거래 내역 및 매너온도는 복구되지 않습니다.',                                     order: 1, visible: true },
-  { id: 7,  category: '신고/제재', question: '가품 판매자를 신고하려면 어떻게 하나요?',       answer: '상품 상세 페이지 또는 채팅방에서 신고하기 버튼을 누르면 신고 접수가 가능합니다. 증거자료(사진, 대화 내역)를 첨부해주시면 빠른 처리가 가능합니다.',     order: 1, visible: true },
-  { id: 8,  category: '거래/배송', question: '판매자가 발송을 안 해요. 어떻게 하나요?',       answer: '결제 후 3영업일이 지나도 발송이 없다면 채팅으로 문의하시고, 해결되지 않으면 고객센터에 신고해주세요. 확인 후 환불 조치가 이루어집니다.',               order: 3, visible: true },
-  { id: 9,  category: '경매',      question: '즉시낙찰가로 구매하면 어떻게 되나요?',           answer: '즉시낙찰가 입찰 즉시 경매가 종료되고 해당 금액으로 낙찰 처리됩니다. 이후 일반 낙찰과 동일하게 24시간 내 결제를 완료해야 합니다.',                   order: 3, visible: true },
-  { id: 10, category: '결제',      question: '결제 후 환불은 가능한가요?',                   answer: '상품 수령 전이라면 판매자 동의 하에 취소가 가능합니다. 수령 후 환불은 상품에 중대한 하자가 있는 경우에만 고객센터를 통해 진행할 수 있습니다.',          order: 2, visible: true },
-  { id: 11, category: '계정',      question: '비밀번호를 잊어버렸어요.',                     answer: '로그인 화면에서 "비밀번호 찾기"를 눌러 가입 이메일로 재설정 링크를 받으실 수 있습니다. 메일이 오지 않는다면 스팸함을 확인해주세요.',                    order: 2, visible: true },
-  { id: 12, category: '신고/제재', question: '허위 후기를 신고할 수 있나요?',                 answer: '거래 후기 페이지에서 해당 후기의 신고 버튼을 누르면 접수됩니다. 거래 내역이 없는 허위 후기는 검토 후 삭제 조치됩니다.',                              order: 2, visible: true },
-  { id: 13, category: '거래/배송', question: '직거래도 가능한가요?',                         answer: '직거래는 양 당사자 합의 하에 가능하지만, 플랫폼 보호를 받으려면 앱 내 채팅과 결제를 이용하는 것을 권장합니다.',                                       order: 4, visible: true },
-  { id: 14, category: '결제',      question: '포인트는 어디서 확인하고 사용하나요?',           answer: '마이페이지 > 포인트 메뉴에서 잔액을 확인하고 결제 시 사용할 수 있습니다. 포인트는 1포인트 = 1원으로 전액 차감 가능합니다.',                           order: 3, visible: true },
-  { id: 15, category: '경매',      question: '경매 시작 전에 입찰을 예약할 수 있나요?',         answer: '현재 경매 예약 입찰 기능은 지원하지 않습니다. 경매 시작 후 직접 입찰해주세요. 향후 업데이트를 통해 알림 기능이 제공될 예정입니다.',                  order: 4, visible: false },
-  { id: 16, category: '계정',      question: '이메일 수신 알림을 끄고 싶어요.',               answer: '마이페이지 > 설정 > 알림 설정에서 이메일 및 푸시 알림을 개별적으로 설정할 수 있습니다.',                                                           order: 3, visible: true },
-  { id: 17, category: '신고/제재', question: '계정이 정지됐어요. 어떻게 해제하나요?',           answer: '정지 기간 중에는 이용이 제한됩니다. 정지 사유와 기간은 가입 이메일로 발송됩니다. 부당한 조치라 판단되면 고객센터에 이의를 제기하실 수 있습니다.',       order: 3, visible: true },
+  { id: 1,  category: '경매', question: '경매(Auction)와 일반 중고 거래(Trade)의 차이점은 무엇인가요?', answer: '일반 거래는 판매자가 등록한 가격에 구매자가 즉시 구매하는 방식입니다. 경매 거래는 설정하신 시작가부터 시작하여 정해진 기간 동안 구매자들이 입찰 경쟁을 벌여 가장 높은 금액을 제시한 사람에게 낙찰되는 방식입니다. 등록 시 두 가지 타입 중 하나를 선택하실 수 있습니다.', order: 1, visible: true },
+  { id: 2,  category: '경매', question: '경매 시작가와 즉시 구매가는 어떻게 설정하는 것이 좋은가요?', answer: '시작 가격(Min Bid)은 상품의 상태(S~C 등급)를 고려하여 "이 가격 이하라면 팔지 않겠다"는 최소한의 금액으로 설정하시는 것이 안전합니다. 만약 경매 기간을 기다리지 않고 바로 판매하고 싶으시다면, 시세보다 약간 높은 금액으로 즉시 구매가(Immediate Price)를 함께 설정해 두시면 빠른 거래에 도움이 됩니다.', order: 2, visible: true },
+  { id: 3,  category: '경매', question: '낙찰자가 물건을 낙찰받아 놓고 대금을 결제하지 않으면 어떻게 되나요?', answer: '낙찰 후 24시간 이내에 구매자가 결제하지 않으면 거래는 자동 취소되며, 해당 구매자에게는 노쇼(No-Show)로 인한 서비스 이용 제한(Sanctions) 페널티가 부여됩니다. 판매자님은 [재경매 등록]을 통해 상품을 다시 올리시거나, [차순위 입찰자에게 판매] 기능을 통해 다음으로 높은 금액을 부른 입찰자에게 판매 제안을 하실 수 있습니다.', order: 3, visible: true },
+  { id: 4,  category: '경매', question: '경매가 진행 중(Live)일 때 중간에 글을 수정하거나 경매를 취소할 수 있나요?', answer: '입찰자가 아무도 없는 상태에서는 언제든지 글 수정 및 경매 취소가 가능합니다. 하지만 이미 입찰(Bids)이 발생한 이후에는 다른 참여자들의 공정한 경쟁을 위해 내용을 수정하거나 경매를 임의로 취소하실 수 없습니다. 상품 정보를 등록하실 때 신중하게 작성해 주세요.', order: 4, visible: true },
+  { id: 5,  category: '경매', question: '경매가 마감되었는데 입찰자가 아무도 없어요. 어떻게 해야 하나요?', answer: '입찰자가 없이 마감된 경매는 유찰(FAILED) 상태로 변경됩니다. 유찰 시 별도의 수수료나 페널티는 발생하지 않으며, 판매자님은 시작 가격을 조금 낮추거나 상품 설명을 보완하여 언제든지 재경매를 진행하실 수 있습니다.', order: 5, visible: true },
+  { id: 6,  category: '경매', question: '경매 참여자가 가격을 인위적으로 올리는 것 같아요. 조작이 의심되면 어떻게 하나요?', answer: '모이다 플랫폼은 AI 기반의 이상 입찰 탐지 시스템(is_suspicious)을 가동하고 있습니다. 동일한 IP에서의 반복 입찰이나 비정상적인 가격 폭등이 감지되면 시스템이 자동으로 해당 입찰을 차단합니다. 만약 의심스러운 정황을 발견하시면 상품 페이지 내 [신고하기(Reports)] 버튼을 통해 제보해 주시면 운영팀에서 즉시 조사에 착수합니다.', order: 6, visible: true },
+  { id: 7,  category: '경매', question: '상품 문의(Inquiries)나 채팅으로 따로 연락해서 직거래를 하자고 하는데 응해도 되나요?', answer: '경매 진행 중 플랫폼 외부에서 따로 돈을 주고받는 외부 직거래 유도는 서비스 이용 약관 위반에 해당하며, 사기 피해의 위험이 매우 높습니다. 이를 응하거나 유도할 경우 판매자님도 계정 정지(Suspended) 처리를 받으실 수 있으니, 반드시 안전한 플랫폼 내 입찰 시스템을 이용해 주세요. 비밀 문의(is_secret) 기능을 활용해 무리한 네고 요청은 정중히 거절하시는 것을 권장합니다.', order: 7, visible: true },
+  { id: 8,  category: '경매', question: '경매 낙찰 후 판매 대금은 언제 저의 지갑(Wallet)으로 정산되나요?', answer: '구매자가 상품을 배송받은 후 [구매 확정]을 누르면, 플랫폼 이용 수수료(fee_rate)를 제외한 최종 금액이 즉시 판매자님의 지갑 잔액(balance)으로 정산(Settlements)됩니다. 정산된 금액은 등록하신 계좌로 즉시 출금하실 수 있습니다.', order: 8, visible: true },
+  { id: 9,  category: '경매', question: '구매자가 물건을 받은 후 단순 변심으로 환불이나 반품을 요구하는데, 해줘야 하나요?', answer: '경매 거래는 특성상 입찰 경쟁을 통해 낙찰자가 결정되므로, 구매자의 단순 변심으로 인한 환불 및 반품은 거부하실 수 있습니다. 단, 상품 등록 시 기재했던 등급(S, A, B, C)이나 설명과 실제 물건의 상태가 현저히 달라 분쟁(Reports)이 발생한 경우에는 운영팀의 중재 하에 환불 절차가 진행될 수 있으니 상품 상태를 투명하게 적어주시는 것이 중요합니다.', order: 9, visible: true },
+  { id: 10, category: '경매', question: '판매자 사정으로 낙찰된 물건을 보내지 못하면 어떤 제재를 받게 되나요?', answer: '낙찰이 완료된 후 판매자가 일방적으로 거래를 파기하거나 물건을 발송하지 않을 경우, 구매자 보호 정책에 따라 경고 및 일정 기간 서비스 이용이 정지되는 패널티(suspended_until)를 받게 됩니다. 더불어 판매자 매너 온도(manner_temp)가 크게 하락하여 향후 다른 거래 시 불이익을 받으실 수 있습니다.', order: 10, visible: true },
 ];
 
 const INITIAL_INQUIRIES: Inquiry[] = [
@@ -65,6 +66,7 @@ const INITIAL_INQUIRIES: Inquiry[] = [
 ];
 
 const PAGE_SIZE = 5;
+const FAQ_PAGE_SIZE = 5;
 
 const InquiryPage: React.FC = () => {
   const [tab, setTab] = useState<'inquiry' | 'faq'>('inquiry');
@@ -95,8 +97,8 @@ const InquiryPage: React.FC = () => {
   const inquiryTotalPages = Math.ceil(filteredInquiries.length / PAGE_SIZE);
   const pagedInquiries = filteredInquiries.slice((inquiryPage - 1) * PAGE_SIZE, inquiryPage * PAGE_SIZE);
 
-  const faqTotalPages = Math.ceil(filteredFaqs.length / PAGE_SIZE);
-  const pagedFaqs = filteredFaqs.slice((faqPage - 1) * PAGE_SIZE, faqPage * PAGE_SIZE);
+  const faqTotalPages = Math.ceil(filteredFaqs.length / FAQ_PAGE_SIZE);
+  const pagedFaqs = filteredFaqs.slice((faqPage - 1) * FAQ_PAGE_SIZE, faqPage * FAQ_PAGE_SIZE);
 
   const submitAnswer = () => {
     if (!selected || !answerText.trim()) return;
@@ -215,11 +217,11 @@ const InquiryPage: React.FC = () => {
 
           {inquiryTotalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 16 }}>
-              <button onClick={() => setInquiryPage(p => Math.max(1, p - 1))} disabled={inquiryPage === 1} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: inquiryPage === 1 ? '#F5F5F5' : '#fff', color: inquiryPage === 1 ? '#ccc' : '#4A4A6A', cursor: inquiryPage === 1 ? 'default' : 'pointer', fontSize: 13 }}>이전</button>
+              <button className={`${s.pageMoveBtn} ${s.pagePrevBtn} ${inquiryPage === 1 ? s.pageMoveBtnDisabled : ''}`} onClick={() => setInquiryPage(p => Math.max(1, p - 1))} disabled={inquiryPage === 1}>이전</button>
               {Array.from({ length: inquiryTotalPages }, (_, i) => i + 1).map(n => (
                 <button key={n} onClick={() => setInquiryPage(n)} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: inquiryPage === n ? '#E24B4A' : '#fff', color: inquiryPage === n ? '#fff' : '#4A4A6A', fontWeight: inquiryPage === n ? 700 : 400, cursor: 'pointer', fontSize: 13 }}>{n}</button>
               ))}
-              <button onClick={() => setInquiryPage(p => Math.min(inquiryTotalPages, p + 1))} disabled={inquiryPage === inquiryTotalPages} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: inquiryPage === inquiryTotalPages ? '#F5F5F5' : '#fff', color: inquiryPage === inquiryTotalPages ? '#ccc' : '#4A4A6A', cursor: inquiryPage === inquiryTotalPages ? 'default' : 'pointer', fontSize: 13 }}>다음</button>
+              <button className={`${s.pageMoveBtn} ${s.pageNextBtn} ${inquiryPage === inquiryTotalPages ? s.pageMoveBtnDisabled : ''}`} onClick={() => setInquiryPage(p => Math.min(inquiryTotalPages, p + 1))} disabled={inquiryPage === inquiryTotalPages}>다음</button>
             </div>
           )}
         </>
@@ -240,13 +242,16 @@ const InquiryPage: React.FC = () => {
           </div>
           <table className={s.table}>
             <thead>
-              <tr><th>구분</th><th>질문</th><th>노출</th><th>관리</th></tr>
+              <tr><th>구분</th><th className={s.faqQuestionHead}>질문</th><th>노출</th><th>관리</th></tr>
             </thead>
             <tbody>
               {pagedFaqs.map(f => (
                 <tr key={f.id}>
-                  <td><span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: '#E3F0FF', color: '#1565C0' }}>{f.category}</span></td>
-                  <td style={{ fontWeight: 600 }}>{f.question}</td>
+                  <td><span className={`${s.faqCategoryBadge} ${getFaqCategoryClass(f.category)}`}>{f.category}</span></td>
+                  <td className={s.faqQuestionCell}>
+                    <span className={s.faqQuestionNo}>Q{f.order}</span>
+                    <span>{f.question}</span>
+                  </td>
                   <td>
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                       <input type="checkbox" checked={f.visible} onChange={() => setFaqs(prev => prev.map(x => x.id === f.id ? { ...x, visible: !x.visible } : x))} />
@@ -254,8 +259,8 @@ const InquiryPage: React.FC = () => {
                     </label>
                   </td>
                   <td>
-                    <button className={s.actionBtn} onClick={() => openFaqEdit(f)}>수정</button>
-                    <button className={`${s.actionBtn} ${s.actionBtnDanger}`} onClick={() => setFaqs(prev => prev.filter(x => x.id !== f.id))}>삭제</button>
+                    <button className={`${s.actionBtn} ${s.faqEditBtn}`} onClick={() => openFaqEdit(f)}>수정</button>
+                    <button className={`${s.actionBtn} ${s.faqDeleteBtn}`} onClick={() => setFaqs(prev => prev.filter(x => x.id !== f.id))}>삭제</button>
                   </td>
                 </tr>
               ))}
@@ -264,11 +269,11 @@ const InquiryPage: React.FC = () => {
 
           {faqTotalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 16 }}>
-              <button onClick={() => setFaqPage(p => Math.max(1, p - 1))} disabled={faqPage === 1} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: faqPage === 1 ? '#F5F5F5' : '#fff', color: faqPage === 1 ? '#ccc' : '#4A4A6A', cursor: faqPage === 1 ? 'default' : 'pointer', fontSize: 13 }}>이전</button>
+              <button className={`${s.pageMoveBtn} ${s.pagePrevBtn} ${faqPage === 1 ? s.pageMoveBtnDisabled : ''}`} onClick={() => setFaqPage(p => Math.max(1, p - 1))} disabled={faqPage === 1}>이전</button>
               {Array.from({ length: faqTotalPages }, (_, i) => i + 1).map(n => (
                 <button key={n} onClick={() => setFaqPage(n)} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: faqPage === n ? '#E24B4A' : '#fff', color: faqPage === n ? '#fff' : '#4A4A6A', fontWeight: faqPage === n ? 700 : 400, cursor: 'pointer', fontSize: 13 }}>{n}</button>
               ))}
-              <button onClick={() => setFaqPage(p => Math.min(faqTotalPages, p + 1))} disabled={faqPage === faqTotalPages} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: faqPage === faqTotalPages ? '#F5F5F5' : '#fff', color: faqPage === faqTotalPages ? '#ccc' : '#4A4A6A', cursor: faqPage === faqTotalPages ? 'default' : 'pointer', fontSize: 13 }}>다음</button>
+              <button className={`${s.pageMoveBtn} ${s.pageNextBtn} ${faqPage === faqTotalPages ? s.pageMoveBtnDisabled : ''}`} onClick={() => setFaqPage(p => Math.min(faqTotalPages, p + 1))} disabled={faqPage === faqTotalPages}>다음</button>
             </div>
           )}
         </>

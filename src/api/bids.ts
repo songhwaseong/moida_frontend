@@ -15,6 +15,24 @@ export interface BidResultDto {
   bidHistory: BidHistory[];
 }
 
+export interface MyBidDto {
+  id: number;
+  productId: number;
+  productNo: string;
+  auctionNo: string;
+  name: string;
+  image: string;
+  category: string;
+  condition: string;
+  myBidAmount: number;
+  currentPrice: number;
+  bidCount: number;
+  timeLeft: number;
+  isLive: boolean;
+  status: 'BIDDING' | 'WON' | 'FAILED';
+  bidTime: string;
+}
+
 export type BidType = 'NORMAL' | 'IMMEDIATE';
 
 export const placeProductBid = async (
@@ -30,5 +48,10 @@ export const placeProductBid = async (
 
 export const buyNowProduct = async (productId: number) => {
   const response = await customAxios.post<ApiResponse<BidResultDto>>(`/products/${productId}/bids/immediate`);
+  return response.data.data;
+};
+
+export const getMyBids = async () => {
+  const response = await customAxios.get<ApiResponse<MyBidDto[]>>('/products/bids/me');
   return response.data.data;
 };

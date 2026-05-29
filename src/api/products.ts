@@ -25,6 +25,7 @@ export interface ProductSummaryDto {
   auctionDate?: string | null;
   category: string;
   type: 'AUCTION';
+  status?: 'SCHEDULED' | 'PENDING' | 'LIVE' | 'SOLD' | 'FAILED' | 'HIDDEN' | 'DELETED';
   auctionNo?: string | null;
   currentPrice?: number | null;
   bidCount?: number | null;
@@ -85,6 +86,11 @@ export const getProducts = async (params?: {
 
 export const getProduct = async (productId: number) => {
   const response = await customAxios.get<ApiResponse<ProductDetailDto>>(`/products/${productId}`);
+  return unwrap(response);
+};
+
+export const getMyProducts = async () => {
+  const response = await customAxios.get<ApiResponse<ProductSummaryDto[]>>('/products/me');
   return unwrap(response);
 };
 

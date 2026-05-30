@@ -6,6 +6,8 @@ import { CATEGORIES } from './data/mockData';
 import { getUnreadNotificationCount } from './api/notifications';
 import PCLayout from './components/PCLayout';
 import { ToastProvider } from './components/Toast';
+import NotificationSocketBridge from './components/NotificationSocketBridge';
+import { disconnectNotificationSocket } from './components/notificationSocket';
 import LeaveConfirmModal from './components/LeaveConfirmModal';
 import AlertModal from './components/AlertModal';
 import styles from './App.module.css';
@@ -331,6 +333,11 @@ const App: React.FC = () => {
     setAuthScreen(null);
   };
   const logoutAdmin = () => {
+    // STOMP 알림 소켓을 토큰 제거 전에 명시적으로 끊는다.
+    // - 토큰이 살아 있는 동안 정상적인 DISCONNECT 프레임을 보내고,
+    // - reconnectDelay 로 자동 재연결이 트리거되지 않도록 deactivate() 를 직접 호출.
+    // void 처리: 동기 흐름을 막지 않기 위함이며, 끊김은 어차피 fire-and-forget 으로 충분.
+    void disconnectNotificationSocket();
     localStorage.removeItem('bazar_is_admin');
     localStorage.removeItem('bazar_admin_idle_warned');
     localStorage.removeItem('bazar_admin_view');
@@ -413,6 +420,9 @@ const App: React.FC = () => {
   }, []); // 앱 최초 마운트 시 한 번만 실행
 
   const logout = () => {
+    // STOMP 알림 소켓을 토큰 제거 전에 명시적으로 끊는다.
+    // 자세한 이유는 logoutAdmin 의 같은 호출 참고.
+    void disconnectNotificationSocket();
     localStorage.removeItem('bazar_logged_in');
     localStorage.removeItem('bazar_user_name');
     localStorage.removeItem('bazar_user_role');
@@ -744,6 +754,11 @@ const App: React.FC = () => {
           onCancel={alertCancelCb !== null ? () => closeAlert(false) : undefined}
         />
       )}
+      {/* 실시간 알림 STOMP 구독. DOM 출력 없이 토스트 + unread 카운트 갱신만 담당. */}
+      <NotificationSocketBridge
+        isAuthenticated={isLoggedIn || isAdmin}
+        onIncoming={() => { void refreshNotificationCount(); }}
+      />
     </>
   );
 };

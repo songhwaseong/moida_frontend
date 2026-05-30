@@ -45,6 +45,10 @@ export interface ProductDetailDto extends ProductSummaryDto {
   minBidUnit?: number | null;
   endDate?: string | null;
   bidHistory?: BidHistory[];
+  // 결제 대기 흐름용 필드
+  auctionStatus?: 'READY' | 'LIVE' | 'AWAITING_PAYMENT' | 'SUCCESS' | 'FAILED' | 'CANCELED' | null;
+  paymentDeadline?: string | null;
+  isWinner?: boolean | null;
 }
 
 const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
@@ -158,4 +162,7 @@ export const toAuctionDetail = (item: ProductDetailDto): AuctionDetail => ({
   liked: item.liked,
   likeCount: item.likeCount,
   timeAgo: item.timeAgo,
+  auctionStatus: item.auctionStatus ?? null,
+  paymentDeadline: item.paymentDeadline ?? null,
+  isWinner: item.isWinner ?? false,
 });

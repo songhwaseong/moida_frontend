@@ -5,6 +5,7 @@
 
 import axios from "axios";
 import { API_BASE_URL } from "../config/config";
+import { disconnectNotificationSocket } from "../components/notificationSocket";
 
 // withCredentials: true 항목은 세션 방식 설정이므로 jwt를 사용하면 삭제하도록 합니다.
 const axiosInstance = axios.create({
@@ -37,6 +38,11 @@ axiosInstance.interceptors.response.use(
         const isAuthRequest = error.config?.url?.includes("/auth/");
 
         if (error.response?.status === 401 && !isAuthRequest) {
+            // STOMP 알림 소켓도 함께 끊는다.
+            // 어차피 직후 window.location.replace 로 페이지가 통째로 새로고침되어 연결이 끊기긴 하지만,
+            // 그 사이에 stale token 으로 STOMP 가 자동 reconnect 를 시도하는 짧은 창을 막기 위함.
+            void disconnectNotificationSocket();
+
             // 토큰과 함께 App.tsx가 로그인 상태로 판단하는 플래그도 같이 정리.
             // 둘 중 하나만 지우면 새로고침 후에도 홈으로 들어가 무한 401 루프가 발생한다.
             localStorage.removeItem("accessToken");

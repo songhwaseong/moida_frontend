@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getProduct, toAuctionDetail } from '../api/products';
 import { toggleLike } from '../api/likes';
-import { buyNowProduct, placeProductBid, type BidType } from '../api/bids';
+import { buyNowProduct, payForAuction, placeProductBid, type BidType } from '../api/bids';
 import { createProductInquiry, getProductInquiries, type InquiryView } from '../api/inquiries';
 import { getWallet } from '../api/wallet';
 import type { AuctionDetail } from '../types';
@@ -220,6 +220,27 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
     }
   };
 
+  // ── 결제 대기 흐름 ────────────────────────────────────────────
+  // 낙찰 후 잔액 부족으로 AWAITING_PAYMENT 상태인 경매에 대해 본인(낙찰자)이 결제 버튼을 눌렀을 때.
+  // 잔액 검증/차감/Settlement 생성은 백엔드(AuctionCompletionService)가 처리.
+  const [isPaying, setIsPaying] = useState(false);
+  const handlePayForWin = async () => {
+    if (!item || isPaying) return;
+    setIsPaying(true);
+    try {
+      await payForAuction(item.id);
+      showToast('결제가 완료되었습니다!', 'success');
+      // 결제 후 상태가 SUCCESS 로 바뀌므로 화면 갱신을 위해 다시 로드.
+      const refreshed = await getProduct(item.id);
+      setItem(toAuctionDetail(refreshed));
+      void refreshBalance();
+    } catch (error: unknown) {
+      showToast(getApiErrorMessage(error, '결제에 실패했습니다.'), 'error');
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   const handleBid = () => {
     if (!item) return;
     const amount = parseInt(bidInput.replace(/,/g, ''), 10);
@@ -389,6 +410,37 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0 4px', borderTop: '1px dashed #E8E8EF', marginTop: 8 }}>
                   <span style={{ fontSize: 13, color: '#8B8FA8' }}>즉시입찰가</span>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#E24B4A' }}> {item.immediatePrice.toLocaleString()}</span>
+                </div>
+              )}
+
+              {/* 결제 대기 안내: 본인 낙찰 + AWAITING_PAYMENT 일 때만 노출 */}
+              {item.auctionStatus === 'AWAITING_PAYMENT' && item.isWinner && (
+                <div
+                  style={{
+                    marginTop: 8, padding: 12, borderRadius: 8,
+                    background: '#FFF7E6', border: '1px solid #FFD591',
+                    fontSize: 13, color: '#7A4A00',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                    낙찰되었습니다 — 결제 대기 중
+                  </div>
+                  <div>결제 기한: <b>{item.paymentDeadline}</b></div>
+                  <div style={{ marginTop: 2 }}>
+                    낙찰가 <b>{currentPrice.toLocaleString()}원</b> · 보유 잔액 {userBalance.toLocaleString()}원
+                  </div>
+                  <button
+                    className={styles.inlineInstantBtn}
+                    style={{ marginTop: 8, width: '100%' }}
+                    onClick={handlePayForWin}
+                    disabled={isPaying || userBalance < currentPrice}
+                  >
+                    {isPaying
+                      ? '결제 중…'
+                      : userBalance < currentPrice
+                        ? `잔액 부족 — ${(currentPrice - userBalance).toLocaleString()}원 충전 필요`
+                        : '결제하기'}
+                  </button>
                 </div>
               )}
 

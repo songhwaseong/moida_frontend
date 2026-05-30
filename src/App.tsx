@@ -44,6 +44,7 @@ const TrackingPage = lazy(() => import('./pages/my/TrackingPage'));
 const GuidePage = lazy(() => import('./pages/my/GuidePage'));
 const MyInquiryPage = lazy(() => import('./pages/my/MyInquiryPage'));
 const AdminPage = lazy(() => import('./pages/admin/AdminPage'));
+import { AdminI18nProvider } from './pages/admin/i18n';
 
 type AuthScreen = 'login' | 'signup' | 'find-id' | 'find-pw' | null;
 
@@ -134,7 +135,11 @@ const getInitialAuthScreen = (): AuthScreen => {
   return 'login';
 };
 
-const getHistoryPath = (view: AppHistoryView) => {
+const getHistoryPath = (view: AppHistoryView, isAdmin = false) => {
+  // 관리자 모드(관리자로 로그인 + admin 뷰)면 다른 화면 상태와 무관하게 /admin 으로 고정.
+  // 그렇지 않으면 authScreen이 'login'으로 남아 URL이 /login으로 잘못 찍힌다.
+  if (isAdmin && view.adminViewMode === 'admin') return '/admin';
+
   // 비로그인 auth 화면은 screen보다 우선해서 처리
   // (isGuest=true인 소셜 로그인 콜백 중에는 건너뜀)
   if (!view.isGuest) {
@@ -472,7 +477,7 @@ const App: React.FC = () => {
       adminViewMode,
     };
     const state: AppHistoryState = { source: 'moida-app', view };
-    const path = getHistoryPath(view);
+    const path = getHistoryPath(view, isAdmin);
 
     // 최초 진입 시에는 replaceState로 현재 URL에 상태만 붙여 둔다.
     if (!hasInitializedHistoryRef.current) {
@@ -496,7 +501,7 @@ const App: React.FC = () => {
     } else {
       window.history.replaceState(state, '', path);
     }
-  }, [screen, mainTab, navTab, selectedCategory, searchQuery, termsInitialTab, authScreen, isGuest, editingProduct, adminViewMode]);
+  }, [screen, mainTab, navTab, selectedCategory, searchQuery, termsInitialTab, authScreen, isGuest, editingProduct, adminViewMode, isAdmin]);
   if (isSocialProcessing) return null;
   if (socialSignupStep === 'info') {
     return (
@@ -531,7 +536,9 @@ const App: React.FC = () => {
   if (isAdmin && adminViewMode === 'admin') {
     return (
       <ToastProvider>
-        <AdminPage onLogout={logoutAdmin} onSwitchToNormal={switchToNormal} />
+        <AdminI18nProvider>
+          <AdminPage onLogout={logoutAdmin} onSwitchToNormal={switchToNormal} />
+        </AdminI18nProvider>
       </ToastProvider>
     );
   }

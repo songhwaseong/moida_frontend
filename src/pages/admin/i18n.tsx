@@ -13,7 +13,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 export type AdminLang = 'ko' | 'en';
 
-const STORAGE_KEY = 'bazar_admin_lang';
+const STORAGE_KEY = 'moida_admin_lang';
 
 /** 한국어 사전. key 는 변경하지 말 것 — 영어 사전도 같은 key 셋을 유지해야 한다. */
 const KO: Record<string, string> = {

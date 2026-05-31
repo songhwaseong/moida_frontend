@@ -159,8 +159,8 @@ const CATEGORY_OPTIONS = ['전체', '디지털/가전', '패션/의류', '명품
 interface Props { onLogout: () => void; onSwitchToNormal: () => void; }
 
 const WARN_COUNTDOWN_S = 30; // 경고 후 30초 뒤 자동 로그아웃
-const IDLE_STORAGE_KEY = 'bazar_admin_idle_minutes';
-const IDLE_WARNED_KEY = 'bazar_admin_idle_warned';
+const IDLE_STORAGE_KEY = 'moida_admin_idle_minutes';
+const IDLE_WARNED_KEY = 'moida_admin_idle_warned';
 
 const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   const t = useT();
@@ -247,7 +247,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
 
   // ─── 로그인 시각 ──────────────────────────────────────────────────
   const loginAt = (() => {
-    const raw = localStorage.getItem('bazar_admin_login_at');
+    const raw = localStorage.getItem('moida_admin_login_at');
     if (!raw) return '';
     const d = new Date(raw);
     const pad = (n: number) => String(n).padStart(2, '0');

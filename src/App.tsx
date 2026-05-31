@@ -128,7 +128,7 @@ const getInitialMainTab = (): MainTab => {
 };
 
 const getInitialAuthScreen = (): AuthScreen => {
-  const loggedIn = localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken');
+  const loggedIn = localStorage.getItem('moida_logged_in') === 'true' && !!localStorage.getItem('accessToken');
   if (loggedIn) return null;
   const path = window.location.pathname;
   if (path === '/signup') return 'signup';
@@ -168,11 +168,11 @@ const getHistoryPath = (view: AppHistoryView, isAdmin = false) => {
 };
 
 const App: React.FC = () => {
-  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('bazar_is_admin') === 'true');
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('moida_is_admin') === 'true');
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
-    localStorage.getItem('bazar_logged_in') === 'true' && !!localStorage.getItem('accessToken')
+    localStorage.getItem('moida_logged_in') === 'true' && !!localStorage.getItem('accessToken')
   );
-  const [loggedInUserName, setLoggedInUserName] = useState(() => localStorage.getItem('bazar_user_name') || '');
+  const [loggedInUserName, setLoggedInUserName] = useState(() => localStorage.getItem('moida_user_name') || '');
   const [authScreen, setAuthScreen] = useState<AuthScreen>(() => getInitialAuthScreen());
   const [isGuest, setIsGuest] = useState(() => {
     // 소셜 로그인 콜백 URL이면 임시 guest 모드로 시작 → LoginPage 안 보임
@@ -234,7 +234,7 @@ const App: React.FC = () => {
   const [formDirty, setFormDirty] = useState(false);
   const [pendingNav, setPendingNav] = useState<null | (() => void)>(null);
   const [adminViewMode, setAdminViewMode] = useState<'admin' | 'normal'>(
-    () => (localStorage.getItem('bazar_admin_view') as 'admin' | 'normal') ?? 'admin'
+    () => (localStorage.getItem('moida_admin_view') as 'admin' | 'normal') ?? 'admin'
   );
 
   // 현재 폼 화면인지 여부
@@ -324,9 +324,9 @@ const App: React.FC = () => {
   }, [isLoggedIn, isAdmin]);
 
   const loginAsAdmin = () => {
-    localStorage.setItem('bazar_is_admin', 'true');
-    localStorage.setItem('bazar_admin_view', 'admin');
-    localStorage.setItem('bazar_admin_login_at', new Date().toISOString());
+    localStorage.setItem('moida_is_admin', 'true');
+    localStorage.setItem('moida_admin_view', 'admin');
+    localStorage.setItem('moida_admin_login_at', new Date().toISOString());
     setIsAdmin(true);
     setAdminViewMode('admin');
     setIsGuest(false);
@@ -338,24 +338,25 @@ const App: React.FC = () => {
     // - reconnectDelay 로 자동 재연결이 트리거되지 않도록 deactivate() 를 직접 호출.
     // void 처리: 동기 흐름을 막지 않기 위함이며, 끊김은 어차피 fire-and-forget 으로 충분.
     void disconnectNotificationSocket();
-    localStorage.removeItem('bazar_is_admin');
-    localStorage.removeItem('bazar_admin_idle_warned');
-    localStorage.removeItem('bazar_admin_view');
-    localStorage.removeItem('bazar_admin_login_at');
-    localStorage.removeItem('bazar_user_name');
-    localStorage.removeItem('bazar_user_role');
+    localStorage.removeItem('moida_is_admin');
+    localStorage.removeItem('moida_admin_idle_warned');
+    localStorage.removeItem('moida_admin_view');
+    localStorage.removeItem('moida_admin_login_at');
+    localStorage.removeItem('moida_user_name');
+    localStorage.removeItem('moida_user_role');
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setIsAdmin(false);
     setAdminViewMode('admin');
     setNotificationCount(0);
     setAuthScreen('login');
   };
-  const switchToNormal = () => { localStorage.setItem('bazar_admin_view', 'normal'); setAdminViewMode('normal'); };
-  const switchToAdmin = () => { localStorage.setItem('bazar_admin_view', 'admin'); setAdminViewMode('admin'); };
+  const switchToNormal = () => { localStorage.setItem('moida_admin_view', 'normal'); setAdminViewMode('normal'); };
+  const switchToAdmin = () => { localStorage.setItem('moida_admin_view', 'admin'); setAdminViewMode('admin'); };
   const login = (name?: string) => {
     const userName = name || '사용자';
-    localStorage.setItem('bazar_logged_in', 'true');
-    localStorage.setItem('bazar_user_name', userName);
+    localStorage.setItem('moida_logged_in', 'true');
+    localStorage.setItem('moida_user_name', userName);
     setIsLoggedIn(true);
     setLoggedInUserName(userName);
     setIsGuest(false); setAuthScreen(null); setScreen({ type: 'home' }); setNavTab('home');
@@ -392,10 +393,12 @@ const App: React.FC = () => {
         });
         const data = await res.json();
         console.log('소셜 로그인 응답:', data.data);
-        const { accessToken, name, role, newUser: isNewUser } = data.data;
+        const { accessToken, refreshToken, name, role, newUser: isNewUser } = data.data;
 
         localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('bazar_user_role', role);
+        // refreshToken 도 함께 보관 — access 만료 시 axios 인터셉터의 자동 갱신에 사용.
+        if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('moida_user_role', role);
         // URL 정리 후 홈으로
         window.history.replaceState({}, '', '/');
 
@@ -405,8 +408,8 @@ const App: React.FC = () => {
           setIsGuest(false);
           setIsSocialProcessing(false);
         } else {
-          localStorage.setItem('bazar_user_name', name);
-          localStorage.setItem('bazar_logged_in', 'true');
+          localStorage.setItem('moida_user_name', name);
+          localStorage.setItem('moida_logged_in', 'true');
           setIsSocialProcessing(false);
           login(name); // 기존 login 함수 호출
         }
@@ -423,10 +426,11 @@ const App: React.FC = () => {
     // STOMP 알림 소켓을 토큰 제거 전에 명시적으로 끊는다.
     // 자세한 이유는 logoutAdmin 의 같은 호출 참고.
     void disconnectNotificationSocket();
-    localStorage.removeItem('bazar_logged_in');
-    localStorage.removeItem('bazar_user_name');
-    localStorage.removeItem('bazar_user_role');
+    localStorage.removeItem('moida_logged_in');
+    localStorage.removeItem('moida_user_name');
+    localStorage.removeItem('moida_user_role');
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setIsLoggedIn(false);
     setLoggedInUserName('');
     setNotificationCount(0);
@@ -533,8 +537,8 @@ const App: React.FC = () => {
           socialMode={true}
           socialName={socialSignupName}
           onComplete={() => {
-            localStorage.setItem('bazar_user_name', socialSignupName);
-            localStorage.setItem('bazar_logged_in', 'true');
+            localStorage.setItem('moida_user_name', socialSignupName);
+            localStorage.setItem('moida_logged_in', 'true');
             setSocialSignupStep(null);
             login(socialSignupName);
           }}

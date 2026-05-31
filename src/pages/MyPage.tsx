@@ -177,9 +177,10 @@ const MyPage: React.FC<Props> = ({ onLogout, onMenuClick, onEditProfile }) => {
         reasonDetail: accountDeactivationReason.trim() || undefined,
       });
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('bazar_logged_in');
-      localStorage.removeItem('bazar_user_name');
-      localStorage.removeItem('bazar_user_role');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('moida_logged_in');
+      localStorage.removeItem('moida_user_name');
+      localStorage.removeItem('moida_user_role');
       setAccountDeactivationStep('complete');
     } catch (error) {
       console.error('Failed to deactivate account', error);

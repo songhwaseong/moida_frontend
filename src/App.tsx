@@ -137,6 +137,26 @@ const getInitialAuthScreen = (): AuthScreen => {
   return 'login';
 };
 
+/**
+ * 관리자 세션 유효성 판정.
+ *
+ * 과거에는 `moida_is_admin` 플래그 하나만 보고 isAdmin 을 결정했는데, 다음 문제가 있었다:
+ *   1) JWT 가 만료되어도 플래그가 살아있어 URL 이 /admin 으로 푸시되고
+ *      → 모든 admin API 가 401 → axios 가 / 로 리다이렉트 → 또 isAdmin=true → 무한 루프
+ *   2) 일반 사용자가 콘솔에서 플래그 한 줄 (`localStorage.setItem('moida_is_admin','true')`)
+ *      만으로 admin UI 컴포넌트를 렌더링시킬 수 있어 메뉴/대시보드 구조가 노출됨
+ *      (API 자체는 백엔드 hasAnyRole 가드로 보호되지만 UI 정보 누설)
+ *
+ * 그래서 토큰 + 로그인 플래그 + 역할(role) 세 가지 모두 충족할 때만 admin 으로 인정한다.
+ * 토큰이 죽으면 자동으로 isAdmin=false 가 되어 위 두 문제가 모두 사라진다.
+ */
+const hasAdminSession = (): boolean => {
+  const hasToken = !!localStorage.getItem('accessToken');
+  const isLoggedIn = localStorage.getItem('moida_logged_in') === 'true';
+  const role = localStorage.getItem('moida_user_role');
+  return hasToken && isLoggedIn && (role === 'ADMIN' || role === 'MANAGER');
+};
+
 const getHistoryPath = (view: AppHistoryView, isAdmin = false) => {
   // 관리자 모드(관리자로 로그인 + admin 뷰)면 다른 화면 상태와 무관하게 /admin 으로 고정.
   // 그렇지 않으면 authScreen이 'login'으로 남아 URL이 /login으로 잘못 찍힌다.
@@ -168,7 +188,7 @@ const getHistoryPath = (view: AppHistoryView, isAdmin = false) => {
 };
 
 const App: React.FC = () => {
-  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('moida_is_admin') === 'true');
+  const [isAdmin, setIsAdmin] = useState(() => hasAdminSession());
   const [isLoggedIn, setIsLoggedIn] = useState(() =>
     localStorage.getItem('moida_logged_in') === 'true' && !!localStorage.getItem('accessToken')
   );
@@ -324,7 +344,11 @@ const App: React.FC = () => {
   }, [isLoggedIn, isAdmin]);
 
   const loginAsAdmin = () => {
-    localStorage.setItem('moida_is_admin', 'true');
+    // isAdmin 판정이 hasAdminSession() (= token + logged_in + role) 기반이므로
+    // 별도 admin 플래그는 더 이상 저장하지 않는다.
+    // moida_logged_in 은 LoginPage 의 admin 분기에서 세팅하지 않으므로 여기서 보강한다.
+    localStorage.setItem('moida_logged_in', 'true');
+    // admin/normal 뷰 토글 선택과 idle 타이머 기준 시각은 인증과 무관한 UI 상태라서 그대로 유지한다.
     localStorage.setItem('moida_admin_view', 'admin');
     localStorage.setItem('moida_admin_login_at', new Date().toISOString());
     setIsAdmin(true);
@@ -338,10 +362,11 @@ const App: React.FC = () => {
     // - reconnectDelay 로 자동 재연결이 트리거되지 않도록 deactivate() 를 직접 호출.
     // void 처리: 동기 흐름을 막지 않기 위함이며, 끊김은 어차피 fire-and-forget 으로 충분.
     void disconnectNotificationSocket();
-    localStorage.removeItem('moida_is_admin');
+    // moida_is_admin 은 더 이상 사용하지 않는다 (hasAdminSession 기반 판정으로 전환).
     localStorage.removeItem('moida_admin_idle_warned');
     localStorage.removeItem('moida_admin_view');
     localStorage.removeItem('moida_admin_login_at');
+    localStorage.removeItem('moida_logged_in');
     localStorage.removeItem('moida_user_name');
     localStorage.removeItem('moida_user_role');
     localStorage.removeItem('accessToken');

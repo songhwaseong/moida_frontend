@@ -58,10 +58,10 @@ const triggerHardLogout = () => {
     localStorage.removeItem("moida_user_name");
     localStorage.removeItem("moida_user_role");
 
-    // 관리자 모드 플래그도 함께 정리. JWT 가 죽었다면 관리자 세션도 신뢰할 수 없으므로 같이 비워서,
-    // 리로드 직후 isAdmin=true 로 URL 이 /admin 으로 푸시되고 → 또 다른 API 가 401 → 다시 / 로 리다이렉트
-    // 되는 무한 루프를 차단한다.
-    localStorage.removeItem("moida_is_admin");
+    // admin 전용 UI 상태(뷰 토글, idle 타이머)도 함께 정리.
+    // 핵심: isAdmin 판정 자체가 hasAdminSession() (=token + logged_in + role) 기반이라
+    // accessToken/logged_in 만 지워도 isAdmin 은 자동으로 false 가 된다. 그래서 별도 admin 플래그
+    // (과거 moida_is_admin) 는 더 이상 존재하지 않는다. 아래 항목들은 단순 UI 상태 정리 용도.
     localStorage.removeItem("moida_admin_view");
     localStorage.removeItem("moida_admin_login_at");
     localStorage.removeItem("moida_admin_idle_warned");

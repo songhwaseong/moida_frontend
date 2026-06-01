@@ -37,11 +37,13 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
     // 2. 백엔드 API 로그인 시도
     try {
       const response = await axiosInstance.post('/auth/login', { email, password }); // ← /api 중복 제거
-      const { accessToken, role, name } = response.data.data;
+      const { accessToken, refreshToken, role, name } = response.data.data;
 
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('bazar_user_name', name);
-      localStorage.setItem('bazar_user_role', role);
+      // refreshToken 은 access 만료 시 axios 인터셉터가 자동 갱신에 사용한다.
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('moida_user_name', name);
+      localStorage.setItem('moida_user_role', role);
 
       if (role === 'ADMIN' || role === 'MANAGER') {
         onAdmin();

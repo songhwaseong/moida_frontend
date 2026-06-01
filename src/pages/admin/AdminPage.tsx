@@ -1,6 +1,13 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { PRODUCTS, AUCTION_ITEMS } from '../../data/mockData';
-import { myProductStore } from '../../data/myProductStore';
+import {
+  getAdminProducts,
+  getAdminProduct,
+  updateAdminProduct,
+  updateAdminProductStatus,
+  deleteAdminProduct,
+  CONDITION_OPTIONS,
+  type AdminProductStatus,
+} from '../../api/adminProducts';
 import DashboardPage from './DashboardPage';
 import NoticePage from './NoticePage';
 import BannerPage from './BannerPage';
@@ -8,7 +15,8 @@ import SettlementPage from './SettlementPage';
 import WalletRequestPage from './WalletRequestPage';
 import InquiryPage from './InquiryPage';
 import InquiryProductPage from './InquiryProductPage';
-import { useInquiries } from '../../data/inquiries';
+import { getAdminInquiries } from '../../api/adminInquiries';
+import { useT } from './i18n';
 import FalseBidPage from './FalseBidPage';
 import SanctionPage from './SanctionPage';
 import ChatLogPage from './ChatLogPage';
@@ -36,64 +44,8 @@ interface AdminProduct {
   price: number;
   status: ProductStatus;
   registeredAt: string;
+  description: string;
 }
-
-const SELLERS = ['운동화마니아', '코딩러버', '사진작가K', '기타리스트', '워치컬렉터', '뷰티러버', '패션킹', '게이머Z', '오디오파일', '홈퍼니싱'];
-const getSeller = (id: number) => SELLERS[id % SELLERS.length];
-
-const YY = String(new Date().getFullYear()).slice(2);
-const makeProductNo = (seq: number) => `${YY}${String(seq).padStart(5, '0')}`;
-
-const buildInitialProducts = (): AdminProduct[] => {
-  const tradeItems: AdminProduct[] = PRODUCTS.map((p, i) => ({
-    id: `trade-${p.id}`,
-    productNo: makeProductNo(i + 1),
-    image: p.image,
-    name: p.name,
-    type: '중고거래',
-    seller: getSeller(p.id),
-    category: p.category,
-    condition: p.condition,
-    price: p.price,
-    status: '경매예정',
-    registeredAt: `2026.04.${String(28 - (p.id % 14)).padStart(2, '0')}`,
-  }));
-
-  const auctionStatus = (a: { isLive: boolean; id: number }): AuctionStatus => {
-    if (a.isLive) return '경매중';
-    return a.id % 3 === 0 ? '유찰' : '낙찰';
-  };
-
-  const auctionItems: AdminProduct[] = AUCTION_ITEMS.map((a, i) => ({
-    id: `auction-${a.id}`,
-    productNo: makeProductNo(PRODUCTS.length + i + 1),
-    image: a.image,
-    name: a.name,
-    type: '경매',
-    seller: getSeller(a.id + 3),
-    category: a.category,
-    condition: a.condition ?? 'S급',
-    price: a.currentPrice,
-    status: auctionStatus(a),
-    registeredAt: `2026.04.${String(27 - (a.id % 12)).padStart(2, '0')}`,
-  }));
-
-  const myItems: AdminProduct[] = myProductStore.map((p, i) => ({
-    id: `my-${p.id}`,
-    productNo: makeProductNo(PRODUCTS.length + AUCTION_ITEMS.length + i + 1),
-    image: p.images[p.mainImageIndex] ?? p.images[0],
-    name: p.title,
-    type: '중고거래',
-    seller: 'hwaseong',
-    category: p.category,
-    condition: p.condition,
-    price: p.price,
-    status: p.status,
-    registeredAt: '2026.04.25',
-  }));
-
-  return [...myItems, ...tradeItems, ...auctionItems];
-};
 
 // ─── 사이드바 메뉴 구조 ─────────────────────────────────────────────────
 type MenuKey =
@@ -141,58 +93,61 @@ const SIDE_ICONS: Record<MenuKey, React.ReactNode> = {
   '설정':        <IC><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/><circle cx="8" cy="6" r="2" fill="#fff"/><circle cx="16" cy="12" r="2" fill="#fff"/><circle cx="8" cy="18" r="2" fill="#fff"/></IC>,
 };
 
-const SIDE_SECTIONS: { label: string; items: { key: MenuKey; label: string }[] }[] = [
+// 사이드바 구조. menuKey 는 내부 state 식별자(한국어 고정)이고,
+// 표시 label 은 모두 i18n 키로 들고 있어 언어 전환 시 화면 텍스트만 바뀐다.
+const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: string }[] }[] = [
   {
-    label: 'Overview',
-    items: [{ key: '대시보드', label: 'Dashboard' }],
+    sectionKey: 'admin.section.overview',
+    items: [{ key: '대시보드', labelKey: 'admin.menu.dashboard' }],
   },
   {
-    label: 'Products',
+    sectionKey: 'admin.section.products',
     items: [
-      { key: '상품 관리', label: 'Product Management' },
-      { key: '상품 문의', label: 'Product Inquiries' },
+      { key: '상품 관리', labelKey: 'admin.menu.productManagement' },
+      { key: '상품 문의', labelKey: 'admin.menu.productInquiries' },
     ],
   },
   {
-    label: 'Auction',
+    sectionKey: 'admin.section.auction',
     items: [
-      { key: '경매 관리', label: 'Auction Management' },
+      { key: '경매 관리', labelKey: 'admin.menu.auctionManagement' },
     ],
   },
   {
-    label: 'Reports & Sanctions',
+    sectionKey: 'admin.section.reports',
     items: [
-      { key: '허위입찰', label: 'False Bids' },
-      { key: '제재 내역', label: 'Sanction History' },
-      { key: '채팅 로그', label: 'Chat Logs (On Hold)' },
+      { key: '허위입찰', labelKey: 'admin.menu.falseBids' },
+      { key: '제재 내역', labelKey: 'admin.menu.sanction' },
+      { key: '채팅 로그', labelKey: 'admin.menu.chatLogs' },
     ],
   },
   {
-    label: 'Members',
+    sectionKey: 'admin.section.members',
     items: [
-      { key: '회원 목록', label: 'Member List' },
-      { key: '탈퇴 회원', label: 'Withdrawn Members' },
+      { key: '회원 목록', labelKey: 'admin.menu.memberList' },
+      { key: '탈퇴 회원', labelKey: 'admin.menu.withdrawn' },
     ],
   },
   {
-    label: 'Content',
+    sectionKey: 'admin.section.content',
     items: [
-      { key: '공지사항', label: 'Notices' },
-      { key: '카테고리/배너', label: 'Categories' },
+      { key: '공지사항', labelKey: 'admin.menu.notices' },
+      { key: '카테고리/배너', labelKey: 'admin.menu.categories' },
     ],
   },
   {
-    label: 'Operations',
+    sectionKey: 'admin.section.operations',
     items: [
-      { key: '정산/수수료', label: 'Settlements & Fees' },
-      { key: '지갑 요청', label: 'Wallet Requests' },
-      { key: '고객문의/FAQ', label: 'Inquiries & FAQ' },
+      { key: '정산/수수료', labelKey: 'admin.menu.settlements' },
+      { key: '지갑 요청', labelKey: 'admin.menu.wallet' },
+      { key: '고객문의/FAQ', labelKey: 'admin.menu.inquiriesFaq' },
     ],
   },
   {
-    label: 'System',
+    sectionKey: 'admin.section.system',
     items: [
-      { key: '설정', label: 'Settings' },
+      { key: '설정', labelKey: 'admin.menu.settings' },
+
     ],
   },
 ];
@@ -204,14 +159,62 @@ const CATEGORY_OPTIONS = ['전체', '디지털/가전', '패션/의류', '명품
 interface Props { onLogout: () => void; onSwitchToNormal: () => void; }
 
 const WARN_COUNTDOWN_S = 30; // 경고 후 30초 뒤 자동 로그아웃
-const IDLE_STORAGE_KEY = 'bazar_admin_idle_minutes';
-const IDLE_WARNED_KEY = 'bazar_admin_idle_warned';
+const IDLE_STORAGE_KEY = 'moida_admin_idle_minutes';
+const IDLE_WARNED_KEY = 'moida_admin_idle_warned';
 
 const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
+  const t = useT();
   const [activeMenu, setActiveMenu] = useState<MenuKey>('대시보드');
-  const inquiryStore = useInquiries();
-  const pendingInquiryCount = inquiryStore.filter(i => !i.answer).length;
-  const [products, setProducts] = useState<AdminProduct[]>(buildInitialProducts);
+  // 사이드바 "상품 문의" 배지용 미답변 건수. 관리자 로그인 직후/주기적으로 가볍게 갱신한다.
+  const [pendingInquiryCount, setPendingInquiryCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPending = async () => {
+      try {
+        const list = await getAdminInquiries();
+        if (!cancelled) setPendingInquiryCount(list.filter(i => !i.answer).length);
+      } catch {
+        // 실패 시 배지 미표시 — 본 화면 진입하면 어차피 정확한 수가 다시 계산됨
+      }
+    };
+    fetchPending();
+    // 답변 처리 후에도 자연스럽게 갱신되도록 60초마다 폴링한다.
+    const id = window.setInterval(fetchPending, 60_000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, []);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 관리자 상품 목록 API 로드
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const list = await getAdminProducts();
+      setProducts(list.map(dto => ({
+        id: String(dto.id),
+        productNo: dto.productNo,
+        image: dto.image ?? '',
+        name: dto.name,
+        type: dto.type,
+        seller: dto.seller,
+        category: dto.category,
+        condition: dto.condition,
+        price: dto.price,
+        status: dto.status,
+        registeredAt: dto.registeredAt,
+        description: dto.description ?? '',
+      })));
+    } catch {
+      setLoadError('상품 목록을 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 내부에서 로딩/결과 setState는 정상 데이터 페칭 패턴
+  useEffect(() => { loadProducts(); }, [loadProducts]);
 
   // ─── 자동 로그아웃 ─────────────────────────────────────────────────
   const [idleMinutes, setIdleMinutes] = useState<IdleMinutes>(() => {
@@ -244,7 +247,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
 
   // ─── 로그인 시각 ──────────────────────────────────────────────────
   const loginAt = (() => {
-    const raw = localStorage.getItem('bazar_admin_login_at');
+    const raw = localStorage.getItem('moida_admin_login_at');
     if (!raw) return '';
     const d = new Date(raw);
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -307,11 +310,16 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   const [deleteTarget, setDeleteTarget] = useState<AdminProduct | null>(null);
 
   // 승인/취소 확인 모달
-  const [approveTarget, setApproveTarget] = useState<{ product: AdminProduct; action: 'approve' | 'cancel' } | null>(null);
+  // approve  : PENDING(승인요청중) → SCHEDULED(경매예정)  — 검토 통과
+  // start    : SCHEDULED(경매예정) → LIVE(경매중)        — 경매 시작
+  // cancel   : LIVE(경매중)        → SCHEDULED(경매예정) — 진행 경매 취소
+  const [approveTarget, setApproveTarget] = useState<{ product: AdminProduct; action: 'approve' | 'start' | 'cancel' } | null>(null);
 
   const handleApproveConfirm = () => {
     if (!approveTarget) return;
-    const newStatus: ProductStatus = approveTarget.action === 'approve' ? '경매중' : '경매예정';
+    // approve(PENDING→SCHEDULED) / cancel(LIVE→SCHEDULED) → 경매예정
+    // start  (SCHEDULED→LIVE) → 경매중
+    const newStatus: ProductStatus = approveTarget.action === 'start' ? '경매중' : '경매예정';
     handleStatusChange(approveTarget.product.id, newStatus);
     setApproveTarget(null);
   };
@@ -320,6 +328,32 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   const [detailProduct, setDetailProduct] = useState<AdminProduct | null>(null);
   const [isEditingDetail, setIsEditingDetail] = useState(false);
   const [editForm, setEditForm] = useState<Partial<AdminProduct>>({});
+
+  // 상세 모달 이미지 갤러리. 이미지는 base64라 무거우므로 목록이 아닌 상세 API로 따로 불러온다.
+  const [detailImages, setDetailImages] = useState<string[]>([]);
+  const [detailImageIndex, setDetailImageIndex] = useState(0);
+
+  // 모달이 열리면 해당 상품의 전체 이미지를 조회한다.
+  /* eslint-disable react-hooks/set-state-in-effect -- 모달 열림 상태에 동기화된 데이터 페치(정상 패턴) */
+  useEffect(() => {
+    if (!detailProduct) { setDetailImages([]); setDetailImageIndex(0); return; }
+    let cancelled = false;
+    // 우선 목록에서 받은 대표 이미지를 보여주고, 상세 응답이 오면 전체로 교체한다.
+    setDetailImages(detailProduct.image ? [detailProduct.image] : []);
+    setDetailImageIndex(0);
+    getAdminProduct(Number(detailProduct.id))
+      .then(detail => {
+        if (cancelled) return;
+        const imgs = detail.images.length > 0
+          ? detail.images
+          : (detail.image ? [detail.image] : []);
+        setDetailImages(imgs);
+        setDetailImageIndex(0);
+      })
+      .catch(() => { /* 실패 시 대표 이미지만 유지 */ });
+    return () => { cancelled = true; };
+  }, [detailProduct]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // 입찰 이력 모달
   const [bidHistoryTarget, setBidHistoryTarget] = useState<AdminProduct | null>(null);
@@ -373,14 +407,29 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
     });
   }, [baseFiltered, statFilter]);
 
-  const handleStatusChange = (id: string, newStatus: AdminProduct['status']) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+  const handleStatusChange = async (id: string, newStatus: AdminProduct['status']) => {
+    const snapshot = products;
+    // 낙관적 업데이트 후 실패 시 롤백
+    setProducts(cur => cur.map(p => p.id === id ? { ...p, status: newStatus } : p));
+    try {
+      await updateAdminProductStatus(Number(id), newStatus as AdminProductStatus);
+    } catch {
+      setProducts(snapshot);
+      setAlertModal('상태 변경에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
-    setProducts(prev => prev.filter(p => p.id !== deleteTarget.id));
-    setDeleteTarget(null);
+    const target = deleteTarget;
+    try {
+      await deleteAdminProduct(Number(target.id));
+      setProducts(prev => prev.filter(p => p.id !== target.id));
+    } catch {
+      setAlertModal('상품 삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const handleStatClick = (key: string) => {
@@ -394,19 +443,19 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   // ─── 상품관리 렌더 ───────────────────────────────────────────────
   const renderProducts = () => (
     <>
-      <div className={styles.pageTitle}>상품 관리</div>
-      <div className={styles.pageSubtitle}>전체 상품을 조회하고 상태를 관리합니다.</div>
+      <div className={styles.pageTitle}>{t('admin.products.title')}</div>
+      <div className={styles.pageSubtitle}>{t('admin.products.subtitle')}</div>
 
       <div className={styles.statsRow}>
         {[
-          { key: null, label: '전체 상품', value: stats.total },
-          { key: '경매예정', label: '경매예정', value: stats.selling },
-          { key: '승인요청중', label: '승인요청', value: stats.approving },
-          { key: '경매중', label: '경매중', value: stats.inBid },
-          { key: '숨김', label: '숨김', value: stats.hidden },
+          { key: null, labelKey: 'admin.products.stats.total', value: stats.total },
+          { key: '경매예정', labelKey: 'admin.products.stats.scheduled', value: stats.selling },
+          { key: '승인요청중', labelKey: 'admin.products.stats.pending', value: stats.approving },
+          { key: '경매중', labelKey: 'admin.products.stats.live', value: stats.inBid },
+          { key: '숨김', labelKey: 'admin.products.stats.hidden', value: stats.hidden },
         ].map(s => (
           <div
-            key={s.label}
+            key={s.labelKey}
             className={`${styles.statCard} ${statFilter === s.key ? styles.statCardActive : ''}`}
             onClick={() => {
               if (s.key === null) {
@@ -417,8 +466,8 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             }}
             style={{ cursor: 'pointer' }}
           >
-            <div className={styles.statLabel}>{s.label}</div>
-            <div className={styles.statValue}>{s.value.toLocaleString()}<span className={styles.statUnit}>건</span></div>
+            <div className={styles.statLabel}>{t(s.labelKey)}</div>
+            <div className={styles.statValue}>{s.value.toLocaleString()}<span className={styles.statUnit}>{t('admin.products.unit')}</span></div>
           </div>
         ))}
       </div>
@@ -427,13 +476,13 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
         <div className={styles.searchWrap}>
           <input
             className={styles.searchInput}
-            placeholder="상품명, 상품번호 또는 판매자 검색"
+            placeholder={t('admin.products.search.placeholder')}
             value={search}
             onChange={e => { setSearch(e.target.value); setStatFilter(null); setCurrentPage(1); }}
           />
         </div>
         <select className={styles.filterSelect} value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setStatFilter(null); setCurrentPage(1); }}>
-          {CATEGORY_OPTIONS.map(c => <option key={c}>{c}</option>)}
+          {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c === '전체' ? t('admin.products.filter.all') : c}</option>)}
         </select>
         <select className={styles.filterSelect} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setStatFilter(null); setCurrentPage(1); }}>
           {['전체', '경매예정', '승인요청중', '경매중', '낙찰', '유찰', '숨김'].map(s => <option key={s}>{s}</option>)}
@@ -441,10 +490,24 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
       </div>
 
       <div className={styles.tableWrap}>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyIcon}>⏳</div>
+            <div className={styles.emptyText}>{t('admin.products.loading')}</div>
+          </div>
+        ) : loadError ? (
+          <div className={styles.empty}>
+            <div className={styles.emptyIcon}>⚠️</div>
+            <div className={styles.emptyText}>{t('admin.products.loadError')}</div>
+            <button
+              onClick={() => loadProducts()}
+              style={{ marginTop: 12, padding: '6px 16px', borderRadius: 6, border: '1px solid #E0E0E0', background: '#fff', cursor: 'pointer', fontSize: 13 }}
+            >{t('admin.products.retry')}</button>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>📦</div>
-            <div className={styles.emptyText}>검색 결과가 없습니다</div>
+            <div className={styles.emptyText}>{t('admin.products.empty')}</div>
           </div>
         ) : (
           <table className={styles.table} style={{ tableLayout: 'fixed' }}>
@@ -459,7 +522,13 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             </colgroup>
             <thead>
               <tr>
-                <th style={{ textAlign: 'center' }}>상품번호</th><th style={{ textAlign: 'center' }}>상품</th><th>판매자</th><th>가격</th><th>등록일</th><th>관리</th><th>승인</th>
+                <th style={{ textAlign: 'center' }}>{t('admin.products.col.no')}</th>
+                <th style={{ textAlign: 'center' }}>{t('admin.products.col.product')}</th>
+                <th>{t('admin.products.col.seller')}</th>
+                <th>{t('admin.products.col.price')}</th>
+                <th>{t('admin.products.col.registeredAt')}</th>
+                <th>{t('admin.products.col.manage')}</th>
+                <th>{t('admin.products.col.approve')}</th>
               </tr>
             </thead>
             <tbody>
@@ -509,6 +578,14 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                         승인
                       </button>
                     )}
+                    {p.status === '경매예정' && (
+                      <button
+                        className={styles.startBtn}
+                        onClick={() => setApproveTarget({ product: p, action: 'start' })}
+                      >
+                        승인
+                      </button>
+                    )}
                     {p.status === '경매중' && (
                       <button
                         className={styles.cancelBtn}
@@ -531,7 +608,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: currentPage === 1 ? '#F5F5F5' : '#fff', color: currentPage === 1 ? '#ccc' : '#333', cursor: currentPage === 1 ? 'default' : 'pointer', fontSize: 13 }}
-          >이전</button>
+          >{t('admin.common.prev')}</button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button
               key={page}
@@ -543,7 +620,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
             style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #E0E0E0', background: currentPage === totalPages ? '#F5F5F5' : '#fff', color: currentPage === totalPages ? '#ccc' : '#333', cursor: currentPage === totalPages ? 'default' : 'pointer', fontSize: 13 }}
-          >다음</button>
+          >{t('admin.common.next')}</button>
         </div>
       )}
     </>
@@ -585,15 +662,15 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
           <span className={styles.headerLogo}>MO<span>IDA</span></span>
         </div>
         <div className={styles.headerRight}>
-          <span className={styles.headerAdmin}><strong>관리자</strong>로 로그인 중</span>
-          <button className={styles.normalBtn} onClick={onSwitchToNormal} title="일반 화면" aria-label="일반 화면으로 이동">
+          <span className={styles.headerAdmin}>{t('admin.header.loggedInAs')}</span>
+          <button className={styles.normalBtn} onClick={onSwitchToNormal} title={t('admin.header.gotoNormal')} aria-label={t('admin.header.gotoNormal')}>
             <svg className={styles.normalIcon} viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 11.5 12 4l9 7.5" />
               <path d="M5.5 10.5V20h13v-9.5" />
               <path d="M9.5 20v-5.5h5V20" />
             </svg>
           </button>
-          <button className={styles.logoutBtn} onClick={onLogout}>로그아웃</button>
+          <button className={styles.logoutBtn} onClick={onLogout}>{t('admin.header.logout')}</button>
         </div>
       </header>
 
@@ -602,8 +679,8 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
         <nav className={styles.sidebar}>
           <div className={styles.sidebarMenu}>
             {SIDE_SECTIONS.map(section => (
-              <div key={section.label}>
-                <div className={styles.sideSection}>{section.label}</div>
+              <div key={section.sectionKey}>
+                <div className={styles.sideSection}>{t(section.sectionKey)}</div>
                 {section.items.map(m => {
                   const badge = getBadge(m.key);
                   return (
@@ -613,7 +690,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                       onClick={() => setActiveMenu(m.key)}
                     >
                       <span className={styles.sideIcon}>{SIDE_ICONS[m.key]}</span>
-                      {m.label}
+                      {t(m.labelKey)}
                       {badge !== null && badge > 0 && (
                         <span className={styles.sideBadge}>{badge}</span>
                       )}
@@ -625,7 +702,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
           </div>
           <div className={styles.sidebarFooter}>
             <div className={styles.adminStatus}>
-              <span className={styles.adminStatusLabel}>접속</span>
+              <span className={styles.adminStatusLabel}>{t('admin.sidebar.access')}</span>
               <span className={styles.headerClock}>{loginAt || '-'}</span>
             </div>
           </div>
@@ -647,7 +724,27 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 {isEditingDetail ? (
                   <>
-                    <button className={styles.detailEditSaveBtn} onClick={() => {
+                    <button className={styles.detailEditSaveBtn} onClick={async () => {
+                      const id = Number(detailProduct.id);
+                      try {
+                        // 1) 텍스트 필드(상품명/설명/카테고리/제품상태/가격) 변경분만 서버에 반영
+                        const payload: Record<string, unknown> = {};
+                        if (editForm.name !== undefined && editForm.name !== detailProduct.name) payload.name = editForm.name;
+                        if (editForm.description !== undefined && editForm.description !== detailProduct.description) payload.description = editForm.description;
+                        if (editForm.category !== undefined && editForm.category !== detailProduct.category) payload.category = editForm.category;
+                        if (editForm.condition !== undefined && editForm.condition !== detailProduct.condition) payload.condition = editForm.condition;
+                        if (editForm.price !== undefined && editForm.price !== detailProduct.price) payload.price = editForm.price;
+                        if (Object.keys(payload).length > 0) {
+                          await updateAdminProduct(id, payload);
+                        }
+                        // 2) 상태는 별도 엔드포인트로 반영
+                        if (editForm.status && editForm.status !== detailProduct.status) {
+                          await updateAdminProductStatus(id, editForm.status as AdminProductStatus);
+                        }
+                      } catch {
+                        setAlertModal('상품 수정에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+                        return;
+                      }
                       setProducts(prev => prev.map(p => p.id === detailProduct.id ? { ...p, ...editForm } : p));
                       setDetailProduct(prev => prev ? { ...prev, ...editForm } : null);
                       setIsEditingDetail(false);
@@ -655,7 +752,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                     <button className={styles.detailEditCancelBtn} onClick={() => setIsEditingDetail(false)}>취소</button>
                   </>
                 ) : (
-                  <button className={styles.detailEditBtn} onClick={() => { setEditForm({ name: detailProduct.name, price: detailProduct.price, category: detailProduct.category, condition: detailProduct.condition, status: detailProduct.status }); setIsEditingDetail(true); }}>
+                  <button className={styles.detailEditBtn} onClick={() => { setEditForm({ name: detailProduct.name, price: detailProduct.price, category: detailProduct.category, condition: detailProduct.condition, status: detailProduct.status, description: detailProduct.description }); setIsEditingDetail(true); }}>
                     수정
                   </button>
                 )}
@@ -668,8 +765,36 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             </div>
 
             <div className={styles.detailScroll}>
-              {/* 이미지 */}
-              <img src={detailProduct.image} alt={detailProduct.name} className={styles.detailImg} />
+              {/* 이미지 갤러리 (등록된 모든 이미지) */}
+              <div style={{ position: 'relative' }}>
+                <img
+                  src={detailImages[detailImageIndex] ?? detailProduct.image}
+                  alt={detailProduct.name}
+                  className={styles.detailImg}
+                />
+                {detailImages.length > 1 && (
+                  <span style={{ position: 'absolute', right: 12, bottom: 12, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, padding: '3px 8px', borderRadius: 12 }}>
+                    {detailImageIndex + 1} / {detailImages.length}
+                  </span>
+                )}
+              </div>
+              {detailImages.length > 1 && (
+                <div style={{ display: 'flex', gap: 8, padding: '12px 16px 0', overflowX: 'auto' }}>
+                  {detailImages.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img}
+                      alt={`${detailProduct.name} ${i + 1}`}
+                      onClick={() => setDetailImageIndex(i)}
+                      style={{
+                        width: 56, height: 56, objectFit: 'cover', borderRadius: 8, flexShrink: 0, cursor: 'pointer',
+                        border: i === detailImageIndex ? '2px solid #E24B4A' : '2px solid transparent',
+                        opacity: i === detailImageIndex ? 1 : 0.6,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* 판매자 */}
               <div className={styles.detailSection}>
@@ -678,7 +803,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                   <div className={styles.detailSellerInfo}>
                     <p className={styles.detailSellerName}>{detailProduct.seller}</p>
                     <div className={styles.detailSellerMeta}>
-                      <span className={styles.detailSellerSub}>📦 {detailProduct.type}</span>
                       <span className={styles.detailSellerSub}>🗓 {detailProduct.registeredAt}</span>
                     </div>
                   </div>
@@ -691,7 +815,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
               <div className={styles.detailSection}>
                 <div className={styles.detailTagRow}>
                   <span className={styles.detailCategoryTag}>{editForm.category ?? detailProduct.category}</span>
-                  <span className={styles.detailTypeTag}>{detailProduct.type}</span>
                 </div>
                 {isEditingDetail ? (
                   <input
@@ -719,14 +842,30 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
 
               <div className={styles.detailDivider}/>
 
+              {/* 상품 설명 */}
+              <div className={styles.detailSection}>
+                <p className={styles.detailSectionTitle}>상품 설명</p>
+                {isEditingDetail ? (
+                  <textarea
+                    className={styles.detailEditInput}
+                    style={{ width: '100%', minHeight: 100, resize: 'vertical', lineHeight: 1.6 }}
+                    value={editForm.description ?? ''}
+                    onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                    placeholder="상품 설명"
+                  />
+                ) : (
+                  <p style={{ fontSize: 13.5, lineHeight: 1.7, color: '#333', whiteSpace: 'pre-wrap', margin: 0 }}>
+                    {detailProduct.description?.trim() ? detailProduct.description : '등록된 설명이 없습니다.'}
+                  </p>
+                )}
+              </div>
+
+              <div className={styles.detailDivider}/>
+
               {/* 거래 정보 */}
               <div className={styles.detailSection}>
                 <p className={styles.detailSectionTitle}>거래 정보</p>
                 <div className={styles.detailInfoGrid}>
-                  <div className={styles.detailInfoItem}>
-                    <span className={styles.detailInfoLabel}>유형</span>
-                    <span className={styles.detailInfoValue}>{detailProduct.type === '중고거래' ? '경매예정' : detailProduct.type}</span>
-                  </div>
                   <div className={styles.detailInfoItem}>
                     <span className={styles.detailInfoLabel}>카테고리</span>
                     {isEditingDetail ? (
@@ -753,7 +892,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                     <span className={styles.detailInfoLabel}>제품상태</span>
                     {isEditingDetail ? (
                       <select className={styles.detailEditSelect} value={editForm.condition ?? ''} onChange={e => setEditForm(f => ({ ...f, condition: e.target.value }))}>
-                        {['미개봉', '거의새것', '상태양호', '사용감있음', '많이사용함'].map(c => <option key={c}>{c}</option>)}
+                        {CONDITION_OPTIONS.map(c => <option key={c}>{c}</option>)}
                       </select>
                     ) : (
                       <span className={styles.detailInfoValue}>{detailProduct.condition}</span>
@@ -874,31 +1013,38 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
 
       {/* 삭제 확인 모달 */}
       {/* 승인/취소 확인 모달 */}
-      {approveTarget && (
+      {approveTarget && (() => {
+        const isCancel = approveTarget.action === 'cancel';
+        const icon = isCancel ? '⛔' : '✅';
+        const title = isCancel ? '경매를 취소하시겠어요?' : '경매를 승인하시겠어요?';
+        const desc = approveTarget.action === 'approve'
+          ? '승인 시 상태가 경매예정으로 변경됩니다.'
+          : approveTarget.action === 'start'
+            ? '승인 시 상태가 경매중으로 변경됩니다.'
+            : '취소 시 상태가 경매예정으로 되돌아갑니다.';
+        const confirmLabel = isCancel ? '취소하기' : '승인하기';
+        return (
         <div className={styles.modalOverlay} onClick={() => setApproveTarget(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalIcon}>{approveTarget.action === 'approve' ? '✅' : '⛔'}</div>
-            <div className={styles.modalTitle}>
-              {approveTarget.action === 'approve' ? '경매를 승인하시겠어요?' : '경매를 취소하시겠어요?'}
-            </div>
+            <div className={styles.modalIcon}>{icon}</div>
+            <div className={styles.modalTitle}>{title}</div>
             <div className={styles.modalDesc}>
               '{approveTarget.product.name}'<br />
-              {approveTarget.action === 'approve'
-                ? '승인 시 상태가 경매중으로 변경됩니다.'
-                : '취소 시 상태가 경매예정으로 되돌아갑니다.'}
+              {desc}
             </div>
             <div className={styles.modalBtns}>
               <button className={styles.modalCancelBtn} onClick={() => setApproveTarget(null)}>닫기</button>
               <button
-                className={approveTarget.action === 'approve' ? styles.modalApproveBtn : styles.modalDeleteBtn}
+                className={isCancel ? styles.modalDeleteBtn : styles.modalApproveBtn}
                 onClick={handleApproveConfirm}
               >
-                {approveTarget.action === 'approve' ? '승인하기' : '취소하기'}
+                {confirmLabel}
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {deleteTarget && (
         <div className={styles.modalOverlay}>

@@ -60,7 +60,7 @@ const ChangePasswordPage: React.FC<Props> = ({ onBack }) => {
             await changePassword({ currentPassword: currentPw, newPassword: newPw });
             setOk(true);
             setTimeout(() => onBack(), 1500);
-        } catch (e) {
+        } catch {
             setApiError('현재 비밀번호가 올바르지 않아요');
             setTouched(p => ({ ...p, currentPw: true }));
         } finally {

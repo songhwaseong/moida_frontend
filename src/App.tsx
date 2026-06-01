@@ -66,7 +66,7 @@ type Screen =
   | { type: 'editProfile' }
   | { type: 'changePassword' };
 
-interface SellerInfo { name: string; temp: number; sales: number; location: string; }
+interface SellerInfo { id: number; name: string; temp: number; sales: number; location: string; }
 type MyMenuKey =
   | '판매 내역' | '구매 내역' | '입찰 내역' | '관심 목록' | '배송 조회'
   | '내 계좌' | '받은 후기' | '내 주소 관리' | '알림 설정'

@@ -15,7 +15,7 @@ interface Props {
   onBack: () => void;
   isLoggedIn?: boolean;
   onRequireLogin?: () => void;
-  onSellerClick?: (seller: { name: string; temp: number; sales: number; location: string }) => void;
+  onSellerClick?: (seller: { id: number; name: string; temp: number; sales: number; location: string }) => void;
 }
 
 const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false, onRequireLogin, onSellerClick }) => {
@@ -519,7 +519,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 </div>
                 <button
                   className={styles.sellerChat}
-                  onClick={() => onSellerClick?.({ name: item.seller, temp: item.sellerTemp, sales: item.sellerSales, location: item.location })}
+                  onClick={() => onSellerClick?.({ id: item.sellerId ?? item.id, name: item.seller, temp: item.sellerTemp, sales: item.sellerSales, location: item.location })}
                 >프로필</button>
               </div>
               <ProductLiveChat

@@ -11,7 +11,7 @@ import ProductLiveChat from '../components/ProductLiveChat';
 interface Props {
   productId: number;
   onBack: () => void;
-  onSellerClick?: (seller: { name: string; temp: number; sales: number; location: string }) => void;
+  onSellerClick?: (seller: { id: number; name: string; temp: number; sales: number; location: string }) => void;
   onAuctionClick?: () => void;
   onChatClick?: () => void;
   isLoggedIn?: boolean;
@@ -253,7 +253,7 @@ const ProductDetailPage: React.FC<Props> = ({ productId, onBack, onSellerClick, 
                   <span className={styles.sellerLoc}>📍 {item.location}</span>
                 </div>
               </div>
-              <button className={styles.profileBtn} onClick={() => onSellerClick?.({ name: item.seller, temp: item.sellerTemp, sales: item.sellerSales, location: item.location })}>프로필</button>
+              <button className={styles.profileBtn} onClick={() => onSellerClick?.({ id: item.sellerId ?? item.id, name: item.seller, temp: item.sellerTemp, sales: item.sellerSales, location: item.location })}>프로필</button>
             </div>
 
             <ProductLiveChat

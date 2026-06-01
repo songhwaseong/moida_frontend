@@ -38,6 +38,7 @@ export interface ProductDetailDto extends ProductSummaryDto {
   description: string;
   carrierCode?: string | null;
   trackingNo?: string | null;
+  sellerId: number;
   seller: string;
   sellerTemp: number;
   sellerSales: number;
@@ -100,6 +101,11 @@ export const getMyProducts = async () => {
   return unwrap(response);
 };
 
+export const getSellerProducts = async (sellerId: number) => {
+  const response = await customAxios.get<ApiResponse<ProductSummaryDto[]>>(`/products/seller/${sellerId}`);
+  return unwrap(response);
+};
+
 export const toProduct = (item: ProductSummaryDto): Product => ({
   id: item.id,
   productNo: item.productNo,
@@ -138,6 +144,7 @@ export const toProductDetail = (item: ProductDetailDto): ProductDetail => ({
   ...toProduct(item),
   images: item.images.length > 0 ? item.images : [item.image],
   description: item.description,
+  sellerId: item.sellerId,
   seller: item.seller,
   sellerTemp: item.sellerTemp,
   sellerSales: item.sellerSales,
@@ -151,6 +158,7 @@ export const toAuctionDetail = (item: ProductDetailDto): AuctionDetail => ({
   ...toAuctionItem(item),
   images: item.images.length > 0 ? item.images : [item.image],
   description: item.description,
+  sellerId: item.sellerId,
   seller: item.seller,
   sellerTemp: item.sellerTemp,
   sellerSales: item.sellerSales,

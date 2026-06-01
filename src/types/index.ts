@@ -25,6 +25,7 @@ export interface BidHistory {
 export interface AuctionDetail extends AuctionItem {
   images: string[];
   description: string;
+  sellerId?: number;
   seller: string;
   sellerTemp: number;
   sellerSales: number;
@@ -69,6 +70,7 @@ export interface Product {
 export interface ProductDetail extends Product {
   images: string[];
   description: string;
+  sellerId?: number;
   seller: string;
   sellerTemp: number;
   sellerSales: number;

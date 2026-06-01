@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { PRODUCTS, PRODUCT_DETAILS } from '../data/mockData';
+import { getSellerProducts, toProduct } from '../api/products';
 import type { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import styles from './SellerProfilePage.module.css';
 
 interface SellerInfo {
+  id: number;
   name: string;
   temp: number;
   sales: number;
@@ -26,6 +27,9 @@ const REVIEWS = [
 const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) => {
   const [activeTab, setActiveTab] = useState<'selling' | 'reviews'>('selling');
   const [barWidth, setBarWidth] = useState(0);
+  const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState('');
 
   // 매너온도 막대 애니메이션
   useEffect(() => {
@@ -39,10 +43,29 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
   const tempColor = seller.temp >= 38 ? '#E24B4A' : seller.temp >= 36.5 ? '#EF9F27' : '#5B9BD5';
 
   // 해당 판매자 상품 필터링
-  const sellerProducts = PRODUCTS.filter((p) =>
-    PRODUCT_DETAILS.find((d) => d.id === p.id && d.seller === seller.name)
-  );
-  const displayProducts = sellerProducts.length > 0 ? sellerProducts : PRODUCTS.slice(0, 2);
+  useEffect(() => {
+    let active = true;
+
+    getSellerProducts(seller.id)
+      .then((products) => {
+        if (!active) return;
+        setSellerProducts(products.map(toProduct));
+        setProductsError('');
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error('Failed to load seller products', error);
+        setSellerProducts([]);
+        setProductsError('판매 상품을 불러오지 못했어요.');
+      })
+      .finally(() => {
+        if (active) setProductsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [seller.id]);
 
   const avgStars = (REVIEWS.reduce((sum, r) => sum + r.stars, 0) / REVIEWS.length).toFixed(1);
   const ThumbUp = () => (
@@ -104,7 +127,7 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
           </div>
           <div className={styles.statDivider} />
           <div className={styles.statItem}>
-            <span className={styles.statNum}>{displayProducts.length}</span>
+            <span className={styles.statNum}>{sellerProducts.length}</span>
             <span className={styles.statLabel}>판매중</span>
           </div>
           <div className={styles.statDivider} />
@@ -119,7 +142,7 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
           <button
             className={`${styles.tab} ${activeTab === 'selling' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('selling')}
-          >판매 상품 {displayProducts.length}</button>
+          >판매 상품 {sellerProducts.length}</button>
           <button
             className={`${styles.tab} ${activeTab === 'reviews' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('reviews')}
@@ -129,8 +152,16 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
         {/* 판매 상품 */}
         {activeTab === 'selling' && (
           <div className={styles.productList}>
-            {displayProducts.length > 0 ? (
-              displayProducts.map((p) => (
+            {productsLoading ? (
+              <div className={styles.empty}>
+                <p className={styles.emptyText}>판매 상품을 불러오는 중...</p>
+              </div>
+            ) : productsError ? (
+              <div className={styles.empty}>
+                <p className={styles.emptyText}>{productsError}</p>
+              </div>
+            ) : sellerProducts.length > 0 ? (
+              sellerProducts.map((p) => (
                 <ProductCard key={p.id} product={p} onClick={onProductClick} />
               ))
             ) : (

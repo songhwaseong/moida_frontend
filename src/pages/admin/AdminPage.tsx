@@ -35,6 +35,7 @@ type ProductStatus = TradeStatus | AuctionStatus;
 
 interface AdminProduct {
   id: string;
+  realId?: number;
   productNo: string;
   image: string;
   name: string;
@@ -60,40 +61,40 @@ type MenuKey =
   | '설정';
 
 const IC = (p: React.SVGProps<SVGSVGElement>) => (
-  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" {...p}/>
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" {...p} />
 );
 
 const SIDE_ICONS: Record<MenuKey, React.ReactNode> = {
   /* LayoutDashboard */
-  '대시보드':    <IC><rect x="3" y="3" width="7" height="10" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="17" width="7" height="4" rx="1.5"/></IC>,
+  '대시보드': <IC><rect x="3" y="3" width="7" height="10" rx="1.5" /><rect x="14" y="3" width="7" height="5" rx="1.5" /><rect x="14" y="12" width="7" height="9" rx="1.5" /><rect x="3" y="17" width="7" height="4" rx="1.5" /></IC>,
   /* ShoppingBag */
-  '상품 관리':   <IC><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></IC>,
+  '상품 관리': <IC><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></IC>,
   /* MessageSquare (상품 문의) */
-  '상품 문의':   <IC><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></IC>,
+  '상품 문의': <IC><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></IC>,
   /* Gavel (경매 관리) */
-  '경매 관리':   <IC><path d="M14 14l6 6"/><path d="M4 4l4 4"/><path d="M9 4h5v2l2 2v1l-7 7-1-1v-2l-2-2V9l3-5z"/><path d="M5 19l4-4"/></IC>,
+  '경매 관리': <IC><path d="M14 14l6 6" /><path d="M4 4l4 4" /><path d="M9 4h5v2l2 2v1l-7 7-1-1v-2l-2-2V9l3-5z" /><path d="M5 19l4-4" /></IC>,
   /* Flag */
-  '허위입찰':    <IC><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></IC>,
+  '허위입찰': <IC><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></IC>,
   /* ShieldX */
-  '제재 내역':   <IC><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9.5" y1="9.5" x2="14.5" y2="14.5"/><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"/></IC>,
+  '제재 내역': <IC><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><line x1="9.5" y1="9.5" x2="14.5" y2="14.5" /><line x1="14.5" y1="9.5" x2="9.5" y2="14.5" /></IC>,
   /* FileText */
-  '채팅 로그':   <IC><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></IC>,
+  '채팅 로그': <IC><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="13" y2="17" /></IC>,
   /* Users */
-  '회원 목록':   <IC><circle cx="9" cy="6" r="3.5"/><path d="M1.5 21v-2a5.5 5.5 0 0115 0v2"/><circle cx="18.5" cy="6.5" r="2.5"/><path d="M22.5 21v-1.5a4 4 0 00-3-3.86"/></IC>,
+  '회원 목록': <IC><circle cx="9" cy="6" r="3.5" /><path d="M1.5 21v-2a5.5 5.5 0 0115 0v2" /><circle cx="18.5" cy="6.5" r="2.5" /><path d="M22.5 21v-1.5a4 4 0 00-3-3.86" /></IC>,
   /* UserMinus */
-  '탈퇴 회원':   <IC><circle cx="9" cy="7" r="3.5"/><path d="M1.5 21v-2a5.5 5.5 0 0111 0v2"/><line x1="16" y1="12" x2="22" y2="12"/></IC>,
+  '탈퇴 회원': <IC><circle cx="9" cy="7" r="3.5" /><path d="M1.5 21v-2a5.5 5.5 0 0111 0v2" /><line x1="16" y1="12" x2="22" y2="12" /></IC>,
   /* Megaphone */
-  '공지사항':    <IC><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></IC>,
+  '공지사항': <IC><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M15.54 8.46a5 5 0 010 7.07" /><path d="M19.07 4.93a10 10 0 010 14.14" /></IC>,
   /* PanelLeft / Columns */
-  '카테고리/배너': <IC><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="2" y1="9" x2="9" y2="9"/><line x1="2" y1="15" x2="9" y2="15"/></IC>,
+  '카테고리/배너': <IC><rect x="2" y="3" width="20" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /><line x1="2" y1="9" x2="9" y2="9" /><line x1="2" y1="15" x2="9" y2="15" /></IC>,
   /* Receipt */
-  '정산/수수료':  <IC><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9.5" x2="16" y2="9.5"/><line x1="8" y1="13.5" x2="14" y2="13.5"/></IC>,
+  '정산/수수료': <IC><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" /><line x1="8" y1="9.5" x2="16" y2="9.5" /><line x1="8" y1="13.5" x2="14" y2="13.5" /></IC>,
   /* Wallet */
-  '지갑 요청':    <IC><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 10h5v5h-5a2.5 2.5 0 010-5z"/><path d="M3 9h18"/></IC>,
+  '지갑 요청': <IC><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M16 10h5v5h-5a2.5 2.5 0 010-5z" /><path d="M3 9h18" /></IC>,
   /* MessageCircleQuestion */
-  '고객문의/FAQ': <IC><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"/><path d="M9.5 9.5a3 3 0 115 2.5c-.5.5-1.5 1-1.5 2"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></IC>,
+  '고객문의/FAQ': <IC><path d="M12 21a9 9 0 100-18 9 9 0 000 18z" /><path d="M9.5 9.5a3 3 0 115 2.5c-.5.5-1.5 1-1.5 2" /><circle cx="12" cy="17" r=".5" fill="currentColor" /></IC>,
   /* SlidersHorizontal */
-  '설정':        <IC><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="12" x2="3" y2="12"/><line x1="21" y1="18" x2="3" y2="18"/><circle cx="8" cy="6" r="2" fill="#fff"/><circle cx="16" cy="12" r="2" fill="#fff"/><circle cx="8" cy="18" r="2" fill="#fff"/></IC>,
+  '설정': <IC><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="12" x2="3" y2="12" /><line x1="21" y1="18" x2="3" y2="18" /><circle cx="8" cy="6" r="2" fill="#fff" /><circle cx="16" cy="12" r="2" fill="#fff" /><circle cx="8" cy="18" r="2" fill="#fff" /></IC>,
 };
 
 // 사이드바 구조. menuKey 는 내부 state 식별자(한국어 고정)이고,
@@ -221,6 +222,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 내부에서 로딩/결과 setState는 정상 데이터 페칭 패턴
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
+
   // ─── 자동 로그아웃 ─────────────────────────────────────────────────
   const [idleMinutes, setIdleMinutes] = useState<IdleMinutes>(() => {
     const saved = localStorage.getItem(IDLE_STORAGE_KEY);
@@ -320,7 +322,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   // cancel   : LIVE(경매중)        → SCHEDULED(경매예정) — 진행 경매 취소
   const [approveTarget, setApproveTarget] = useState<{ product: AdminProduct; action: 'approve' | 'start' | 'cancel' } | null>(null);
 
-  const handleApproveConfirm = () => {
+  const handleApproveConfirm = async () => {
     if (!approveTarget) return;
     // approve(PENDING→SCHEDULED) / cancel(LIVE→SCHEDULED) → 경매예정
     // start  (SCHEDULED→LIVE) → 경매중
@@ -764,7 +766,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                     <button className={styles.detailEditSaveBtn} onClick={async () => {
                       const id = Number(detailProduct.id);
                       try {
-                        // 1) 텍스트 필드(상품명/설명/카테고리/제품상태/가격) 변경분만 서버에 반영
                         const payload: Record<string, unknown> = {};
                         if (editForm.name !== undefined && editForm.name !== detailProduct.name) payload.name = editForm.name;
                         if (editForm.description !== undefined && editForm.description !== detailProduct.description) payload.description = editForm.description;
@@ -774,7 +775,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                         if (Object.keys(payload).length > 0) {
                           await updateAdminProduct(id, payload);
                         }
-                        // 2) 상태는 별도 엔드포인트로 반영
                         if (editForm.status && editForm.status !== detailProduct.status) {
                           await updateAdminProductStatus(id, editForm.status as AdminProductStatus);
                         }
@@ -795,7 +795,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                 )}
                 <button className={styles.detailCloseBtn} onClick={() => { setDetailProduct(null); setIsEditingDetail(false); }}>
                   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M18 6L6 18M6 6l12 12"/>
+                    <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
               </div>
@@ -834,6 +834,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
               )}
 
               {/* 판매자 */}
+              {/* 판매자 */}
               <div className={styles.detailSection}>
                 <div className={styles.detailSellerRow}>
                   <div className={styles.detailSellerAvatar}>😊</div>
@@ -846,38 +847,16 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                 </div>
               </div>
 
-              <div className={styles.detailDivider}/>
+              <div className={styles.detailDivider} />
 
               {/* 상품 정보 */}
               <div className={styles.detailSection}>
                 <div className={styles.detailTagRow}>
                   <span className={styles.detailCategoryTag}>{editForm.category ?? detailProduct.category}</span>
                 </div>
-                {isEditingDetail ? (
-                  <input
-                    className={styles.detailEditInput}
-                    value={editForm.name ?? ''}
-                    onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="상품명"
-                  />
-                ) : (
-                  <h2 className={styles.detailName}>{detailProduct.name}</h2>
-                )}
-                <p className={styles.detailMeta}>등록일 {detailProduct.registeredAt}</p>
-                {isEditingDetail ? (
-                  <input
-                    className={styles.detailEditInput}
-                    type="number"
-                    value={editForm.price ?? ''}
-                    onChange={e => setEditForm(f => ({ ...f, price: Number(e.target.value) }))}
-                    placeholder="가격"
-                  />
-                ) : (
-                  <p className={styles.detailPrice}> {detailProduct.price.toLocaleString()}</p>
-                )}
               </div>
 
-              <div className={styles.detailDivider}/>
+              <div className={styles.detailDivider} />
 
               {/* 상품 설명 */}
               <div className={styles.detailSection}>
@@ -950,105 +929,104 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                     <span className={styles.detailInfoValue}>{detailProduct.registeredAt}</span>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ height: 32 }}/>
+                <div style={{ height: 32 }} />
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* 입찰 이력 모달 */}
-      {bidHistoryTarget && (
-        <div className={styles.detailOverlay} onClick={() => setBidHistoryTarget(null)}>
-          <div className={styles.detailSheet} onClick={e => e.stopPropagation()}>
-            <div className={styles.detailHeader}>
-              <span className={styles.detailHeaderTitle}>입찰 이력</span>
-              <button className={styles.detailCloseBtn} onClick={() => setBidHistoryTarget(null)}>
-                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            <div className={styles.detailScroll}>
-              <div className={styles.detailSection}>
-                <p className={styles.detailName} style={{ fontSize: 15 }}>{bidHistoryTarget.name}</p>
-                <p className={styles.detailMeta}>경매 시작가 {bidHistoryTarget.price.toLocaleString()}</p>
+        {bidHistoryTarget && (
+          <div className={styles.detailOverlay} onClick={() => setBidHistoryTarget(null)}>
+            <div className={styles.detailSheet} onClick={e => e.stopPropagation()}>
+              <div className={styles.detailHeader}>
+                <span className={styles.detailHeaderTitle}>입찰 이력</span>
+                <button className={styles.detailCloseBtn} onClick={() => setBidHistoryTarget(null)}>
+                  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div className={styles.detailDivider}/>
-              <div className={styles.detailSection}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #E8E8E8' }}>
-                      <th style={{ padding: '8px 6px', textAlign: 'center', color: '#8B8FA8', fontWeight: 600, width: 40 }}>순위</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'left', color: '#8B8FA8', fontWeight: 600 }}>입찰자</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right', color: '#8B8FA8', fontWeight: 600 }}>입찰가</th>
-                      <th style={{ padding: '8px 6px', textAlign: 'right', color: '#8B8FA8', fontWeight: 600 }}>입찰 시각</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getMockBids(bidHistoryTarget).map(bid => (
-                      <tr key={bid.rank} style={{ borderBottom: '1px solid #F3F3F3' }}>
-                        <td style={{ padding: '10px 6px', textAlign: 'center', fontWeight: 700, color: bid.rank === 1 ? '#E24B4A' : '#8B8FA8' }}>
-                          {bid.rank === 1 ? '🥇' : bid.rank}
-                        </td>
-                        <td style={{ padding: '10px 6px', fontWeight: bid.rank === 1 ? 600 : 400 }}>{bid.bidder}</td>
-                        <td style={{ padding: '10px 6px', textAlign: 'right', fontWeight: 700, color: bid.rank === 1 ? '#E24B4A' : '#333' }}>
-                          {bid.amount.toLocaleString()}
-                        </td>
-                        <td style={{ padding: '10px 6px', textAlign: 'right', color: '#8B8FA8' }}>{bid.time}</td>
+              <div className={styles.detailScroll}>
+                <div className={styles.detailSection}>
+                  <p className={styles.detailName} style={{ fontSize: 15 }}>{bidHistoryTarget.name}</p>
+                  <p className={styles.detailMeta}>경매 시작가 {bidHistoryTarget.price.toLocaleString()}</p>
+                </div>
+                <div className={styles.detailDivider} />
+                <div className={styles.detailSection}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #E8E8E8' }}>
+                        <th style={{ padding: '8px 6px', textAlign: 'center', color: '#8B8FA8', fontWeight: 600, width: 40 }}>순위</th>
+                        <th style={{ padding: '8px 6px', textAlign: 'left', color: '#8B8FA8', fontWeight: 600 }}>입찰자</th>
+                        <th style={{ padding: '8px 6px', textAlign: 'right', color: '#8B8FA8', fontWeight: 600 }}>입찰가</th>
+                        <th style={{ padding: '8px 6px', textAlign: 'right', color: '#8B8FA8', fontWeight: 600 }}>입찰 시각</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {getMockBids(bidHistoryTarget).map(bid => (
+                        <tr key={bid.rank} style={{ borderBottom: '1px solid #F3F3F3' }}>
+                          <td style={{ padding: '10px 6px', textAlign: 'center', fontWeight: 700, color: bid.rank === 1 ? '#E24B4A' : '#8B8FA8' }}>
+                            {bid.rank === 1 ? '🥇' : bid.rank}
+                          </td>
+                          <td style={{ padding: '10px 6px', fontWeight: bid.rank === 1 ? 600 : 400 }}>{bid.bidder}</td>
+                          <td style={{ padding: '10px 6px', textAlign: 'right', fontWeight: 700, color: bid.rank === 1 ? '#E24B4A' : '#333' }}>
+                            {bid.amount.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '10px 6px', textAlign: 'right', color: '#8B8FA8' }}>{bid.time}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ height: 24 }} />
               </div>
-              <div style={{ height: 24 }}/>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 안내 알림 모달 */}
-      {alertModal && (
-        <div className={styles.modalOverlay} onClick={() => setAlertModal(null)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalIcon}>⚠️</div>
-            <div className={styles.modalTitle}>변경 불가</div>
-            <div className={styles.modalDesc}>
-              {alertModal.split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
-            </div>
-            <div className={styles.modalBtns}>
-              <button className={styles.modalApproveBtn} onClick={() => setAlertModal(null)}>확인</button>
+        {/* 안내 알림 모달 */}
+        {alertModal && (
+          <div className={styles.modalOverlay} onClick={() => setAlertModal(null)}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalIcon}>⚠️</div>
+              <div className={styles.modalTitle}>변경 불가</div>
+              <div className={styles.modalDesc}>
+                {alertModal.split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+              </div>
+              <div className={styles.modalBtns}>
+                <button className={styles.modalApproveBtn} onClick={() => setAlertModal(null)}>확인</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 자동 로그아웃 경고 모달 */}
-      {showIdleModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalIcon}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#E24B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="13" r="8"/>
-                <path d="M12 9v4l2.5 2.5"/>
-                <path d="M9 2h6"/>
-                <path d="M12 2v3"/>
-              </svg>
-            </div>
-            <div className={styles.modalTitle}>자동 로그아웃 예정</div>
-            <div className={styles.modalDesc}>
-              {idleMinutes}분간 입력이 없었습니다.<br />
-              자동으로 로그아웃됩니다.
-            </div>
-            <div className={styles.modalBtns}>
-              <button className={styles.modalDeleteBtn} onClick={onLogout}>로그아웃</button>
+        {/* 자동 로그아웃 경고 모달 */}
+        {showIdleModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modal}>
+              <div className={styles.modalIcon}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#E24B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="13" r="8" />
+                  <path d="M12 9v4l2.5 2.5" />
+                  <path d="M9 2h6" />
+                  <path d="M12 2v3" />
+                </svg>
+              </div>
+              <div className={styles.modalTitle}>자동 로그아웃 예정</div>
+              <div className={styles.modalDesc}>
+                {idleMinutes}분간 입력이 없었습니다.<br />
+                자동으로 로그아웃됩니다.
+              </div>
+              <div className={styles.modalBtns}>
+                <button className={styles.modalDeleteBtn} onClick={onLogout}>로그아웃</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 삭제 확인 모달 */}
       {/* 승인/취소 확인 모달 */}
       {approveTarget && (() => {
         const isCancel = approveTarget.action === 'cancel';
@@ -1061,44 +1039,44 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             : '취소 시 상태가 경매예정으로 되돌아갑니다.';
         const confirmLabel = isCancel ? '취소하기' : '승인하기';
         return (
-        <div className={styles.modalOverlay} onClick={() => setApproveTarget(null)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalIcon}>{icon}</div>
-            <div className={styles.modalTitle}>{title}</div>
-            <div className={styles.modalDesc}>
-              '{approveTarget.product.name}'<br />
-              {desc}
-            </div>
-            <div className={styles.modalBtns}>
-              <button className={styles.modalCancelBtn} onClick={() => setApproveTarget(null)}>닫기</button>
-              <button
-                className={isCancel ? styles.modalDeleteBtn : styles.modalApproveBtn}
-                onClick={handleApproveConfirm}
-              >
-                {confirmLabel}
-              </button>
+          <div className={styles.modalOverlay} onClick={() => setApproveTarget(null)}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+              <div className={styles.modalIcon}>{icon}</div>
+              <div className={styles.modalTitle}>{title}</div>
+              <div className={styles.modalDesc}>
+                '{approveTarget.product.name}'<br />
+                {desc}
+              </div>
+              <div className={styles.modalBtns}>
+                <button className={styles.modalCancelBtn} onClick={() => setApproveTarget(null)}>닫기</button>
+                <button
+                  className={isCancel ? styles.modalDeleteBtn : styles.modalApproveBtn}
+                  onClick={handleApproveConfirm}
+                >
+                  {confirmLabel}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         );
       })()}
 
-      {deleteTarget && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <div className={styles.modalIcon}>🗑️</div>
-            <div className={styles.modalTitle}>상품을 삭제하시겠어요?</div>
-            <div className={styles.modalDesc}>
-              '{deleteTarget.name}'<br />
-              삭제된 상품은 복구할 수 없습니다.
-            </div>
-            <div className={styles.modalBtns}>
-              <button className={styles.modalCancelBtn} onClick={() => setDeleteTarget(null)}>취소</button>
-              <button className={styles.modalDeleteBtn} onClick={handleDelete}>삭제하기</button>
+        {deleteTarget && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modal}>
+              <div className={styles.modalIcon}>🗑️</div>
+              <div className={styles.modalTitle}>상품을 삭제하시겠어요?</div>
+              <div className={styles.modalDesc}>
+                '{deleteTarget.name}'<br />
+                삭제된 상품은 복구할 수 없습니다.
+              </div>
+              <div className={styles.modalBtns}>
+                <button className={styles.modalCancelBtn} onClick={() => setDeleteTarget(null)}>취소</button>
+                <button className={styles.modalDeleteBtn} onClick={handleDelete}>삭제하기</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

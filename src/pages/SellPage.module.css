@@ -288,6 +288,12 @@
   transition: border-color 0.2s;
 }
 
+.inputReadonly {
+  background: #f9f8f5;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 .input:focus {
   border-color: var(--primary);
 }

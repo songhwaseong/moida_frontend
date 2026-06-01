@@ -41,6 +41,7 @@ const FaqPage = lazy(() => import('./pages/my/FaqPage'));
 const CustomerServicePage = lazy(() => import('./pages/my/CustomerServicePage'));
 const TermsPage = lazy(() => import('./pages/my/TermsPage'));
 const EditProfilePage = lazy(() => import('./pages/my/EditProfilePage'));
+const ChangePasswordPage = lazy(() => import('./pages/my/ChangePasswordPage'));
 const MyWalletPage = lazy(() => import('./pages/my/MyWalletPage'));
 const TrackingPage = lazy(() => import('./pages/my/TrackingPage'));
 const GuidePage = lazy(() => import('./pages/my/GuidePage'));
@@ -62,7 +63,8 @@ type Screen =
   | { type: 'navChat' }
   | { type: 'navMy' }
   | { type: 'myMenu'; menu: MyMenuKey }
-  | { type: 'editProfile' };
+  | { type: 'editProfile' }
+  | { type: 'changePassword' };
 
 interface SellerInfo { name: string; temp: number; sales: number; location: string; }
 type MyMenuKey =
@@ -108,6 +110,7 @@ const getInitialScreen = (): Screen => {
 
   if (path === '/my') return { type: 'navMy' };
   if (path === '/my/edit-profile') return { type: 'editProfile' };
+  if (path === '/my/change-password') return { type: 'changePassword' };
   if (path === '/chat') return { type: 'navChat' };
   if (path === '/notifications') return { type: 'navNotification' };
   if (path === '/search') return { type: 'navSearch' };
@@ -174,6 +177,7 @@ const getHistoryPath = (view: AppHistoryView, isAdmin = false) => {
   if (view.screen.type === 'auctionDetail') return `/auctions/${view.screen.id}`;
   if (view.screen.type === 'navMy') return '/my';
   if (view.screen.type === 'editProfile') return '/my/edit-profile';
+  if (view.screen.type === 'changePassword') return '/my/change-password';
   if (view.screen.type === 'navChat') return '/chat';
   if (view.screen.type === 'navNotification') return '/notifications';
   if (view.screen.type === 'navSearch') return '/search';
@@ -240,7 +244,7 @@ const App: React.FC = () => {
   const [mainTab, setMainTab] = useState<MainTab>(() => getInitialMainTab());
   const [navTab, setNavTab] = useState<NavTab>(() => {
     const screen = getInitialScreen();
-    if (screen.type === 'navMy' || screen.type === 'editProfile' || screen.type === 'myMenu') return 'my';
+    if (screen.type === 'navMy' || screen.type === 'editProfile' || screen.type === 'myMenu' || screen.type === 'changePassword') return 'my';
     if (screen.type === 'navChat') return 'chat';
     if (screen.type === 'navNotification') return 'notification';
     if (screen.type === 'navSearch') return 'search';
@@ -692,7 +696,8 @@ const App: React.FC = () => {
         onRequireLogin={() => requireLogin(() => { })}
       />
     );
-    if (screen.type === 'editProfile') return <EditProfilePage onBack={goBack} />;
+    if (screen.type === 'editProfile') return <EditProfilePage onBack={goBack} onChangePassword={() => setScreen({ type: 'changePassword' })} />;
+    if (screen.type === 'changePassword') return <ChangePasswordPage onBack={goBack} />;
     if (screen.type === 'myMenu') {
       const backToMy = goBack;
       const menuMap: Record<MyMenuKey, React.ReactNode> = {

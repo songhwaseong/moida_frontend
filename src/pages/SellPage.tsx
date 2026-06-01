@@ -6,6 +6,7 @@ import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { CARRIERS } from '../data/carriers';
 import styles from './SellPage.module.css';
 import customAxios from '../api/axiosInstance';
+import { getMyProfile } from '../api/member';
 
 interface Props {
   onBack: () => void;
@@ -56,6 +57,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   // ── 인증 관련 ──
   const [phone, setPhone] = useState('');
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneFromProfile, setPhoneFromProfile] = useState(false);
   const [verifyCode, setVerifyCode] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -79,6 +81,15 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
     auctionStartPrice !== '' || buyNowPrice !== '' || minBidUnit !== '' ||
     description !== '' || location !== '' || carrierCode !== '' || trackingNo !== '' || phone !== ''
   );
+
+  useEffect(() => {
+    getMyProfile().then(data => {
+      if (data.phone) {
+        setPhone(data.phone);
+        setPhoneFromProfile(true);
+      }
+    }).catch(() => { });
+  }, []);
 
   useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
 
@@ -202,14 +213,14 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
 
   const validateStep2 = () => {
     const e: Record<string, string> = {};
-      // 경매 유효성
-      if (!auctionStartPrice.trim()) e.auctionStartPrice = '경매 시작가를 입력해주세요';
-      if (buyNowPrice.trim() && auctionStartPrice.trim()) {
-        const start = Number(auctionStartPrice.replace(/,/g, ''));
-        const buyNow = Number(buyNowPrice.replace(/,/g, ''));
-        if (buyNow <= start) e.buyNowPrice = '즉시낙찰가는 경매 시작가보다 높게 입력해주세요';
-      }
-      if (!minBidUnit.trim()) e.minBidUnit = '최소 호가 단위를 입력해주세요';
+    // 경매 유효성
+    if (!auctionStartPrice.trim()) e.auctionStartPrice = '경매 시작가를 입력해주세요';
+    if (buyNowPrice.trim() && auctionStartPrice.trim()) {
+      const start = Number(auctionStartPrice.replace(/,/g, ''));
+      const buyNow = Number(buyNowPrice.replace(/,/g, ''));
+      if (buyNow <= start) e.buyNowPrice = '즉시낙찰가는 경매 시작가보다 높게 입력해주세요';
+    }
+    if (!minBidUnit.trim()) e.minBidUnit = '최소 호가 단위를 입력해주세요';
 
     if (!description.trim()) e.description = '상품 설명을 입력해주세요';
     if (!location.trim()) e.location = '거래 희망 지역을 입력해주세요';
@@ -445,54 +456,54 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
           {/* STEP 2: 경매 정보 */}
           {step === 2 && (
             <div className={styles.form}>
-                  {/* 경매 시작가 */}
-                  <div className={styles.section}>
-                    <label className={styles.sectionTitle}>경매 시작가 <span className={styles.required}>*</span></label>
-                    <div className={styles.priceWrap}>
-                      <span className={styles.pricePrefix}>₩</span>
-                      <input
-                        className={`${styles.input} ${styles.priceInput} ${errors.auctionStartPrice ? styles.inputError : ''}`}
-                        placeholder="시작가를 입력해주세요"
-                        value={auctionStartPrice}
-                        onChange={e => { setAuctionStartPrice(formatPrice(e.target.value)); setErrors(p => ({ ...p, auctionStartPrice: '' })); }}
-                        inputMode="numeric"
-                      />
-                    </div>
-                    {errors.auctionStartPrice && <p className={styles.fieldError}>{errors.auctionStartPrice}</p>}
-                  </div>
+              {/* 경매 시작가 */}
+              <div className={styles.section}>
+                <label className={styles.sectionTitle}>경매 시작가 <span className={styles.required}>*</span></label>
+                <div className={styles.priceWrap}>
+                  <span className={styles.pricePrefix}>₩</span>
+                  <input
+                    className={`${styles.input} ${styles.priceInput} ${errors.auctionStartPrice ? styles.inputError : ''}`}
+                    placeholder="시작가를 입력해주세요"
+                    value={auctionStartPrice}
+                    onChange={e => { setAuctionStartPrice(formatPrice(e.target.value)); setErrors(p => ({ ...p, auctionStartPrice: '' })); }}
+                    inputMode="numeric"
+                  />
+                </div>
+                {errors.auctionStartPrice && <p className={styles.fieldError}>{errors.auctionStartPrice}</p>}
+              </div>
 
-                  {/* 즉시낙찰가 */}
-                  <div className={styles.section}>
-                    <label className={styles.sectionTitle}>즉시낙찰가</label>
-                    <p className={styles.sectionDesc}>구매자가 바로 낙찰할 수 있는 가격이에요</p>
-                    <div className={styles.priceWrap}>
-                      <span className={styles.pricePrefix}>₩</span>
-                      <input
-                        className={`${styles.input} ${styles.priceInput} ${errors.buyNowPrice ? styles.inputError : ''}`}
-                        placeholder="즉시낙찰가 (선택)"
-                        value={buyNowPrice}
-                        onChange={e => { setBuyNowPrice(formatPrice(e.target.value)); setErrors(p => ({ ...p, buyNowPrice: '' })); }}
-                        inputMode="numeric"
-                      />
-                    </div>
-                    {errors.buyNowPrice && <p className={styles.fieldError}>{errors.buyNowPrice}</p>}
-                  </div>
+              {/* 즉시낙찰가 */}
+              <div className={styles.section}>
+                <label className={styles.sectionTitle}>즉시낙찰가</label>
+                <p className={styles.sectionDesc}>구매자가 바로 낙찰할 수 있는 가격이에요</p>
+                <div className={styles.priceWrap}>
+                  <span className={styles.pricePrefix}>₩</span>
+                  <input
+                    className={`${styles.input} ${styles.priceInput} ${errors.buyNowPrice ? styles.inputError : ''}`}
+                    placeholder="즉시낙찰가 (선택)"
+                    value={buyNowPrice}
+                    onChange={e => { setBuyNowPrice(formatPrice(e.target.value)); setErrors(p => ({ ...p, buyNowPrice: '' })); }}
+                    inputMode="numeric"
+                  />
+                </div>
+                {errors.buyNowPrice && <p className={styles.fieldError}>{errors.buyNowPrice}</p>}
+              </div>
 
-                  {/* 최소 호가 단위 */}
-                  <div className={styles.section}>
-                    <label className={styles.sectionTitle}>최소 호가 단위 <span className={styles.required}>*</span></label>
-                    <div className={styles.priceWrap}>
-                      <span className={styles.pricePrefix}>₩</span>
-                      <input
-                        className={`${styles.input} ${styles.priceInput} ${errors.minBidUnit ? styles.inputError : ''}`}
-                        placeholder="입찰 최소 단위를 입력해주세요"
-                        value={minBidUnit}
-                        onChange={e => { setMinBidUnit(formatPrice(e.target.value)); setErrors(p => ({ ...p, minBidUnit: '' })); }}
-                        inputMode="numeric"
-                      />
-                    </div>
-                    {errors.minBidUnit && <p className={styles.fieldError}>{errors.minBidUnit}</p>}
-                  </div>
+              {/* 최소 호가 단위 */}
+              <div className={styles.section}>
+                <label className={styles.sectionTitle}>최소 호가 단위 <span className={styles.required}>*</span></label>
+                <div className={styles.priceWrap}>
+                  <span className={styles.pricePrefix}>₩</span>
+                  <input
+                    className={`${styles.input} ${styles.priceInput} ${errors.minBidUnit ? styles.inputError : ''}`}
+                    placeholder="입찰 최소 단위를 입력해주세요"
+                    value={minBidUnit}
+                    onChange={e => { setMinBidUnit(formatPrice(e.target.value)); setErrors(p => ({ ...p, minBidUnit: '' })); }}
+                    inputMode="numeric"
+                  />
+                </div>
+                {errors.minBidUnit && <p className={styles.fieldError}>{errors.minBidUnit}</p>}
+              </div>
 
               {/* 상품 설명 */}
               <div className={styles.section}>
@@ -582,11 +593,18 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                 <p className={styles.sectionDesc}>판매자 인증을 위해 휴대폰 번호가 필요해요</p>
                 <div className={styles.phoneRow}>
                   <input
-                    className={`${styles.input} ${styles.phoneInput} ${errors.phone ? styles.inputError : ''}`}
+                    className={`${styles.input} ${styles.phoneInput} ${phoneFromProfile ? styles.inputReadonly : ''} ${errors.phone ? styles.inputError : ''}`}
                     placeholder="010-0000-0000"
                     value={phone}
-                    onChange={e => { setPhone(e.target.value); setErrors(p => ({ ...p, phone: '', code: '' })); setPhoneVerified(false); setCodeSent(false); }}
+                    onChange={e => {
+                      if (phoneFromProfile) return;
+                      setPhone(e.target.value);
+                      setErrors(p => ({ ...p, phone: '', code: '' }));
+                      setPhoneVerified(false);
+                      setCodeSent(false);
+                    }}
                     inputMode="tel"
+                    readOnly={phoneFromProfile}
                     disabled={phoneVerified}
                   />
                   <button

@@ -186,7 +186,7 @@ const SIDE_SECTIONS: { label: string; items: { key: MenuKey; label: string }[] }
     items: [
       { key: '정산/수수료', label: 'Settlements & Fees' },
       { key: '지갑 요청', label: 'Wallet Requests' },
-      { key: '고객문의/FAQ', label: 'Inquiries & FAQ' },
+      { key: '고객문의/FAQ', label: 'FAQ' },
     ],
   },
   {

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './SignupPage.module.css';
 
 import axios from '../api/axiosInstance';
+import { sendPhoneCode, verifyPhoneCode } from '../api/phoneVerification';
 
 interface Props {
   onSignup: (name?: string) => void;
@@ -33,6 +34,76 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
   const [emailChecking, setEmailChecking] = useState(false);
   const [agreed, setAgreed] = useState({ all: false, terms: false, privacy: false, marketing: false });
   const [modalType, setModalType] = useState<'terms' | 'privacy' | 'marketing' | null>(null);
+
+  // ── 휴대폰 인증 상태 ──
+  const [codeSent, setCodeSent] = useState(false);       // 인증번호 발송됨
+  const [code, setCode] = useState('');                  // 입력한 인증번호
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [codeTimer, setCodeTimer] = useState(0);         // 남은 유효시간(초)
+  const [codeMsg, setCodeMsg] = useState('');            // 안내/오류 문구
+
+  // 인증번호 유효시간 카운트다운 (백엔드 TTL 3분 = 180초)
+  useEffect(() => {
+    if (codeTimer <= 0) return;
+    const id = window.setInterval(() => setCodeTimer((t) => (t <= 1 ? 0 : t - 1)), 1000);
+    return () => window.clearInterval(id);
+  }, [codeTimer]);
+
+  const formatTimer = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  // 휴대폰 번호가 바뀌면 인증 상태 초기화
+  const handlePhoneChange = (value: string) => {
+    set('phone', value);
+    setCodeSent(false);
+    setCode('');
+    setPhoneVerified(false);
+    setCodeTimer(0);
+    setCodeMsg('');
+  };
+
+  const handleSendCode = async () => {
+    if (!form.phone.trim()) {
+      setErrors((p) => ({ ...p, phone: '휴대폰 번호를 입력해주세요' }));
+      return;
+    }
+    setSendingCode(true);
+    setCodeMsg('');
+    try {
+      await sendPhoneCode(form.phone.trim());
+      setCodeSent(true);
+      setPhoneVerified(false);
+      setCode('');
+      setCodeTimer(180);
+      setCodeMsg('인증번호를 전송했어요. 3분 이내에 입력해주세요.');
+    } catch (error: unknown) {
+      setCodeMsg(getErrorMessage(error, '인증번호 발송에 실패했어요'));
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!code.trim()) return;
+    setVerifyingCode(true);
+    setCodeMsg('');
+    try {
+      await verifyPhoneCode(form.phone.trim(), code.trim());
+      setPhoneVerified(true);
+      setCodeTimer(0);
+      setCodeMsg('휴대폰 인증이 완료됐어요 ✓');
+      setErrors((p) => ({ ...p, phone: '' }));
+    } catch (error: unknown) {
+      setCodeMsg(getErrorMessage(error, '인증번호가 올바르지 않아요'));
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
 
   const TERMS_CONTENT: Record<'terms' | 'privacy' | 'marketing', { title: string; body: string }> = {
     terms: {
@@ -75,6 +146,7 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
     if (!form.nickname.trim()) e.nickname = '닉네임을 입력해주세요';
     else if (form.nickname.length < 2) e.nickname = '닉네임은 2자 이상이어야 해요';
     if (!form.phone.trim()) e.phone = '휴대폰 번호를 입력해주세요';
+    else if (!phoneVerified) e.phone = '휴대폰 인증을 완료해주세요';
     if (!agreed.terms) e.terms = '필수 약관에 동의해주세요';
     if (!agreed.privacy) e.terms = '필수 약관에 동의해주세요';
     setErrors(e);
@@ -327,13 +399,54 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
             {/* 휴대폰 */}
             <div className={styles.inputGroup}>
               <label className={styles.label}>휴대폰 번호 *</label>
-              <input
-                className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
-                type="tel"
-                placeholder="010-0000-0000"
-                value={form.phone}
-                onChange={(e) => set('phone', e.target.value)}
-              />
+              <div className={styles.pwWrap}>
+                <input
+                  className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
+                  type="tel"
+                  placeholder="010-0000-0000"
+                  value={form.phone}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  disabled={phoneVerified}
+                />
+                <button
+                  type="button"
+                  className={styles.pwToggle}
+                  onClick={handleSendCode}
+                  disabled={!form.phone.trim() || sendingCode || phoneVerified}
+                >
+                  {phoneVerified ? '인증완료' : sendingCode ? '전송 중' : codeSent ? '재전송' : '인증번호 받기'}
+                </button>
+              </div>
+
+              {/* 인증번호 입력 (발송 후 ~ 인증 완료 전) */}
+              {codeSent && !phoneVerified && (
+                <div className={styles.pwWrap} style={{ marginTop: 8 }}>
+                  <input
+                    className={styles.input}
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="인증번호 6자리"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                  />
+                  {codeTimer > 0 && (
+                    <span style={{ alignSelf: 'center', minWidth: 44, textAlign: 'center', color: '#E24B4A', fontSize: 13, fontWeight: 600 }}>
+                      {formatTimer(codeTimer)}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.pwToggle}
+                    onClick={handleVerifyCode}
+                    disabled={code.length < 6 || verifyingCode}
+                  >
+                    {verifyingCode ? '확인 중' : '확인'}
+                  </button>
+                </div>
+              )}
+
+              {codeMsg && <p className={phoneVerified ? styles.matchOk : styles.hint}>{codeMsg}</p>}
               {errors.phone && <p className={styles.fieldError}>{errors.phone}</p>}
             </div>
 

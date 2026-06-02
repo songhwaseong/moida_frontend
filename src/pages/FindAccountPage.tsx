@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './FindAccountPage.module.css';
+import { verifyPhoneCode } from '../api/phoneVerification';
+import { findIdByVerifiedPhone, sendFindIdPhoneCode, type FindIdResult } from '../api/findAccount';
 
 type Tab = 'id' | 'pw';
 type IdStep = 'form' | 'result';
@@ -10,6 +12,11 @@ interface Props {
   initialTab?: Tab;
 }
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const response = (error as { response?: { data?: { message?: string } } })?.response;
+  return response?.data?.message || fallback;
+};
+
 const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
   const [tab, setTab] = useState<Tab>(initialTab);
 
@@ -19,6 +26,14 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
   const [idStep, setIdStep] = useState<IdStep>('form');
   const [idError, setIdError] = useState('');
   const [idLoading, setIdLoading] = useState(false);
+  const [idResult, setIdResult] = useState<FindIdResult | null>(null);
+  const [idCodeSent, setIdCodeSent] = useState(false);
+  const [idCode, setIdCode] = useState('');
+  const [idPhoneVerified, setIdPhoneVerified] = useState(false);
+  const [idSendingCode, setIdSendingCode] = useState(false);
+  const [idVerifyingCode, setIdVerifyingCode] = useState(false);
+  const [idCodeTimer, setIdCodeTimer] = useState(0);
+  const [idCodeMsg, setIdCodeMsg] = useState('');
 
   // ── 비번 찾기 상태 ──
   const [pwEmail, setPwEmail] = useState('');
@@ -32,6 +47,12 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
   const [pwLoading, setPwLoading] = useState(false);
   const [codeTimer, setCodeTimer] = useState(0);
 
+  useEffect(() => {
+    if (idCodeTimer <= 0) return;
+    const id = window.setInterval(() => setIdCodeTimer(prev => (prev <= 1 ? 0 : prev - 1)), 1000);
+    return () => window.clearInterval(id);
+  }, [idCodeTimer]);
+
   // ── 타이머 ──
   const startTimer = () => {
     setCodeTimer(180);
@@ -44,6 +65,85 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
   };
   const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
 
+  const handleIdPhoneChange = (value: string) => {
+    setIdPhone(value);
+    setIdError('');
+    setIdCodeSent(false);
+    setIdCode('');
+    setIdPhoneVerified(false);
+    setIdCodeTimer(0);
+    setIdCodeMsg('');
+  };
+
+  const handleIdNameChange = (value: string) => {
+    setIdName(value);
+    setIdError('');
+    setIdCodeSent(false);
+    setIdCode('');
+    setIdPhoneVerified(false);
+    setIdCodeTimer(0);
+    setIdCodeMsg('');
+  };
+
+  const handleSendIdPhoneCode = async () => {
+    setIdError('');
+    setIdCodeMsg('');
+    if (!idName.trim()) {
+      setIdError('이름을 입력해주세요');
+      return;
+    }
+    if (!/^01[0-9]-?\d{3,4}-?\d{4}$/.test(idPhone.replace(/-/g,''))) {
+      setIdError('올바른 휴대폰 번호를 입력해주세요');
+      return;
+    }
+    setIdSendingCode(true);
+    try {
+      await sendFindIdPhoneCode(idName.trim(), idPhone.trim());
+      setIdCodeSent(true);
+      setIdPhoneVerified(false);
+      setIdCode('');
+      setIdCodeTimer(180);
+      setIdCodeMsg('인증번호를 전송했어요. 3분 이내에 입력해주세요.');
+    } catch (error: unknown) {
+      setIdCodeMsg(getErrorMessage(error, '인증번호 발송에 실패했어요'));
+    } finally {
+      setIdSendingCode(false);
+    }
+  };
+
+  const handleVerifyIdPhoneCode = async () => {
+    setIdError('');
+    setIdCodeMsg('');
+    if (idCode.length !== 6) {
+      setIdError('인증번호 6자리를 입력해주세요');
+      return;
+    }
+    setIdVerifyingCode(true);
+    try {
+      await verifyPhoneCode(idPhone.trim(), idCode);
+      setIdPhoneVerified(true);
+      setIdCodeTimer(0);
+      setIdCodeMsg('휴대폰 인증이 완료됐어요 ✓');
+    } catch (error: unknown) {
+      setIdCodeMsg(getErrorMessage(error, '인증번호가 올바르지 않아요'));
+    } finally {
+      setIdVerifyingCode(false);
+    }
+  };
+
+  const resetIdFindForm = () => {
+    setIdStep('form');
+    setIdError('');
+    setIdName('');
+    setIdPhone('');
+    setIdResult(null);
+    setIdCodeSent(false);
+    setIdCode('');
+    setIdPhoneVerified(false);
+    setIdCodeTimer(0);
+    setIdCodeMsg('');
+  };
+
   // ── 아이디 찾기 제출 ──
   const handleFindId = async () => {
     setIdError('');
@@ -51,10 +151,17 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
     if (!/^01[0-9]-?\d{3,4}-?\d{4}$/.test(idPhone.replace(/-/g,''))) {
       setIdError('올바른 휴대폰 번호를 입력해주세요'); return;
     }
+    if (!idPhoneVerified) { setIdError('휴대폰 인증을 완료해주세요'); return; }
     setIdLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setIdLoading(false);
-    setIdStep('result');
+    try {
+      const result = await findIdByVerifiedPhone(idName.trim(), idPhone.trim());
+      setIdResult(result);
+      setIdStep('result');
+    } catch (error: unknown) {
+      setIdError(getErrorMessage(error, '아이디 조회에 실패했어요'));
+    } finally {
+      setIdLoading(false);
+    }
   };
 
   // ── 인증코드 발송 ──
@@ -95,7 +202,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
 
   const switchTab = (t: Tab) => {
     setTab(t);
-    setIdStep('form'); setIdError(''); setIdName(''); setIdPhone('');
+    resetIdFindForm();
     setPwStep('form'); setPwError(''); setPwEmail(''); setPwCode(''); setPwNew(''); setPwConfirm('');
   };
 
@@ -136,22 +243,60 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
                 type="text"
                 placeholder="이름을 입력해주세요"
                 value={idName}
-                onChange={e => { setIdName(e.target.value); setIdError(''); }}
+                onChange={e => handleIdNameChange(e.target.value)}
               />
             </div>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>휴대폰 번호</label>
-              <input
-                className={styles.input}
-                type="tel"
-                inputMode="numeric"
-                placeholder="010-0000-0000"
-                value={idPhone}
-                onChange={e => { setIdPhone(e.target.value); setIdError(''); }}
-                maxLength={13}
-              />
+              <div className={styles.pwWrap}>
+                <input
+                  className={styles.input}
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="010-0000-0000"
+                  value={idPhone}
+                  onChange={e => handleIdPhoneChange(e.target.value)}
+                  maxLength={13}
+                  disabled={idPhoneVerified}
+                />
+                <button
+                  type="button"
+                  className={styles.pwToggle}
+                  onClick={handleSendIdPhoneCode}
+                  disabled={!idName.trim() || !idPhone.trim() || idSendingCode || idPhoneVerified}
+                >
+                  {idPhoneVerified ? '인증완료' : idSendingCode ? '전송 중' : idCodeSent ? '재전송' : '인증번호 받기'}
+                </button>
+              </div>
             </div>
+
+            {idCodeSent && !idPhoneVerified && (
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>인증번호</label>
+                <div className={styles.codeWrap}>
+                  <input
+                    className={styles.input}
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="6자리 코드 입력"
+                    value={idCode}
+                    onChange={e => { setIdCode(e.target.value.replace(/\D/g,'')); setIdError(''); }}
+                    maxLength={6}
+                  />
+                  {idCodeTimer > 0 && <span className={styles.timer}>{fmtTime(idCodeTimer)}</span>}
+                </div>
+                <button
+                  className={`${styles.ghostBtn} ${idVerifyingCode ? styles.loading : ''}`}
+                  onClick={handleVerifyIdPhoneCode}
+                  disabled={idCode.length < 6 || idVerifyingCode}
+                >
+                  {idVerifyingCode ? '확인 중...' : '인증 확인'}
+                </button>
+              </div>
+            )}
+
+            {idCodeMsg && <p className={idPhoneVerified ? styles.matchOk : styles.hint}>{idCodeMsg}</p>}
 
             {idError && <p className={styles.errorMsg}>⚠️ {idError}</p>}
 
@@ -166,11 +311,11 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
             <div className={styles.resultBox}>
               <div className={styles.resultIcon}>✉️</div>
               <p className={styles.resultLabel}>회원님의 아이디</p>
-              <p className={styles.resultEmail}>ba***r@email.com</p>
-              <p className={styles.resultSub}>가입일: 2024년 3월 12일</p>
+              <p className={styles.resultEmail}>{idResult?.maskedEmail ?? '-'}</p>
+              {idResult?.joinedAt && <p className={styles.resultSub}>가입일: {idResult.joinedAt}</p>}
             </div>
             <button className={styles.submitBtn} onClick={onBack}>로그인하러 가기</button>
-            <button className={styles.ghostBtn} onClick={() => { setIdStep('form'); setIdName(''); setIdPhone(''); }}>
+            <button className={styles.ghostBtn} onClick={resetIdFindForm}>
               다시 찾기
             </button>
           </div>

@@ -108,7 +108,7 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
       }
     })();
     return () => { ignore = true; };
-  }, [product.id]);
+  }, [product]);
 
   // 기준선(baseline)과 비교해 변경 여부 감지
   const isDirty =

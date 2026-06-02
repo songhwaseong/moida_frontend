@@ -360,13 +360,16 @@ const App: React.FC = () => {
     setIsGuest(false);
     setAuthScreen(null);
   };
-  const logoutAdmin = () => {
+  // 일반/관리자 로그아웃 공통 처리: 모든 인증 상태(토큰/플래그/React state)를 한 번에 정리한다.
+  // 과거에는 logout 은 isLoggedIn 만, logoutAdmin 은 isAdmin 만 정리해서,
+  // 새로고침 후처럼 두 플래그가 모두 true 인 상태에서 한 번에 로그아웃되지 않고
+  // "본인 계정 화면으로 바뀐 뒤 다시 로그아웃" 해야 하는 문제가 있었다.
+  const clearAllAuthState = () => {
     // STOMP 알림 소켓을 토큰 제거 전에 명시적으로 끊는다.
     // - 토큰이 살아 있는 동안 정상적인 DISCONNECT 프레임을 보내고,
     // - reconnectDelay 로 자동 재연결이 트리거되지 않도록 deactivate() 를 직접 호출.
-    // void 처리: 동기 흐름을 막지 않기 위함이며, 끊김은 어차피 fire-and-forget 으로 충분.
     void disconnectNotificationSocket();
-    // moida_is_admin 은 더 이상 사용하지 않는다 (hasAdminSession 기반 판정으로 전환).
+    // 인증 관련 localStorage 전체 정리. (moida_is_admin 은 더 이상 사용하지 않음 — hasAdminSession 기반 판정)
     localStorage.removeItem('moida_admin_idle_warned');
     localStorage.removeItem('moida_admin_view');
     localStorage.removeItem('moida_admin_login_at');
@@ -375,11 +378,17 @@ const App: React.FC = () => {
     localStorage.removeItem('moida_user_role');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    // React state 전체 초기화 — isLoggedIn·isAdmin 을 모두 꺼야 한 번에 로그인 화면으로 돌아간다.
     setIsAdmin(false);
+    setIsLoggedIn(false);
+    setLoggedInUserName('');
     setAdminViewMode('admin');
+    setIsGuest(false);
     setNotificationCount(0);
     setAuthScreen('login');
   };
+
+  const logoutAdmin = () => { clearAllAuthState(); };
   const switchToNormal = () => { localStorage.setItem('moida_admin_view', 'normal'); setAdminViewMode('normal'); };
   const switchToAdmin = () => { localStorage.setItem('moida_admin_view', 'admin'); setAdminViewMode('admin'); };
   const login = (name?: string) => {
@@ -451,20 +460,7 @@ const App: React.FC = () => {
     handleSocialCallback();
   }, []); // 앱 최초 마운트 시 한 번만 실행
 
-  const logout = () => {
-    // STOMP 알림 소켓을 토큰 제거 전에 명시적으로 끊는다.
-    // 자세한 이유는 logoutAdmin 의 같은 호출 참고.
-    void disconnectNotificationSocket();
-    localStorage.removeItem('moida_logged_in');
-    localStorage.removeItem('moida_user_name');
-    localStorage.removeItem('moida_user_role');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setIsLoggedIn(false);
-    setLoggedInUserName('');
-    setNotificationCount(0);
-    setIsGuest(false); setAuthScreen('login');
-  };
+  const logout = () => { clearAllAuthState(); };
 
   // 로그인 필요 기능 접근 시 알럿
   const requireLogin = (action: () => void) => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styles from './FindAccountPage.module.css';
 import { verifyPhoneCode } from '../api/phoneVerification';
 import { findIdByVerifiedPhone, sendFindIdPhoneCode, type FindIdResult } from '../api/findAccount';
+import { sendEmailCode, verifyEmailCode, resetPassword } from '../api/emailVerification';
 
 type Tab = 'id' | 'pw';
 type IdStep = 'form' | 'result';
@@ -63,7 +64,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
       });
     }, 1000);
   };
-  const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+  const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const handleIdPhoneChange = (value: string) => {
     setIdPhone(value);
@@ -92,7 +93,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
       setIdError('이름을 입력해주세요');
       return;
     }
-    if (!/^01[0-9]-?\d{3,4}-?\d{4}$/.test(idPhone.replace(/-/g,''))) {
+    if (!/^01[0-9]-?\d{3,4}-?\d{4}$/.test(idPhone.replace(/-/g, ''))) {
       setIdError('올바른 휴대폰 번호를 입력해주세요');
       return;
     }
@@ -148,7 +149,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
   const handleFindId = async () => {
     setIdError('');
     if (!idName.trim()) { setIdError('이름을 입력해주세요'); return; }
-    if (!/^01[0-9]-?\d{3,4}-?\d{4}$/.test(idPhone.replace(/-/g,''))) {
+    if (!/^01[0-9]-?\d{3,4}-?\d{4}$/.test(idPhone.replace(/-/g, ''))) {
       setIdError('올바른 휴대폰 번호를 입력해주세요'); return;
     }
     if (!idPhoneVerified) { setIdError('휴대폰 인증을 완료해주세요'); return; }
@@ -171,21 +172,30 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
       setPwError('올바른 이메일 주소를 입력해주세요'); return;
     }
     setPwLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setPwLoading(false);
-    setPwStep('verify');
-    startTimer();
+    try {
+      await sendEmailCode(pwEmail);
+      setPwStep('verify');
+      startTimer();
+    } catch (error: unknown) {
+      setPwError(getErrorMessage(error, '인증코드 발송에 실패했어요'));
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   // ── 코드 확인 ──
   const handleVerifyCode = async () => {
     setPwError('');
     if (pwCode.length !== 6) { setPwError('인증코드 6자리를 입력해주세요'); return; }
-    if (pwCode !== '123456') { setPwError('인증코드가 올바르지 않습니다'); return; }
     setPwLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setPwLoading(false);
-    setPwStep('reset');
+    try {
+      await verifyEmailCode(pwEmail, pwCode);
+      setPwStep('reset');
+    } catch (error: unknown) {
+      setPwError(getErrorMessage(error, '인증코드가 올바르지 않아요'));
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   // ── 비번 재설정 ──
@@ -195,9 +205,14 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
     if (!/(?=.*[A-Za-z])(?=.*\d)/.test(pwNew)) { setPwError('영문과 숫자를 조합해주세요'); return; }
     if (pwNew !== pwConfirm) { setPwError('비밀번호가 일치하지 않습니다'); return; }
     setPwLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setPwLoading(false);
-    setPwStep('done');
+    try {
+      await resetPassword(pwEmail, pwNew);
+      setPwStep('done');
+    } catch (error: unknown) {
+      setPwError(getErrorMessage(error, '비밀번호 변경에 실패했어요'));
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   const switchTab = (t: Tab) => {
@@ -212,11 +227,11 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
       <div className={styles.header}>
         <button className={styles.back} onClick={onBack}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
+            <path d="M19 12H5M12 5l-7 7 7 7" />
           </svg>
         </button>
         <span className={styles.headerTitle}>계정 찾기</span>
-        <div style={{ width: 32 }}/>
+        <div style={{ width: 32 }} />
       </div>
 
       {/* 탭 */}
@@ -234,7 +249,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
         {/* ────────── 아이디 찾기 ────────── */}
         {tab === 'id' && idStep === 'form' && (
           <div className={styles.section}>
-            <p className={styles.desc}>가입 시 등록한 이름과 휴대폰 번호로<br/>아이디를 찾을 수 있습니다.</p>
+            <p className={styles.desc}>가입 시 등록한 이름과 휴대폰 번호로<br />아이디를 찾을 수 있습니다.</p>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>이름</label>
@@ -281,7 +296,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
                     inputMode="numeric"
                     placeholder="6자리 코드 입력"
                     value={idCode}
-                    onChange={e => { setIdCode(e.target.value.replace(/\D/g,'')); setIdError(''); }}
+                    onChange={e => { setIdCode(e.target.value.replace(/\D/g, '')); setIdError(''); }}
                     maxLength={6}
                   />
                   {idCodeTimer > 0 && <span className={styles.timer}>{fmtTime(idCodeTimer)}</span>}
@@ -324,7 +339,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
         {/* ────────── 비밀번호 찾기 ────────── */}
         {tab === 'pw' && pwStep === 'form' && (
           <div className={styles.section}>
-            <p className={styles.desc}>가입 시 사용한 이메일 주소로<br/>인증코드를 발송해 드립니다.</p>
+            <p className={styles.desc}>가입 시 사용한 이메일 주소로<br />인증코드를 발송해 드립니다.</p>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>이메일</label>
@@ -352,7 +367,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
               <span>📧</span>
               <span><b>{pwEmail}</b>로 인증코드를 발송했습니다</span>
             </div>
-            <p className={styles.desc} style={{ marginTop: 4 }}>스팸함도 확인해보세요. (테스트 코드: <b>123456</b>)</p>
+            <p className={styles.desc} style={{ marginTop: 4 }}>스팸함도 확인해보세요.</p>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>인증코드</label>
@@ -363,7 +378,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
                   inputMode="numeric"
                   placeholder="6자리 코드 입력"
                   value={pwCode}
-                  onChange={e => { setPwCode(e.target.value.replace(/\D/g,'')); setPwError(''); }}
+                  onChange={e => { setPwCode(e.target.value.replace(/\D/g, '')); setPwError(''); }}
                   maxLength={6}
                 />
                 {codeTimer > 0 && <span className={styles.timer}>{fmtTime(codeTimer)}</span>}
@@ -383,7 +398,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
 
         {tab === 'pw' && pwStep === 'reset' && (
           <div className={styles.section}>
-            <p className={styles.desc}>새로운 비밀번호를 입력해주세요.<br/>영문+숫자 조합 8자 이상</p>
+            <p className={styles.desc}>새로운 비밀번호를 입력해주세요.<br />영문+숫자 조합 8자 이상</p>
 
             <div className={styles.inputGroup}>
               <label className={styles.label}>새 비밀번호</label>
@@ -399,13 +414,12 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
               </div>
               {pwNew && (
                 <div className={styles.strengthBar}>
-                  <div className={`${styles.strengthFill} ${
-                    pwNew.length >= 12 && /(?=.*[!@#$%])/.test(pwNew) ? styles.strong :
+                  <div className={`${styles.strengthFill} ${pwNew.length >= 12 && /(?=.*[!@#$%])/.test(pwNew) ? styles.strong :
                     pwNew.length >= 8 && /(?=.*[A-Za-z])(?=.*\d)/.test(pwNew) ? styles.medium : styles.weak
-                  }`}/>
+                    }`} />
                   <span className={styles.strengthLabel}>
                     {pwNew.length >= 12 && /(?=.*[!@#$%])/.test(pwNew) ? '강함' :
-                     pwNew.length >= 8 && /(?=.*[A-Za-z])(?=.*\d)/.test(pwNew) ? '보통' : '약함'}
+                      pwNew.length >= 8 && /(?=.*[A-Za-z])(?=.*\d)/.test(pwNew) ? '보통' : '약함'}
                   </span>
                 </div>
               )}
@@ -439,7 +453,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
             <div className={styles.doneBox}>
               <div className={styles.doneCircle}>
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
+                  <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
               <p className={styles.doneTitle}>비밀번호 변경 완료!</p>

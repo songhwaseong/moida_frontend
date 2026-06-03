@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   getAdminProducts,
   getAdminProduct,
@@ -17,20 +17,19 @@ import InquiryPage from './InquiryPage';
 import InquiryProductPage from './InquiryProductPage';
 import { getAdminInquiries } from '../../api/adminInquiries';
 import { useT } from './i18n';
-import FalseBidPage from './FalseBidPage';
 import SanctionPage from './SanctionPage';
 import ChatLogPage from './ChatLogPage';
 import MemberListPage from './MemberListPage';
 import WithdrawnMemberPage from './WithdrawnMemberPage';
 import AdminSettingsPage from './AdminSettingsPage';
 import AuctionManagePage from './AuctionManagePage';
-import { IDLE_OPTIONS, type IdleMinutes } from './adminSettingsOptions';
+import type { IdleMinutes } from './adminSettingsOptions';
 import TrackingModal from '../../components/TrackingModal';
 import styles from './AdminPage.module.css';
 
 // ─── 관리자용 통합 상품 타입 ───────────────────────────────────────────
-type TradeStatus = '경매예정' | '승인요청중' | '낙찰' | '숨김';
-type AuctionStatus = '경매중' | '낙찰' | '유찰' | '숨김';
+type TradeStatus = '경매예정' | '승인요청중' | '낙찰' | '환수요청' | '반송중' | '환수완료' | '숨김';
+type AuctionStatus = '경매중' | '낙찰' | '유찰' | '환수요청' | '반송중' | '환수완료' | '숨김';
 type ProductStatus = TradeStatus | AuctionStatus;
 
 interface AdminProduct {
@@ -49,13 +48,15 @@ interface AdminProduct {
   description: string;
   carrierCode: string | null;
   trackingNo: string | null;
+  returnRequestReason: string | null;
+  returnRequestedAt: string | null;
 }
 
 // ─── 사이드바 메뉴 구조 ─────────────────────────────────────────────────
 type MenuKey =
   | '대시보드'
   | '상품 관리' | '상품 문의' | '경매 관리'
-  | '허위입찰' | '제재 내역' | '채팅 로그'
+  | '제재 내역' | '채팅 로그'
   | '회원 목록' | '탈퇴 회원'
   | '공지사항' | '카테고리/배너' | '정산/수수료' | '지갑 요청' | '고객문의/FAQ'
   | '설정';
@@ -73,8 +74,6 @@ const SIDE_ICONS: Record<MenuKey, React.ReactNode> = {
   '상품 문의': <IC><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></IC>,
   /* Gavel (경매 관리) */
   '경매 관리': <IC><path d="M14 14l6 6" /><path d="M4 4l4 4" /><path d="M9 4h5v2l2 2v1l-7 7-1-1v-2l-2-2V9l3-5z" /><path d="M5 19l4-4" /></IC>,
-  /* Flag */
-  '허위입찰': <IC><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" y1="22" x2="4" y2="15" /></IC>,
   /* ShieldX */
   '제재 내역': <IC><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><line x1="9.5" y1="9.5" x2="14.5" y2="14.5" /><line x1="14.5" y1="9.5" x2="9.5" y2="14.5" /></IC>,
   /* FileText */
@@ -120,7 +119,6 @@ const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: stri
   {
     sectionKey: 'admin.section.reports',
     items: [
-      { key: '허위입찰', labelKey: 'admin.menu.falseBids' },
       { key: '제재 내역', labelKey: 'admin.menu.sanction' },
       { key: '채팅 로그', labelKey: 'admin.menu.chatLogs' },
     ],
@@ -156,17 +154,20 @@ const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: stri
   },
 ];
 
-const CATEGORY_OPTIONS = ['전체', '디지털/가전', '패션/의류', '명품', '시계/주얼리', '신발', '스포츠/레저', '뷰티/미용', '게임/취미', '음향/악기', '한정판', '이월상품'];
+const CATEGORY_OPTIONS = ['전체', '디지털/가전', '패션/의류', '명품', '시계/주얼리', '신발', '스포츠/레저', '뷰티/미용', '게임/취미', '음향/악기', '한정판'];
+const PRODUCT_STATUS_OPTIONS: ProductStatus[] = ['경매예정', '승인요청중', '경매중', '낙찰', '유찰', '환수요청', '반송중', '환수완료', '숨김'];
+const MANAGE_STATUS_OPTIONS: ProductStatus[] = ['경매예정', '승인요청중', '경매중', '환수요청', '반송중', '환수완료', '숨김'];
 
 
 // ─── AdminPage ─────────────────────────────────────────────────────────
-interface Props { onLogout: () => void; onSwitchToNormal: () => void; }
+interface Props {
+  onLogout: () => void;
+  onSwitchToNormal: () => void;
+  idleMinutes: IdleMinutes;
+  onChangeIdleMinutes: (v: IdleMinutes) => void;
+}
 
-const WARN_COUNTDOWN_S = 30; // 경고 후 30초 뒤 자동 로그아웃
-const IDLE_STORAGE_KEY = 'moida_admin_idle_minutes';
-const IDLE_WARNED_KEY = 'moida_admin_idle_warned';
-
-const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
+const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, onChangeIdleMinutes }) => {
   const t = useT();
   const [activeMenu, setActiveMenu] = useState<MenuKey>('대시보드');
   // 사이드바 "상품 문의" 배지용 미답변 건수. 관리자 로그인 직후/주기적으로 가볍게 갱신한다.
@@ -211,6 +212,8 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
         description: dto.description ?? '',
         carrierCode: dto.carrierCode,
         trackingNo: dto.trackingNo,
+        returnRequestReason: dto.returnRequestReason,
+        returnRequestedAt: dto.returnRequestedAt,
       })));
     } catch {
       setLoadError('상품 목록을 불러오지 못했습니다.');
@@ -222,36 +225,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 내부에서 로딩/결과 setState는 정상 데이터 페칭 패턴
   useEffect(() => { loadProducts(); }, [loadProducts]);
 
-
-  // ─── 자동 로그아웃 ─────────────────────────────────────────────────
-  const [idleMinutes, setIdleMinutes] = useState<IdleMinutes>(() => {
-    const saved = localStorage.getItem(IDLE_STORAGE_KEY);
-    const parsed = saved ? Number(saved) : 10;
-    return (IDLE_OPTIONS.map(o => o.value) as number[]).includes(parsed)
-      ? (parsed as IdleMinutes)
-      : 10;
-  });
-  const [showIdleModal, setShowIdleModal] = useState(false);
-  const [, setCountdown] = useState(WARN_COUNTDOWN_S);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const idleMinutesRef = useRef(idleMinutes);
-
-  useEffect(() => { idleMinutesRef.current = idleMinutes; }, [idleMinutes]);
-
-  // 새로고침 시 경고 상태였으면 즉시 로그아웃
-  useEffect(() => {
-    if (localStorage.getItem(IDLE_WARNED_KEY)) {
-      localStorage.removeItem(IDLE_WARNED_KEY);
-      onLogout();
-    }
-  }, [onLogout]);
-
-  const handleChangeIdleMinutes = (v: IdleMinutes) => {
-    setIdleMinutes(v);
-    localStorage.setItem(IDLE_STORAGE_KEY, String(v));
-  };
-
   // ─── 로그인 시각 ──────────────────────────────────────────────────
   const loginAt = (() => {
     const raw = localStorage.getItem('moida_admin_login_at');
@@ -260,47 +233,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   })();
-
-  const clearCountdown = () => {
-    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
-  };
-
-  const startCountdown = useCallback(() => {
-    setCountdown(WARN_COUNTDOWN_S);
-    clearCountdown();
-    countdownRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearCountdown();
-          onLogout();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, [onLogout]);
-
-  const resetIdleTimer = useCallback(() => {
-    if (showIdleModal) return; // 경고 모달 중엔 활동 무시
-    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      localStorage.setItem(IDLE_WARNED_KEY, '1');
-      setShowIdleModal(true);
-      startCountdown();
-    }, idleMinutesRef.current * 60 * 1000);
-  }, [showIdleModal, startCountdown]);
-
-  // 활동 이벤트 감지
-  useEffect(() => {
-    const events: (keyof DocumentEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
-    events.forEach(e => document.addEventListener(e, resetIdleTimer, { passive: true }));
-    resetIdleTimer(); // 초기 타이머 시작
-    return () => {
-      events.forEach(e => document.removeEventListener(e, resetIdleTimer));
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-      clearCountdown();
-    };
-  }, [resetIdleTimer]);
 
   // 상품관리 필터 상태
   const [search, setSearch] = useState('');
@@ -320,13 +252,17 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
   // approve  : PENDING(승인요청중) → SCHEDULED(경매예정)  — 검토 통과
   // start    : SCHEDULED(경매예정) → LIVE(경매중)        — 경매 시작
   // cancel   : LIVE(경매중)        → SCHEDULED(경매예정) — 진행 경매 취소
-  const [approveTarget, setApproveTarget] = useState<{ product: AdminProduct; action: 'approve' | 'start' | 'cancel' } | null>(null);
+  // ship     : RETURN_REQUESTED    → RETURN_SHIPPING    — 반송 시작
+  // complete : RETURN_SHIPPING     → RETURN_COMPLETED   — 환수 완료
+  const [approveTarget, setApproveTarget] = useState<{ product: AdminProduct; action: 'approve' | 'start' | 'cancel' | 'ship' | 'complete' } | null>(null);
 
   const handleApproveConfirm = async () => {
     if (!approveTarget) return;
-    // approve(PENDING→SCHEDULED) / cancel(LIVE→SCHEDULED) → 경매예정
-    // start  (SCHEDULED→LIVE) → 경매중
-    const newStatus: ProductStatus = approveTarget.action === 'start' ? '경매중' : '경매예정';
+    const newStatus: ProductStatus =
+      approveTarget.action === 'start' ? '경매중'
+      : approveTarget.action === 'ship' ? '반송중'
+      : approveTarget.action === 'complete' ? '환수완료'
+      : '경매예정';
     handleStatusChange(approveTarget.product.id, newStatus);
     setApproveTarget(null);
   };
@@ -406,6 +342,8 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
     inBid: baseFiltered.filter(p => p.status === '경매중').length,
     won: baseFiltered.filter(p => p.status === '낙찰').length,
     failed: baseFiltered.filter(p => p.status === '유찰').length,
+    returnRequested: baseFiltered.filter(p => p.status === '환수요청').length,
+    returnShipping: baseFiltered.filter(p => p.status === '반송중').length,
     hidden: baseFiltered.filter(p => p.status === '숨김').length,
   }), [baseFiltered]);
 
@@ -462,10 +400,12 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
           { key: '경매예정', labelKey: 'admin.products.stats.scheduled', value: stats.selling },
           { key: '승인요청중', labelKey: 'admin.products.stats.pending', value: stats.approving },
           { key: '경매중', labelKey: 'admin.products.stats.live', value: stats.inBid },
+          { key: '환수요청', label: '환수요청', value: stats.returnRequested },
+          { key: '반송중', label: '반송중', value: stats.returnShipping },
           { key: '숨김', labelKey: 'admin.products.stats.hidden', value: stats.hidden },
         ].map(s => (
           <div
-            key={s.labelKey}
+            key={'labelKey' in s ? s.labelKey : s.label}
             className={`${styles.statCard} ${statFilter === s.key ? styles.statCardActive : ''}`}
             onClick={() => {
               if (s.key === null) {
@@ -476,7 +416,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
             }}
             style={{ cursor: 'pointer' }}
           >
-            <div className={styles.statLabel}>{t(s.labelKey)}</div>
+            <div className={styles.statLabel}>{'label' in s ? s.label : t(s.labelKey)}</div>
             <div className={styles.statValue}>{s.value.toLocaleString()}<span className={styles.statUnit}>{t('admin.products.unit')}</span></div>
           </div>
         ))}
@@ -495,7 +435,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
           {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c === '전체' ? t('admin.products.filter.all') : c}</option>)}
         </select>
         <select className={styles.filterSelect} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setStatFilter(null); setCurrentPage(1); }}>
-          {['전체', '경매예정', '승인요청중', '경매중', '낙찰', '유찰', '숨김'].map(s => <option key={s}>{s}</option>)}
+          {['전체', ...PRODUCT_STATUS_OPTIONS].map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
 
@@ -591,10 +531,9 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                         }}
                       >
                         <>
-                          <option value="경매예정">경매예정</option>
-                          <option value="승인요청중">승인요청중</option>
-                          <option value="경매중">경매중</option>
-                          <option value="숨김">숨김</option>
+                          {MANAGE_STATUS_OPTIONS.map(status => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
                         </>
                       </select>
                     </div>
@@ -622,6 +561,22 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                         onClick={() => setApproveTarget({ product: p, action: 'cancel' })}
                       >
                         취소
+                      </button>
+                    )}
+                    {p.status === '환수요청' && (
+                      <button
+                        className={styles.cancelBtn}
+                        onClick={() => setApproveTarget({ product: p, action: 'ship' })}
+                      >
+                        반송처리
+                      </button>
+                    )}
+                    {p.status === '반송중' && (
+                      <button
+                        className={styles.approveBtn}
+                        onClick={() => setApproveTarget({ product: p, action: 'complete' })}
+                      >
+                        완료
                       </button>
                     )}
                   </td>
@@ -672,7 +627,6 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
       case '상품 관리': return renderProducts();
       case '상품 문의': return <InquiryProductPage />;
       case '경매 관리': return <AuctionManagePage />;
-      case '허위입찰': return <FalseBidPage />;
       case '제재 내역': return <SanctionPage />;
       case '채팅 로그': return <ChatLogPage />;
       case '회원 목록': return <MemberListPage />;
@@ -685,7 +639,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
       case '설정': return (
         <AdminSettingsPage
           idleMinutes={idleMinutes}
-          onChangeIdleMinutes={handleChangeIdleMinutes}
+          onChangeIdleMinutes={onChangeIdleMinutes}
         />
       );
       default: return null;
@@ -918,7 +872,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                     <span className={styles.detailInfoLabel}>상태</span>
                     {isEditingDetail ? (
                       <select className={styles.detailEditSelect} value={editForm.status ?? ''} onChange={e => setEditForm(f => ({ ...f, status: e.target.value as ProductStatus }))}>
-                        {['경매예정', '승인요청중', '경매중', '숨김'].map(s => <option key={s}>{s}</option>)}
+                        {MANAGE_STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
                       </select>
                     ) : (
                       <span className={styles.detailInfoValue}>{detailProduct.status}</span>
@@ -929,6 +883,29 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
                     <span className={styles.detailInfoValue}>{detailProduct.registeredAt}</span>
                   </div>
                 </div>
+
+                {(detailProduct.returnRequestReason || detailProduct.returnRequestedAt || detailProduct.status === '환수요청' || detailProduct.status === '반송중' || detailProduct.status === '환수완료') && (
+                  <>
+                    <div className={styles.detailDivider}/>
+                    <p className={styles.detailSectionTitle}>환수 요청 정보</p>
+                    <div className={styles.detailInfoGrid}>
+                      <div className={styles.detailInfoItem}>
+                        <span className={styles.detailInfoLabel}>요청일</span>
+                        <span className={styles.detailInfoValue}>{detailProduct.returnRequestedAt ?? '-'}</span>
+                      </div>
+                      <div className={styles.detailInfoItem}>
+                        <span className={styles.detailInfoLabel}>진행 상태</span>
+                        <span className={styles.detailInfoValue}>{detailProduct.status}</span>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <span className={styles.detailInfoLabel}>요청 사유</span>
+                      <p style={{ margin: '6px 0 0', fontSize: 13.5, lineHeight: 1.7, color: '#333', whiteSpace: 'pre-wrap' }}>
+                        {detailProduct.returnRequestReason?.trim() || '-'}
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <div style={{ height: 32 }} />
               </div>
@@ -1003,41 +980,28 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal }) => {
           </div>
         )}
 
-        {/* 자동 로그아웃 경고 모달 */}
-        {showIdleModal && (
-          <div className={styles.modalOverlay}>
-            <div className={styles.modal}>
-              <div className={styles.modalIcon}>
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#E24B4A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="13" r="8" />
-                  <path d="M12 9v4l2.5 2.5" />
-                  <path d="M9 2h6" />
-                  <path d="M12 2v3" />
-                </svg>
-              </div>
-              <div className={styles.modalTitle}>자동 로그아웃 예정</div>
-              <div className={styles.modalDesc}>
-                {idleMinutes}분간 입력이 없었습니다.<br />
-                자동으로 로그아웃됩니다.
-              </div>
-              <div className={styles.modalBtns}>
-                <button className={styles.modalDeleteBtn} onClick={onLogout}>로그아웃</button>
-              </div>
-            </div>
-          </div>
-        )}
-
       {/* 승인/취소 확인 모달 */}
       {approveTarget && (() => {
         const isCancel = approveTarget.action === 'cancel';
-        const icon = isCancel ? '⛔' : '✅';
-        const title = isCancel ? '경매를 취소하시겠어요?' : '경매를 승인하시겠어요?';
+        const isReturnAction = approveTarget.action === 'ship' || approveTarget.action === 'complete';
+        const icon = isCancel ? '⛔' : isReturnAction ? '↩' : '✅';
+        const title = isCancel ? '경매를 취소하시겠어요?'
+          : approveTarget.action === 'ship' ? '반송 처리하시겠어요?'
+          : approveTarget.action === 'complete' ? '환수 완료 처리할까요?'
+          : '경매를 승인하시겠어요?';
         const desc = approveTarget.action === 'approve'
           ? '승인 시 상태가 경매예정으로 변경됩니다.'
           : approveTarget.action === 'start'
             ? '승인 시 상태가 경매중으로 변경됩니다.'
-            : '취소 시 상태가 경매예정으로 되돌아갑니다.';
-        const confirmLabel = isCancel ? '취소하기' : '승인하기';
+            : approveTarget.action === 'ship'
+              ? '처리 시 상태가 반송중으로 변경됩니다.'
+              : approveTarget.action === 'complete'
+                ? '처리 시 상태가 환수완료로 변경됩니다.'
+                : '취소 시 상태가 경매예정으로 되돌아갑니다.';
+        const confirmLabel = isCancel ? '취소하기'
+          : approveTarget.action === 'ship' ? '반송처리'
+          : approveTarget.action === 'complete' ? '완료처리'
+          : '승인하기';
         return (
           <div className={styles.modalOverlay} onClick={() => setApproveTarget(null)}>
             <div className={styles.modal} onClick={e => e.stopPropagation()}>

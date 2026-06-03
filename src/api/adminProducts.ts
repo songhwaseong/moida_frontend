@@ -13,6 +13,9 @@ export type AdminProductStatus =
   | '경매중'
   | '낙찰'
   | '유찰'
+  | '환수요청'
+  | '반송중'
+  | '환수완료'
   | '숨김';
 
 export interface AdminProductDto {
@@ -31,6 +34,8 @@ export interface AdminProductDto {
   // 관리자 테이블의 송장번호 컬럼/배송조회 모달에 사용. 등록 시 입력값이 없으면 null.
   carrierCode: string | null;
   trackingNo: string | null;
+  returnRequestReason: string | null;
+  returnRequestedAt: string | null;
 }
 
 // 상세 조회 응답. 목록 DTO에 더해 등록된 모든 이미지(images)를 포함한다.
@@ -55,6 +60,9 @@ const STATUS_TO_ENUM: Record<AdminProductStatus, string> = {
   '경매중': 'LIVE',
   '낙찰': 'SOLD',
   '유찰': 'FAILED',
+  '환수요청': 'RETURN_REQUESTED',
+  '반송중': 'RETURN_SHIPPING',
+  '환수완료': 'RETURN_COMPLETED',
   '숨김': 'HIDDEN',
 };
 

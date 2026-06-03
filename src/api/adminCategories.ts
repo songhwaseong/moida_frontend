@@ -8,6 +8,7 @@ interface ApiResponse<T> {
 }
 
 const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
+const HIDDEN_CATEGORIES = new Set(['이월상품']);
 
 export interface AdminCategoryDto {
   id: number;
@@ -24,7 +25,7 @@ export interface ReorderItem {
 
 export const getAdminCategories = async (): Promise<AdminCategoryDto[]> => {
   const res = await customAxios.get<ApiResponse<AdminCategoryDto[]>>('/admin/categories');
-  return unwrap(res);
+  return unwrap(res).filter((category) => !HIDDEN_CATEGORIES.has(category.name));
 };
 
 export const setCategoryVisibility = async (id: number, visible: boolean): Promise<AdminCategoryDto> => {
@@ -40,5 +41,5 @@ export const reorderCategories = async (orders: ReorderItem[]): Promise<AdminCat
     '/admin/categories/reorder',
     { orders },
   );
-  return unwrap(res);
+  return unwrap(res).filter((category) => !HIDDEN_CATEGORIES.has(category.name));
 };

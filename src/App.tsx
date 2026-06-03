@@ -10,6 +10,8 @@ import NotificationSocketBridge from './components/NotificationSocketBridge';
 import { disconnectNotificationSocket } from './components/notificationSocket';
 import LeaveConfirmModal from './components/LeaveConfirmModal';
 import AlertModal from './components/AlertModal';
+import SellNoticeModal from './components/SellNoticeModal';
+import { IDLE_OPTIONS, type IdleMinutes } from './pages/admin/adminSettingsOptions';
 import styles from './App.module.css';
 import './styles/global.css';
 
@@ -91,8 +93,21 @@ interface AppHistoryState {
   view: AppHistoryView;
 }
 
+const SELL_NOTICE_DISMISSED_KEY = 'moida_sell_notice_dismissed';
+const ADMIN_IDLE_STORAGE_KEY = 'moida_admin_idle_minutes';
+const ADMIN_IDLE_WARNED_KEY = 'moida_admin_idle_warned';
+const ADMIN_IDLE_WARN_COUNTDOWN_S = 30;
+
 const isAppHistoryState = (state: unknown): state is AppHistoryState => {
   return typeof state === 'object' && state !== null && (state as AppHistoryState).source === 'moida-app';
+};
+
+const readAdminIdleMinutes = (): IdleMinutes => {
+  const saved = localStorage.getItem(ADMIN_IDLE_STORAGE_KEY);
+  const parsed = saved ? Number(saved) : 10;
+  return (IDLE_OPTIONS.map(o => o.value) as number[]).includes(parsed)
+    ? (parsed as IdleMinutes)
+    : 10;
 };
 
 const getInitialScreen = (): Screen => {
@@ -253,6 +268,7 @@ const App: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationCount, setNotificationCount] = useState(0);
+  const [showSellNotice, setShowSellNotice] = useState(false);
 
   // 폼 이탈 확인 상태
   const [formDirty, setFormDirty] = useState(false);
@@ -260,12 +276,108 @@ const App: React.FC = () => {
   const [adminViewMode, setAdminViewMode] = useState<'admin' | 'normal'>(
     () => (localStorage.getItem('moida_admin_view') as 'admin' | 'normal') ?? 'admin'
   );
+  const [adminIdleMinutes, setAdminIdleMinutes] = useState<IdleMinutes>(readAdminIdleMinutes);
+  const [showAdminIdleModal, setShowAdminIdleModal] = useState(false);
+  const [adminIdleCountdown, setAdminIdleCountdown] = useState(ADMIN_IDLE_WARN_COUNTDOWN_S);
+  const adminIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const adminIdleCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const adminIdleMinutesRef = useRef(adminIdleMinutes);
 
   // 현재 폼 화면인지 여부
   const isFormScreen = screen.type === 'sellPage' || editingProduct !== null;
   const formDirtyRef = useRef(formDirty);
   const isFormScreenRef = useRef(isFormScreen);
   const currentHistoryViewRef = useRef<AppHistoryView | null>(null);
+  const showAdminIdleModalRef = useRef(showAdminIdleModal);
+
+  useEffect(() => {
+    adminIdleMinutesRef.current = adminIdleMinutes;
+  }, [adminIdleMinutes]);
+
+  useEffect(() => {
+    showAdminIdleModalRef.current = showAdminIdleModal;
+  }, [showAdminIdleModal]);
+
+  const clearAdminIdleCountdown = useCallback(() => {
+    if (adminIdleCountdownRef.current) {
+      clearInterval(adminIdleCountdownRef.current);
+      adminIdleCountdownRef.current = null;
+    }
+  }, []);
+
+  const clearAdminIdleTimer = useCallback(() => {
+    if (adminIdleTimerRef.current) {
+      clearTimeout(adminIdleTimerRef.current);
+      adminIdleTimerRef.current = null;
+    }
+  }, []);
+
+  const handleChangeAdminIdleMinutes = useCallback((v: IdleMinutes) => {
+    setAdminIdleMinutes(v);
+    localStorage.setItem(ADMIN_IDLE_STORAGE_KEY, String(v));
+  }, []);
+
+  // 일반/관리자 로그아웃 공통 처리: 모든 인증 상태를 한 번에 정리한다.
+  const clearAllAuthState = useCallback(() => {
+    clearAdminIdleTimer();
+    clearAdminIdleCountdown();
+    showAdminIdleModalRef.current = false;
+    setShowAdminIdleModal(false);
+    void disconnectNotificationSocket();
+    localStorage.removeItem('moida_admin_idle_warned');
+    localStorage.removeItem('moida_admin_view');
+    localStorage.removeItem('moida_admin_login_at');
+    localStorage.removeItem('moida_logged_in');
+    localStorage.removeItem('moida_user_name');
+    localStorage.removeItem('moida_user_role');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setIsAdmin(false);
+    setIsLoggedIn(false);
+    setLoggedInUserName('');
+    setAdminViewMode('admin');
+    setIsGuest(false);
+    setNotificationCount(0);
+    setAuthScreen('login');
+  }, [clearAdminIdleCountdown, clearAdminIdleTimer]);
+
+  const startAdminIdleCountdown = useCallback(() => {
+    setAdminIdleCountdown(ADMIN_IDLE_WARN_COUNTDOWN_S);
+    clearAdminIdleCountdown();
+    adminIdleCountdownRef.current = setInterval(() => {
+      setAdminIdleCountdown(prev => {
+        if (prev <= 1) {
+          clearAdminIdleCountdown();
+          clearAllAuthState();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [clearAdminIdleCountdown, clearAllAuthState]);
+
+  const scheduleAdminIdleWarning = useCallback(() => {
+    clearAdminIdleTimer();
+    adminIdleTimerRef.current = setTimeout(() => {
+      localStorage.setItem(ADMIN_IDLE_WARNED_KEY, '1');
+      showAdminIdleModalRef.current = true;
+      setShowAdminIdleModal(true);
+      startAdminIdleCountdown();
+    }, adminIdleMinutesRef.current * 60 * 1000);
+  }, [clearAdminIdleTimer, startAdminIdleCountdown]);
+
+  const resetAdminIdleTimer = useCallback(() => {
+    if (!isAdmin || showAdminIdleModalRef.current) return;
+    scheduleAdminIdleWarning();
+  }, [isAdmin, scheduleAdminIdleWarning]);
+
+  const continueAdminSession = useCallback(() => {
+    localStorage.removeItem(ADMIN_IDLE_WARNED_KEY);
+    showAdminIdleModalRef.current = false;
+    setShowAdminIdleModal(false);
+    clearAdminIdleCountdown();
+    if (isAdmin) scheduleAdminIdleWarning();
+  }, [clearAdminIdleCountdown, isAdmin, scheduleAdminIdleWarning]);
 
   const restoreHistoryView = (view: AppHistoryView, clearDirty = true) => {
     isRestoringHistoryRef.current = true;
@@ -364,30 +476,6 @@ const App: React.FC = () => {
   // 과거에는 logout 은 isLoggedIn 만, logoutAdmin 은 isAdmin 만 정리해서,
   // 새로고침 후처럼 두 플래그가 모두 true 인 상태에서 한 번에 로그아웃되지 않고
   // "본인 계정 화면으로 바뀐 뒤 다시 로그아웃" 해야 하는 문제가 있었다.
-  const clearAllAuthState = () => {
-    // STOMP 알림 소켓을 토큰 제거 전에 명시적으로 끊는다.
-    // - 토큰이 살아 있는 동안 정상적인 DISCONNECT 프레임을 보내고,
-    // - reconnectDelay 로 자동 재연결이 트리거되지 않도록 deactivate() 를 직접 호출.
-    void disconnectNotificationSocket();
-    // 인증 관련 localStorage 전체 정리. (moida_is_admin 은 더 이상 사용하지 않음 — hasAdminSession 기반 판정)
-    localStorage.removeItem('moida_admin_idle_warned');
-    localStorage.removeItem('moida_admin_view');
-    localStorage.removeItem('moida_admin_login_at');
-    localStorage.removeItem('moida_logged_in');
-    localStorage.removeItem('moida_user_name');
-    localStorage.removeItem('moida_user_role');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    // React state 전체 초기화 — isLoggedIn·isAdmin 을 모두 꺼야 한 번에 로그인 화면으로 돌아간다.
-    setIsAdmin(false);
-    setIsLoggedIn(false);
-    setLoggedInUserName('');
-    setAdminViewMode('admin');
-    setIsGuest(false);
-    setNotificationCount(0);
-    setAuthScreen('login');
-  };
-
   const logoutAdmin = () => { clearAllAuthState(); };
   const switchToNormal = () => { localStorage.setItem('moida_admin_view', 'normal'); setAdminViewMode('normal'); };
   const switchToAdmin = () => { localStorage.setItem('moida_admin_view', 'admin'); setAdminViewMode('admin'); };
@@ -399,6 +487,32 @@ const App: React.FC = () => {
     setLoggedInUserName(userName);
     setIsGuest(false); setAuthScreen(null); setScreen({ type: 'home' }); setNavTab('home');
   };
+
+  useEffect(() => {
+    if (!isAdmin) {
+      clearAdminIdleTimer();
+      clearAdminIdleCountdown();
+      showAdminIdleModalRef.current = false;
+      localStorage.removeItem(ADMIN_IDLE_WARNED_KEY);
+      return;
+    }
+
+    if (localStorage.getItem(ADMIN_IDLE_WARNED_KEY)) {
+      localStorage.removeItem(ADMIN_IDLE_WARNED_KEY);
+      const logoutTimer = window.setTimeout(() => clearAllAuthState(), 0);
+      return () => window.clearTimeout(logoutTimer);
+    }
+
+    const events: (keyof DocumentEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(eventName => document.addEventListener(eventName, resetAdminIdleTimer, { passive: true }));
+    resetAdminIdleTimer();
+
+    return () => {
+      events.forEach(eventName => document.removeEventListener(eventName, resetAdminIdleTimer));
+      clearAdminIdleTimer();
+      clearAdminIdleCountdown();
+    };
+  }, [clearAdminIdleCountdown, clearAdminIdleTimer, clearAllAuthState, isAdmin, resetAdminIdleTimer]);
 
   // 소셜 로그인 콜백 처리 - 앱 시작 시 URL 확인
   useEffect(() => {
@@ -571,13 +685,44 @@ const App: React.FC = () => {
       </ToastProvider>
     );
   }
+
+  const adminIdleModal = showAdminIdleModal ? (
+    <div className={styles.adminIdleOverlay}>
+      <div className={styles.adminIdleModal}>
+        <div className={styles.adminIdleIcon}>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="13" r="8" />
+            <path d="M12 9v4l2.5 2.5" />
+            <path d="M9 2h6" />
+            <path d="M12 2v3" />
+          </svg>
+        </div>
+        <h2 className={styles.adminIdleTitle}>관리자 세션 자동 로그아웃 예정</h2>
+        <p className={styles.adminIdleDesc}>
+          {adminIdleMinutes}분간 입력이 없었습니다.<br />
+          {adminIdleCountdown}초 후 자동으로 로그아웃됩니다.
+        </p>
+        <div className={styles.adminIdleActions}>
+          <button className={styles.adminIdleLogoutBtn} onClick={clearAllAuthState}>로그아웃</button>
+          <button className={styles.adminIdleContinueBtn} onClick={continueAdminSession}>계속 사용하기</button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   // 관리자 화면
   if (isAdmin && adminViewMode === 'admin') {
     return (
       <ToastProvider>
         <AdminI18nProvider>
-          <AdminPage onLogout={logoutAdmin} onSwitchToNormal={switchToNormal} />
+          <AdminPage
+            onLogout={logoutAdmin}
+            onSwitchToNormal={switchToNormal}
+            idleMinutes={adminIdleMinutes}
+            onChangeIdleMinutes={handleChangeAdminIdleMinutes}
+          />
         </AdminI18nProvider>
+        {adminIdleModal}
       </ToastProvider>
     );
   }
@@ -652,6 +797,25 @@ const App: React.FC = () => {
   const handleProductClick = (product: Product) => setScreen({ type: 'productDetail', id: product.id });
   const handleSearch = (query: string) => {
     guardedNav(() => { setSearchQuery(query); setNavTab('search'); setScreen({ type: 'navSearch' }); setFormDirty(false); setEditingProduct(null); });
+  };
+  const openSellPage = () => {
+    setScreen({ type: 'sellPage' });
+  };
+  const handleSellClick = () => {
+    requireLogin(() => {
+      if (localStorage.getItem(SELL_NOTICE_DISMISSED_KEY) === 'true') {
+        openSellPage();
+        return;
+      }
+      setShowSellNotice(true);
+    });
+  };
+  const handleConfirmSellNotice = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      localStorage.setItem(SELL_NOTICE_DISMISSED_KEY, 'true');
+    }
+    setShowSellNotice(false);
+    openSellPage();
   };
 
   // ── 화면 라우팅 ──
@@ -733,7 +897,7 @@ const App: React.FC = () => {
         navTab={navTab}
         onMainTabChange={handleMainTabChange}
         onNavTabChange={goNav}
-        onSellClick={() => requireLogin(() => setScreen({ type: 'sellPage' }))}
+        onSellClick={handleSellClick}
         onSearch={handleSearch}
         notificationCount={notificationCount}
         isLoggedIn={isLoggedIn || isAdmin}
@@ -776,6 +940,13 @@ const App: React.FC = () => {
           onCancel={() => setPendingNav(null)}
         />
       )}
+      {showSellNotice && (
+        <SellNoticeModal
+          onConfirm={handleConfirmSellNotice}
+          onCancel={() => setShowSellNotice(false)}
+        />
+      )}
+      {adminIdleModal}
       {alertMsg && (
         <AlertModal
           message={alertMsg}

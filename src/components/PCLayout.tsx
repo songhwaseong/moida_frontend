@@ -42,7 +42,7 @@ interface Props {
 // 마이페이지(MyPage)의 그룹 구조와 동일하게 유지한다.
 // 메뉴 라벨이 바뀌면 App.tsx의 MyMenuKey 유니언과 함께 갱신해야 한다.
 const MY_MENU_GROUPS: { title: string; items: string[] }[] = [
-  { title: '나의 거래', items: ['내 등록 상품', '입찰 내역', '관심 목록', '내 문의', '배송 조회'] },
+  { title: '나의 거래', items: ['내 등록 상품', '입찰 내역', '구매 내역', '관심 목록', '내 문의', '배송 조회'] },
   { title: '나의 계정', items: ['내 계좌', '받은 후기', '내 주소 관리', '알림 설정'] },
   { title: '고객지원', items: ['이용 가이드', '자주 묻는 질문', '고객센터', '이용약관'] },
 ];
@@ -136,12 +136,12 @@ const PCLayout: React.FC<Props> = ({
               <button
                 className={`${styles.iconBtn} ${isNavActive('notification') ? styles.iconBtnActive : ''}`}
                 onClick={() => onNavTabChange('notification')}
+                aria-label="알림"
               >
                 <div className={styles.iconWrap}>
                   <BellIcon active={isNavActive('notification')} />
                   {notificationCount > 0 && <span className={styles.badge}>{notificationCount}</span>}
                 </div>
-                <span>알림</span>
               </button>
             </div>
             <div className={styles.headerActionGroup}>

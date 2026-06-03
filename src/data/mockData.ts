@@ -12,7 +12,6 @@ export const CATEGORIES: Category[] = [
   { id: 8,  emoji: '🎮', label: '게임/취미',    tags: ['게임기', '피규어'] },
   { id: 9,  emoji: '🎸', label: '음향/악기',    tags: ['헤드폰', '스피커', '기타', '신디사이저'] },
   { id: 10, emoji: '🏷️', label: '한정판',        tags: [] },
-  { id: 11, emoji: '📦', label: '이월상품',      tags: [] },
 ];
 
 export const AUCTION_ITEMS: AuctionItem[] = [

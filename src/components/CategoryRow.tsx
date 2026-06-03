@@ -63,13 +63,6 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
     </svg>
   ),
-  '이월상품': (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/>
-      <path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/>
-      <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>
-    </svg>
-  ),
 };
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string; selectedBg: string }> = {
@@ -84,7 +77,6 @@ const CATEGORY_COLORS: Record<string, { bg: string; color: string; selectedBg: s
   '게임/취미':  { bg: '#FBE9E7', color: '#F4511E', selectedBg: '#F4511E' },
   '음향/악기':  { bg: '#EFEBE9', color: '#6D4C41', selectedBg: '#6D4C41' },
   '한정판':    { bg: '#FFFDE7', color: '#F9A825', selectedBg: '#E53935' },
-  '이월상품':   { bg: '#ECEFF1', color: '#546E7A', selectedBg: '#1E88E5' },
 };
 
 interface CategoryRowProps {
@@ -102,7 +94,7 @@ const CategoryRow: React.FC<CategoryRowProps> = ({ categories, selectedLabel, on
             ? selectedLabel === null || selectedLabel === '전체'
             : selectedLabel === cat.label;
           const palette = CATEGORY_COLORS[cat.label] ?? { bg: '#F0F0F0', color: '#555', selectedBg: '#555' };
-          const highlightBorder = cat.label === '한정판' ? '#1E88E5' : cat.label === '이월상품' ? '#E53935' : '#D0D3DE';
+          const highlightBorder = cat.label === '한정판' ? '#1E88E5' : '#D0D3DE';
           const chipStyle = isSelected
             ? { background: palette.selectedBg, borderColor: palette.selectedBg }
             : { background: '#fff', borderColor: highlightBorder };

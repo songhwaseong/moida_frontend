@@ -59,3 +59,74 @@
     transform: translateY(0);
   }
 }
+
+.adminIdleOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.adminIdleModal {
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 24px 22px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  text-align: center;
+}
+
+.adminIdleIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-light, #FDEEED);
+}
+
+.adminIdleTitle {
+  margin: 0 0 9px;
+  color: var(--text, #1A1A1A);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.adminIdleDesc {
+  margin: 0 0 20px;
+  color: var(--muted, #8B8FA8);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.adminIdleActions {
+  display: flex;
+  gap: 10px;
+}
+
+.adminIdleLogoutBtn,
+.adminIdleContinueBtn {
+  flex: 1;
+  height: 46px;
+  border-radius: 12px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.adminIdleLogoutBtn {
+  background: #F4F5F7;
+  color: #444;
+}
+
+.adminIdleContinueBtn {
+  background: var(--primary, #E24B4A);
+  color: #fff;
+}

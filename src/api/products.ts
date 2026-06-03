@@ -25,12 +25,17 @@ export interface ProductSummaryDto {
   auctionDate?: string | null;
   category: string;
   type: 'AUCTION';
-  status?: 'SCHEDULED' | 'PENDING' | 'LIVE' | 'SOLD' | 'FAILED' | 'HIDDEN' | 'DELETED';
+  status?: 'SCHEDULED' | 'PENDING' | 'LIVE' | 'SOLD' | 'FAILED' | 'RETURN_REQUESTED' | 'RETURN_SHIPPING' | 'RETURN_COMPLETED' | 'HIDDEN' | 'DELETED';
   auctionNo?: string | null;
   currentPrice?: number | null;
   bidCount?: number | null;
   timeLeft?: number | null;
   isLive?: boolean | null;
+  seller?: string | null;
+  auctionStatus?: 'READY' | 'LIVE' | 'AWAITING_PAYMENT' | 'SUCCESS' | 'FAILED' | 'CANCELED' | null;
+  paymentDeadline?: string | null;
+  deliveryStatus?: DeliveryStatus | null;
+  deliveryStatusLabel?: string | null;
 }
 
 export interface ProductDetailDto extends ProductSummaryDto {
@@ -52,6 +57,36 @@ export interface ProductDetailDto extends ProductSummaryDto {
   auctionStatus?: 'READY' | 'LIVE' | 'AWAITING_PAYMENT' | 'SUCCESS' | 'FAILED' | 'CANCELED' | null;
   paymentDeadline?: string | null;
   isWinner?: boolean | null;
+}
+
+export type DeliveryStatus =
+  | 'PAYMENT_COMPLETED'
+  | 'SHIPMENT_NOTICE'
+  | 'SHIPPING'
+  | 'DELIVERED'
+  | 'RECEIVED';
+
+export type SettlementStatus = 'PENDING' | 'PAID' | 'CANCELED';
+
+export interface PurchaseHistoryDto {
+  productId: number;
+  auctionId: number;
+  productNo: string;
+  auctionNo: string;
+  name: string;
+  image: string;
+  category: string;
+  winningPrice: number;
+  auctionStatus: 'SUCCESS';
+  deliveryStatus: DeliveryStatus | null;
+  deliveryStatusLabel: string;
+  settlementStatus: SettlementStatus | null;
+  feeAmount: number | null;
+  settledAmount: number | null;
+  canConfirmReceipt: boolean;
+  purchasedAt: string | null;
+  deliveredAt: string | null;
+  receivedAt: string | null;
 }
 
 const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
@@ -98,6 +133,21 @@ export const getProduct = async (productId: number) => {
 
 export const getMyProducts = async () => {
   const response = await customAxios.get<ApiResponse<ProductSummaryDto[]>>('/products/me');
+  return unwrap(response);
+};
+
+export const requestProductReturn = async (productId: number, reason: string) => {
+  const response = await customAxios.post<ApiResponse<number>>(`/products/${productId}/return-request`, { reason });
+  return unwrap(response);
+};
+
+export const getMyPurchases = async () => {
+  const response = await customAxios.get<ApiResponse<PurchaseHistoryDto[]>>('/products/purchases/me');
+  return unwrap(response);
+};
+
+export const confirmProductReceipt = async (productId: number) => {
+  const response = await customAxios.post<ApiResponse<void>>(`/products/${productId}/confirm-receipt`);
   return unwrap(response);
 };
 

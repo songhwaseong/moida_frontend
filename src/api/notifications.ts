@@ -16,6 +16,9 @@ export interface NotificationSettingDto {
   chatEnabled: boolean;
   tradeEnabled: boolean;
   marketingEnabled: boolean;
+  productStatusEnabled: boolean;
+  inquiryEnabled: boolean;
+  auctionResultEnabled: boolean;
 }
 
 export type NotificationCategory = 'BID' | 'PRICE' | 'CHAT' | 'TRADE' | 'MARKETING' | 'SYSTEM';

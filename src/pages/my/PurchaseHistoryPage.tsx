@@ -1,135 +1,164 @@
-import React, { useState } from 'react';
-import { PRODUCTS } from '../../data/mockData';
-import { addReview } from '../../data/reviewStore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  confirmProductReceipt,
+  getMyPurchases,
+  type PurchaseHistoryDto,
+} from '../../api/products';
 import { useToast } from '../../components/ToastContext';
 import styles from './MySubPage.module.css';
-import modalStyles from './ReviewModal.module.css';
 
-const TABS = ['구매완료', '진행중'];
-const STAR_LABELS = ['', '별로예요', '그저 그래요', '보통이에요', '좋아요', '최고예요!'];
+const TABS = ['진행중', '구매완료'] as const;
+
 interface Props { onBack: () => void; }
+
+const isCompleted = (item: PurchaseHistoryDto) =>
+  item.deliveryStatus === 'RECEIVED' || item.settlementStatus === 'PAID';
+
+const statusClass = (item: PurchaseHistoryDto) => {
+  if (isCompleted(item)) return styles.statusDone;
+  if (item.deliveryStatus === 'DELIVERED') return styles.statusBid;
+  if (item.deliveryStatus === 'SHIPPING') return styles.statusOn;
+  return styles.statusAuctioning;
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error !== 'object' || error === null) return fallback;
+  const response = (error as { response?: { data?: { message?: unknown } } }).response;
+  return typeof response?.data?.message === 'string' ? response.data.message : fallback;
+};
 
 const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
   const { showToast } = useToast();
-  const [tab, setTab] = useState('구매완료');
-  const items = tab === '구매완료' ? PRODUCTS.slice(0, 3) : PRODUCTS.slice(3);
+  const [tab, setTab] = useState<(typeof TABS)[number]>('진행중');
+  const [items, setItems] = useState<PurchaseHistoryDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
 
-  const ThumbUp = ({ filled }: { filled: boolean }) => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8">
-      <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/>
-      <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
-    </svg>
+  const loadPurchases = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    setError(null);
+    try {
+      setItems(await getMyPurchases());
+    } catch (loadError) {
+      console.error('Failed to load purchase history', loadError);
+      setError('구매 내역을 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadInitialPurchases = async () => {
+      try {
+        const data = await getMyPurchases();
+        if (!ignore) setItems(data);
+      } catch (loadError) {
+        console.error('Failed to load purchase history', loadError);
+        if (!ignore) setError('구매 내역을 불러오지 못했습니다.');
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    void loadInitialPurchases();
+
+    return () => { ignore = true; };
+  }, []);
+
+  const filteredItems = useMemo(
+    () => items.filter((item) => (tab === '구매완료' ? isCompleted(item) : !isCompleted(item))),
+    [items, tab],
   );
 
-  const [reviewedIds, setReviewedIds] = useState<number[]>([]);
-  const [modalProduct, setModalProduct] = useState<{ id: number; name: string } | null>(null);
-  const [stars, setStars] = useState(0);
-  const [hoverStar, setHoverStar] = useState(0);
-  const [reviewText, setReviewText] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  const openModal = (id: number, name: string) => {
-    setModalProduct({ id, name });
-    setStars(0); setHoverStar(0); setReviewText(''); setSubmitted(false);
-  };
-  const closeModal = () => setModalProduct(null);
-
-  const handleSubmit = () => {
-    if (stars === 0) { showToast('평가를 선택해주세요', 'warning'); return; }
-    if (reviewText.trim().length < 10) { showToast('후기를 10자 이상 입력해주세요', 'warning'); return; }
-    const today = new Date();
-    const date = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
-    addReview({ user: '홍길동', date, stars, text: reviewText.trim(), product: modalProduct!.name });
-    setSubmitted(true);
-    setReviewedIds(prev => [...prev, modalProduct!.id]);
+  const handleConfirmReceipt = async (item: PurchaseHistoryDto) => {
+    if (!item.canConfirmReceipt) return;
+    if (!window.confirm('상품을 정상 수령하셨나요? 확인하면 판매자에게 정산금액이 지급됩니다.')) {
+      return;
+    }
+    setConfirmingId(item.productId);
+    try {
+      await confirmProductReceipt(item.productId);
+      showToast('수령확인이 완료되었습니다. 판매자 정산도 처리됐어요.', 'success');
+      await loadPurchases(false);
+      setTab('구매완료');
+    } catch (confirmError) {
+      showToast(getApiErrorMessage(confirmError, '수령확인에 실패했습니다.'), 'error');
+    } finally {
+      setConfirmingId(null);
+    }
   };
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.back} onClick={onBack}>
+        <button className={styles.back} onClick={onBack} aria-label="뒤로가기">
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <span className={styles.title}>구매 내역</span>
-        <div style={{width:32}}/>
+        <div style={{ width: 32 }} />
       </div>
 
       <div className={styles.tabs}>
-        {TABS.map(t => <button key={t} className={`${styles.tab} ${tab===t?styles.tabActive:''}`} onClick={()=>setTab(t)}>{t}</button>)}
+        {TABS.map((name) => (
+          <button
+            key={name}
+            className={`${styles.tab} ${tab === name ? styles.tabActive : ''}`}
+            onClick={() => setTab(name)}
+          >
+            {name}
+          </button>
+        ))}
       </div>
 
       <div className={styles.list}>
-        {items.length > 0 ? items.map(p => (
-          <div key={p.id} className={styles.tradeItem}>
-            <img src={p.image} alt={p.name} className={styles.tradeImg}/>
+        {loading ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyText}>구매 내역을 불러오는 중입니다.</p>
+          </div>
+        ) : error ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyText}>{error}</p>
+            <button className={styles.retryBtn} onClick={() => loadPurchases()}>다시 시도</button>
+          </div>
+        ) : filteredItems.length > 0 ? filteredItems.map((item) => (
+          <div key={`${item.auctionId}-${item.productId}`} className={styles.tradeItem}>
+            <img src={item.image} alt={item.name} className={styles.tradeImg} />
             <div className={styles.tradeBody}>
-              <p className={styles.tradeName}>{p.name}</p>
-              <p className={styles.tradeMeta}>{p.location} · {p.timeAgo}</p>
-              <p className={styles.tradePrice}> {p.price.toLocaleString()}</p>
+              <p className={styles.tradeName}>{item.name}</p>
+              <p className={styles.tradeMeta}>
+                {item.category} · {item.auctionNo}
+              </p>
+              <p className={styles.tradePrice}>{item.winningPrice.toLocaleString()}원</p>
+              {item.feeAmount != null && item.settledAmount != null && (
+                <p className={styles.tradeMeta}>
+                  수수료 {item.feeAmount.toLocaleString()}원 · 판매자 정산 {item.settledAmount.toLocaleString()}원
+                </p>
+              )}
             </div>
             <div className={styles.tradeActions}>
-              <span className={`${styles.statusBadge} ${tab==='진행중'?styles.statusOn:styles.statusDone}`}>
-                {tab==='진행중'?'진행중':'완료'}
+              <span className={`${styles.statusBadge} ${statusClass(item)}`}>
+                {item.deliveryStatusLabel}
               </span>
-              {tab==='구매완료' && (
-                reviewedIds.includes(p.id)
-                  ? <span className={styles.reviewDone}>후기완료 ✓</span>
-                  : <button className={styles.reviewBtn} onClick={()=>openModal(p.id, p.name)}>후기 작성</button>
+              {item.canConfirmReceipt && (
+                <button
+                  className={styles.reviewBtn}
+                  disabled={confirmingId === item.productId}
+                  onClick={() => handleConfirmReceipt(item)}
+                >
+                  {confirmingId === item.productId ? '처리중' : '수령확인'}
+                </button>
               )}
             </div>
           </div>
         )) : (
           <div className={styles.empty}>
-            <p style={{fontSize:40}}>🛒</p>
-            <p className={styles.emptyText}>{tab} 내역이 없어요</p>
+            <p className={styles.emptyText}>{tab} 내역이 없습니다.</p>
           </div>
         )}
       </div>
-
-      {modalProduct && (
-        <div className={modalStyles.overlay} onClick={closeModal}>
-          <div className={modalStyles.modal} onClick={e=>e.stopPropagation()}>
-            {!submitted ? (
-              <>
-                <p className={modalStyles.title}>후기 작성</p>
-                <p className={modalStyles.productName}>📦 {modalProduct.name}</p>
-                <div className={modalStyles.starsRow}>
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} className={`${modalStyles.starBtn} ${(hoverStar||stars)>=n ? modalStyles.starOn : modalStyles.starOff}`}
-                      onMouseEnter={()=>setHoverStar(n)} onMouseLeave={()=>setHoverStar(0)}
-                      onClick={()=>setStars(n)}>
-                      <ThumbUp filled={(hoverStar||stars)>=n} />
-                    </button>
-                  ))}
-                </div>
-                <p className={modalStyles.starLabel}>
-                  {STAR_LABELS[hoverStar || stars] || '평가를 선택해주세요'}
-                </p>
-                <textarea
-                  className={modalStyles.textarea}
-                  placeholder="거래는 어떠셨나요? 자세한 후기를 남겨주세요 (최소 10자)"
-                  value={reviewText}
-                  onChange={e=>setReviewText(e.target.value)}
-                  maxLength={300} rows={4}
-                />
-                <p className={modalStyles.charCount}>{reviewText.length}/300</p>
-                <div className={modalStyles.btns}>
-                  <button className={modalStyles.cancelBtn} onClick={closeModal}>취소</button>
-                  <button className={modalStyles.submitBtn} onClick={handleSubmit}
-                    disabled={stars===0 || reviewText.trim().length<10}>후기 등록</button>
-                </div>
-              </>
-            ) : (
-              <div className={modalStyles.successWrap}>
-                <p className={modalStyles.successEmoji}>🎉</p>
-                <p className={modalStyles.successTitle}>후기가 등록됐어요!</p>
-                <p className={modalStyles.successSub}>소중한 후기 감사해요{'\n'}판매자에게 큰 힘이 됩니다</p>
-                <button className={modalStyles.submitBtn} onClick={closeModal}>확인</button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

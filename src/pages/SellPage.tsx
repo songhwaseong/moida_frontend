@@ -7,6 +7,7 @@ import { CARRIERS } from '../data/carriers';
 import styles from './SellPage.module.css';
 import customAxios from '../api/axiosInstance';
 import { getMyProfile } from '../api/member';
+import { sendPhoneCode, verifyPhoneCode } from '../api/phoneVerification';
 
 interface Props {
   onBack: () => void;
@@ -21,11 +22,18 @@ const getApiError = (error: unknown) => {
   return (error as { response?: { status?: number; data?: { message?: string } } })?.response;
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return getApiError(error)?.data?.message || fallback;
+};
+
 const PRODUCT_CATEGORIES = HOME_CATEGORIES
   .map(category => category.label)
   .filter(label => label !== '전체');
-const ADDON_CATEGORIES = ['한정판', '이월상품'];
-const BASE_CATEGORIES = PRODUCT_CATEGORIES.filter(label => !ADDON_CATEGORIES.includes(label));
+const HIDDEN_SELL_CATEGORIES = ['이월상품'];
+const ADDON_CATEGORIES = ['한정판'];
+const BASE_CATEGORIES = PRODUCT_CATEGORIES.filter(
+  label => !ADDON_CATEGORIES.includes(label) && !HIDDEN_SELL_CATEGORIES.includes(label)
+);
 const CONDITIONS: { value: Condition; label: string; desc: string }[] = [
   { value: 'S급', label: 'S급', desc: '미사용/새상품' },
   { value: 'A급', label: 'A급', desc: '거의 새것' },
@@ -58,7 +66,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [phone, setPhone] = useState('');
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [phoneFromProfile, setPhoneFromProfile] = useState(false);
-  const [verifyCode, setVerifyCode] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [codeTimer, setCodeTimer] = useState(0);
@@ -67,7 +74,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const bottomRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,6 +105,14 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
+
+  useEffect(() => {
+    if (!codeSent || phoneVerified || codeTimer <= 0) return;
+    const timer = window.setTimeout(() => {
+      setCodeTimer(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [codeSent, phoneVerified, codeTimer]);
 
   // ── 이미지 처리 ──
   const handleAddImage = () => { if (images.length >= 10) return; fileInputRef.current?.click(); };
@@ -168,29 +182,39 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
       setErrors(p => ({ ...p, phone: '올바른 휴대폰 번호를 입력해주세요' }));
       return;
     }
-    setErrors(p => ({ ...p, phone: '' }));
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
-    setLoading(false);
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    setVerifyCode(code);
-    setCodeSent(true);
-    setCodeTimer(180);
-    const interval = setInterval(() => {
-      setCodeTimer(prev => {
-        if (prev <= 1) { clearInterval(interval); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
-    showToast(`[테스트] 인증번호: ${code}`, 'info');
+    setErrors(p => ({ ...p, phone: '', code: '' }));
+    try {
+      await sendPhoneCode(phone.trim());
+      setCodeSent(true);
+      setPhoneVerified(false);
+      setInputCode('');
+      setCodeTimer(180);
+      showToast('인증번호를 전송했어요. 3분 이내에 입력해주세요.', 'success');
+    } catch (error: unknown) {
+      showToast(getErrorMessage(error, '인증번호 발송에 실패했어요'), 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleVerifyCode = () => {
-    if (inputCode === verifyCode) {
+  const handleVerifyCode = async () => {
+    if (!inputCode.trim()) {
+      setErrors(p => ({ ...p, code: '인증번호 6자리를 입력해주세요' }));
+      return;
+    }
+    setLoading(true);
+    setErrors(p => ({ ...p, code: '' }));
+    try {
+      await verifyPhoneCode(phone.trim(), inputCode.trim());
       setPhoneVerified(true);
+      setCodeTimer(0);
       setErrors(p => ({ ...p, code: '' }));
-    } else {
-      setErrors(p => ({ ...p, code: '인증번호가 올바르지 않아요' }));
+      showToast('휴대폰 인증이 완료됐어요.', 'success');
+    } catch (error: unknown) {
+      setErrors(p => ({ ...p, code: getErrorMessage(error, '인증번호가 올바르지 않아요') }));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -513,7 +537,6 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                   placeholder="상품 상태, 구매 시기, 사용 횟수 등을 자세히 적어주세요"
                   value={description}
                   onChange={e => { setDescription(e.target.value); setErrors(p => ({ ...p, description: '' })); }}
-                  onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100)}
                   maxLength={500}
                   rows={6}
                 />
@@ -602,6 +625,8 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                       setErrors(p => ({ ...p, phone: '', code: '' }));
                       setPhoneVerified(false);
                       setCodeSent(false);
+                      setInputCode('');
+                      setCodeTimer(0);
                     }}
                     inputMode="tel"
                     readOnly={phoneFromProfile}
@@ -633,7 +658,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                       />
                       {codeTimer > 0 && <span className={styles.timer}>{formatTimer(codeTimer)}</span>}
                     </div>
-                    <button className={styles.sendBtn} onClick={handleVerifyCode}>확인</button>
+                    <button className={styles.sendBtn} onClick={handleVerifyCode} disabled={loading || codeTimer === 0}>확인</button>
                   </div>
                   {errors.code && <p className={styles.fieldError}>{errors.code}</p>}
                   {codeTimer === 0 && codeSent && (
@@ -674,7 +699,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
           )}
 
           {/* 하단 버튼 */}
-          <div className={styles.bottomAction} ref={bottomRef}>
+          <div className={styles.bottomAction}>
             <button className={styles.prevBtn} onClick={handlePrevStep}>
               {step === 1 ? '취소' : '이전'}
             </button>

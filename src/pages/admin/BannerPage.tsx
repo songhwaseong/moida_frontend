@@ -32,7 +32,6 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '게임/취미':   <SvgIcon><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1" fill="currentColor"/><circle cx="17" cy="13" r="1" fill="currentColor"/><path d="M3 7h18l-1.5 9.5a2 2 0 01-2 1.5H6.5a2 2 0 01-2-1.5L3 7z"/></SvgIcon>,
   '음향/악기':   <SvgIcon><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></SvgIcon>,
   '한정판':      <SvgIcon><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></SvgIcon>,
-  '이월상품':    <SvgIcon><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></SvgIcon>,
 };
 
 const renderIcon = (c: CategoryRow): React.ReactNode => {

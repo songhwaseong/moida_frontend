@@ -12,6 +12,9 @@ const SETTINGS = [
   { key: 'chatEnabled', label: '채팅 알림', desc: '새 메시지가 오면 알려드려요' },
   { key: 'tradeEnabled', label: '거래 완료 알림', desc: '거래가 완료되면 알려드려요' },
   { key: 'marketingEnabled', label: '마케팅 알림', desc: '이벤트, 혜택 정보를 알려드려요' },
+  { key: 'productStatusEnabled', label: '상품 진행 알림', desc: '승인, 경매 시작, 유찰 등 상품 상태 변화를 알려드려요' },
+  { key: 'inquiryEnabled', label: '상품 문의 알림', desc: '새 문의와 문의 답변 등록을 알려드려요' },
+  { key: 'auctionResultEnabled', label: '경매 결과/결제 알림', desc: '낙찰, 결제 요청, 미결제 유찰을 알려드려요' },
 ] satisfies Array<{ key: keyof NotificationSettingDto; label: string; desc: string }>;
 
 const DEFAULT_SETTINGS: NotificationSettingDto = {
@@ -20,6 +23,9 @@ const DEFAULT_SETTINGS: NotificationSettingDto = {
   chatEnabled: true,
   tradeEnabled: true,
   marketingEnabled: false,
+  productStatusEnabled: true,
+  inquiryEnabled: true,
+  auctionResultEnabled: true,
 };
 
 interface Props {

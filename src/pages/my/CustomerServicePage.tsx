@@ -26,7 +26,7 @@ const CustomerServicePage: React.FC<Props> = ({ onBack }) => (
       <div className={styles.csCard}>
         <p className={styles.csEmoji}>📧</p>
         <p className={styles.csTitle}>이메일 문의</p>
-        <p className={styles.csDesc}>support@bazar.kr{'\n'}영업일 기준 1~2일 내 답변</p>
+        <p className={styles.csDesc}>support@moida.kr{'\n'}영업일 기준 1~2일 내 답변</p>
         <button className={styles.csBtnOutline}>이메일 보내기</button>
       </div>
     </div>

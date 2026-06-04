@@ -22,6 +22,7 @@ import ChatLogPage from './ChatLogPage';
 import MemberListPage from './MemberListPage';
 import WithdrawnMemberPage from './WithdrawnMemberPage';
 import AdminSettingsPage from './AdminSettingsPage';
+import AdminLoginLogPage from './AdminLoginLogPage';
 import AuctionManagePage from './AuctionManagePage';
 import type { IdleMinutes } from './adminSettingsOptions';
 import TrackingModal from '../../components/TrackingModal';
@@ -59,7 +60,7 @@ type MenuKey =
   | '제재 내역' | '채팅 로그'
   | '회원 목록' | '탈퇴 회원'
   | '공지사항' | '카테고리/배너' | '정산/수수료' | '지갑 요청' | '고객문의/FAQ'
-  | '설정';
+  | '설정' | '접속 기록';
 
 const IC = (p: React.SVGProps<SVGSVGElement>) => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" {...p} />
@@ -94,11 +95,13 @@ const SIDE_ICONS: Record<MenuKey, React.ReactNode> = {
   '고객문의/FAQ': <IC><path d="M12 21a9 9 0 100-18 9 9 0 000 18z" /><path d="M9.5 9.5a3 3 0 115 2.5c-.5.5-1.5 1-1.5 2" /><circle cx="12" cy="17" r=".5" fill="currentColor" /></IC>,
   /* SlidersHorizontal */
   '설정': <IC><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="12" x2="3" y2="12" /><line x1="21" y1="18" x2="3" y2="18" /><circle cx="8" cy="6" r="2" fill="#fff" /><circle cx="16" cy="12" r="2" fill="#fff" /><circle cx="8" cy="18" r="2" fill="#fff" /></IC>,
+  /* History (접속 기록) */
+  '접속 기록': <IC><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><polyline points="3 3 3 8 8 8" /><polyline points="12 7 12 12 15 14" /></IC>,
 };
 
 // 사이드바 구조. menuKey 는 내부 state 식별자(한국어 고정)이고,
 // 표시 label 은 모두 i18n 키로 들고 있어 언어 전환 시 화면 텍스트만 바뀐다.
-const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: string }[] }[] = [
+const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: string; adminOnly?: boolean }[] }[] = [
   {
     sectionKey: 'admin.section.overview',
     items: [{ key: '대시보드', labelKey: 'admin.menu.dashboard' }],
@@ -148,8 +151,8 @@ const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: stri
   {
     sectionKey: 'admin.section.system',
     items: [
+      { key: '접속 기록', labelKey: 'admin.menu.loginLogs', adminOnly: true },
       { key: '설정', labelKey: 'admin.menu.settings' },
-
     ],
   },
 ];
@@ -169,6 +172,8 @@ interface Props {
 
 const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, onChangeIdleMinutes }) => {
   const t = useT();
+  // ADMIN 전용 메뉴(접속 기록) 노출 판별. MANAGER 는 제외.
+  const isAdminRole = localStorage.getItem('moida_user_role') === 'ADMIN';
   const [activeMenu, setActiveMenu] = useState<MenuKey>('대시보드');
   // 사이드바 "상품 문의" 배지용 미답변 건수. 관리자 로그인 직후/주기적으로 가볍게 갱신한다.
   const [pendingInquiryCount, setPendingInquiryCount] = useState(0);
@@ -642,6 +647,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
           onChangeIdleMinutes={onChangeIdleMinutes}
         />
       );
+      case '접속 기록': return isAdminRole ? <AdminLoginLogPage /> : null;
       default: return null;
     }
   };
@@ -671,10 +677,14 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
         {/* 사이드바 */}
         <nav className={styles.sidebar}>
           <div className={styles.sidebarMenu}>
-            {SIDE_SECTIONS.map(section => (
+            {SIDE_SECTIONS.map(section => {
+              // adminOnly 항목은 ADMIN 에게만 노출. 필터 후 비면 섹션 자체를 숨긴다.
+              const visibleItems = section.items.filter(m => !m.adminOnly || isAdminRole);
+              if (visibleItems.length === 0) return null;
+              return (
               <div key={section.sectionKey}>
                 <div className={styles.sideSection}>{t(section.sectionKey)}</div>
-                {section.items.map(m => {
+                {visibleItems.map(m => {
                   const badge = getBadge(m.key);
                   return (
                     <button
@@ -691,7 +701,8 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
                   );
                 })}
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className={styles.sidebarFooter}>
             <div className={styles.adminStatus}>

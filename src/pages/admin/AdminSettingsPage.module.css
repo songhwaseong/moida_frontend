@@ -90,3 +90,58 @@
 .currentInfo strong {
   color: #E24B4A;
 }
+
+/* 경매 기본 기간 — 일/시간/분 입력 */
+.section + .section {
+  margin-top: 20px;
+}
+
+.durationRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.durationField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.durationLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8B8FA8;
+}
+
+.durationInput {
+  width: 88px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #E8E8EF;
+  background: #F8F9FB;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A1A2E;
+  font-family: 'Noto Sans KR', sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.durationInput:focus { border-color: #E24B4A; background: #fff; }
+
+.saveBtn {
+  padding: 11px 28px;
+  border-radius: 10px;
+  border: none;
+  background: #E24B4A;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: opacity 0.15s;
+}
+.saveBtn:hover:not(:disabled) { opacity: 0.88; }
+.saveBtn:disabled { opacity: 0.5; cursor: default; }

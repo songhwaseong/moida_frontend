@@ -5,9 +5,12 @@ import {
   getAdminAuctionBids,
   updateAdminAuctionStatus,
   STATUS_LABEL,
+  PROGRESS_LABELS,
+  toProgressLabel,
   type AdminAuctionDto,
   type AdminAuctionBidDto,
   type AdminAuctionStatusLabel,
+  type AdminProgressLabel,
 } from '../../api/adminAuctions';
 
 // 화면 행 타입. API DTO 를 살짝 가공해 한글 status 와 함께 들고 다닌다.
@@ -19,6 +22,7 @@ interface AuctionRow {
   currentPrice: number;
   bidCount: number;
   status: AdminAuctionStatusLabel;
+  progress: AdminProgressLabel | null;  // 낙찰 이후 결제·배송 진행 단계 (없으면 null)
   timeLeft: number;
 }
 
@@ -36,6 +40,14 @@ const formatPrice = (p: number) => p.toLocaleString('ko-KR') + '원';
 
 const STATUS_OPTIONS: AdminAuctionStatusLabel[] = ['경매중', '낙찰', '유찰', '취소'];
 
+// 상태 필터용 옵션. '전체' 는 필터 해제를 의미한다.
+// '대기'는 화면상 '경매중'으로 표시되고 직접 설정도 불가하므로 필터에서 제외한다.
+const STATUS_FILTER_OPTIONS: AdminAuctionStatusLabel[] = ['경매중', '낙찰', '유찰', '취소'];
+type StatusFilter = AdminAuctionStatusLabel | '전체';
+
+// 진행상태(낙찰 이후 결제·배송 단계) 필터용 옵션.
+type ProgressFilter = AdminProgressLabel | '전체';
+
 const toRow = (dto: AdminAuctionDto): AuctionRow => ({
   id: dto.id,
   auctionNo: dto.auctionNo,
@@ -44,6 +56,7 @@ const toRow = (dto: AdminAuctionDto): AuctionRow => ({
   currentPrice: dto.currentPrice,
   bidCount: dto.bidCount,
   status: STATUS_LABEL[dto.status],
+  progress: toProgressLabel(dto.status, dto.deliveryStatus),
   timeLeft: dto.timeLeft,
 });
 
@@ -53,6 +66,8 @@ const AuctionManagePage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('전체');
+  const [progressFilter, setProgressFilter] = useState<ProgressFilter>('전체');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [bidsByAuction, setBidsByAuction] = useState<Record<number, AdminAuctionBidDto[]>>({});
   const [bidsLoading, setBidsLoading] = useState<number | null>(null);
@@ -88,16 +103,32 @@ const AuctionManagePage: React.FC = () => {
   }, []);
 
   const filtered = useMemo(() => rows.filter(r => {
+    // 대기는 화면상 '경매중'으로 표시되므로 필터에서도 경매중과 동일하게 취급한다.
+    const displayStatus = r.status === '대기' ? '경매중' : r.status;
+    if (statusFilter !== '전체' && displayStatus !== statusFilter) return false;
+    if (progressFilter !== '전체' && r.progress !== progressFilter) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
     return r.auctionNo.toLowerCase().includes(q) || r.name.toLowerCase().includes(q);
-  }), [rows, search]);
+  }), [rows, search, statusFilter, progressFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleSearch = (value: string) => {
     setSearch(value);
+    setPage(1);
+    setExpandedId(null);
+  };
+
+  const handleStatusFilter = (value: StatusFilter) => {
+    setStatusFilter(value);
+    setPage(1);
+    setExpandedId(null);
+  };
+
+  const handleProgressFilter = (value: ProgressFilter) => {
+    setProgressFilter(value);
     setPage(1);
     setExpandedId(null);
   };
@@ -154,6 +185,26 @@ const AuctionManagePage: React.FC = () => {
           value={search}
           onChange={e => handleSearch(e.target.value)}
         />
+        <select
+          className={styles.filterSelect}
+          value={statusFilter}
+          onChange={e => handleStatusFilter(e.target.value as StatusFilter)}
+        >
+          <option value="전체">전체 상태</option>
+          {STATUS_FILTER_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <select
+          className={styles.filterSelect}
+          value={progressFilter}
+          onChange={e => handleProgressFilter(e.target.value as ProgressFilter)}
+        >
+          <option value="전체">전체 진행상태</option>
+          {PROGRESS_LABELS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
       </div>
 
       <div className={styles.tableWrap}>
@@ -167,14 +218,15 @@ const AuctionManagePage: React.FC = () => {
               <th>입찰수</th>
               <th>남은시간</th>
               <th>상태</th>
+              <th>진행상태</th>
               <th>입찰내역</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className={styles.empty}>경매를 불러오는 중입니다…</td></tr>
+              <tr><td colSpan={9} className={styles.empty}>경매를 불러오는 중입니다…</td></tr>
             ) : loadError ? (
-              <tr><td colSpan={8} className={styles.empty}>
+              <tr><td colSpan={9} className={styles.empty}>
                 {loadError}
                 <button
                   onClick={reload}
@@ -182,7 +234,7 @@ const AuctionManagePage: React.FC = () => {
                 >다시 시도</button>
               </td></tr>
             ) : paginated.length === 0 ? (
-              <tr><td colSpan={8} className={styles.empty}>검색 결과가 없습니다.</td></tr>
+              <tr><td colSpan={9} className={styles.empty}>검색 결과가 없습니다.</td></tr>
             ) : paginated.map(row => {
               const bids = bidsByAuction[row.id] ?? [];
               const isExpanded = expandedId === row.id;
@@ -208,6 +260,11 @@ const AuctionManagePage: React.FC = () => {
                       </select>
                     </td>
                     <td>
+                      {row.progress
+                        ? <span className={styles.progressBadge}>{row.progress}</span>
+                        : <span className={styles.progressNone}>-</span>}
+                    </td>
+                    <td>
                       <button className={styles.bidBtn} onClick={() => toggleBids(row.id)}>
                         {isExpanded ? '닫기' : '보기'}
                       </button>
@@ -215,7 +272,7 @@ const AuctionManagePage: React.FC = () => {
                   </tr>
                   {isExpanded && (
                     <tr>
-                      <td colSpan={8} className={styles.bidHistoryCell}>
+                      <td colSpan={9} className={styles.bidHistoryCell}>
                         <div className={styles.bidHistory}>
                           <p className={styles.bidHistoryTitle}>입찰 내역 — {row.name}</p>
                           {bidsLoading === row.id ? (

@@ -30,6 +30,20 @@
 }
 .searchInput:focus { border-color: #4A4A6A; }
 
+.filterSelect {
+  padding: 8px 14px;
+  border: 1.5px solid #D0D3DE;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: #1A1A2E;
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.filterSelect:focus { border-color: #4A4A6A; }
+
 .tableWrap {
   overflow-x: auto;
   border-radius: 12px;
@@ -93,6 +107,22 @@
   cursor: pointer;
   background: #fff;
   outline: none;
+}
+
+/* 진행상태(낙찰 이후 결제·배송 단계) 뱃지 */
+.progressBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6A4AC0;
+  background: #EFEAFB;
+  white-space: nowrap;
+}
+.progressNone {
+  color: #C0C3D0;
+  font-size: 13px;
 }
 
 .bidBtn {

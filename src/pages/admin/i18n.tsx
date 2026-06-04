@@ -41,6 +41,7 @@ const KO: Record<string, string> = {
   'admin.menu.settlements': '정산/수수료',
   'admin.menu.wallet': '지갑 요청',
   'admin.menu.inquiriesFaq': '고객문의/FAQ',
+  'admin.menu.loginLogs': '접속 기록',
   'admin.menu.settings': '설정',
 
   // ── 공통 헤더
@@ -115,6 +116,7 @@ const EN: Record<string, string> = {
   'admin.menu.settlements': 'Settlements & Fees',
   'admin.menu.wallet': 'Wallet Requests',
   'admin.menu.inquiriesFaq': 'Inquiries & FAQ',
+  'admin.menu.loginLogs': 'Login History',
   'admin.menu.settings': 'Settings',
 
   // header

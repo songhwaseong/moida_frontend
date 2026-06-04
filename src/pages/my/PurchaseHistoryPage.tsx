@@ -5,6 +5,7 @@ import {
   type PurchaseHistoryDto,
 } from '../../api/products';
 import { useToast } from '../../components/ToastContext';
+import AlertModal from '../../components/AlertModal';
 import styles from './MySubPage.module.css';
 
 const TABS = ['진행중', '구매완료'] as const;
@@ -34,6 +35,8 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  // 수령확인 확인 모달 대상 (null 이면 닫힘)
+  const [confirmTarget, setConfirmTarget] = useState<PurchaseHistoryDto | null>(null);
 
   const loadPurchases = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -73,11 +76,17 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
     [items, tab],
   );
 
-  const handleConfirmReceipt = async (item: PurchaseHistoryDto) => {
+  // 수령확인 버튼 클릭 → 확인 모달 오픈
+  const handleConfirmReceipt = (item: PurchaseHistoryDto) => {
     if (!item.canConfirmReceipt) return;
-    if (!window.confirm('상품을 정상 수령하셨나요? 확인하면 판매자에게 정산금액이 지급됩니다.')) {
-      return;
-    }
+    setConfirmTarget(item);
+  };
+
+  // 모달에서 '수령확인' 확정 시 실제 처리
+  const doConfirmReceipt = async () => {
+    const item = confirmTarget;
+    if (!item) return;
+    setConfirmTarget(null);
     setConfirmingId(item.productId);
     try {
       await confirmProductReceipt(item.productId);
@@ -159,6 +168,16 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
           </div>
         )}
       </div>
+
+      {confirmTarget && (
+        <AlertModal
+          message={'상품을 정상 수령하셨나요?\n확인하면 판매자에게 정산금액이 지급됩니다.'}
+          confirmLabel="수령확인"
+          cancelLabel="취소"
+          onConfirm={doConfirmReceipt}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      )}
     </div>
   );
 };

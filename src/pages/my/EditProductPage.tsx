@@ -45,6 +45,21 @@ const STATUS_TO_API: Partial<Record<MyProduct['status'], 'PENDING' | 'HIDDEN'>> 
 const formatPrice = (v: string) => v.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const toNumber = (v: string) => Number(v.replace(/[^0-9]/g, '')) || 0;
 
+// 수정이 허용되는 백엔드 상태. (목록 화면의 수정 버튼 노출 조건과 동일: 승인요청중/유찰/숨김)
+// 저장 직전 최신 상태가 이 목록에 없으면 수정을 차단한다.
+const EDITABLE_API_STATUSES = ['PENDING', 'FAILED', 'HIDDEN'] as const;
+
+// 차단 안내 문구에 쓰는 상태 한글 라벨.
+const STATUS_LABEL_KO: Record<string, string> = {
+  SCHEDULED: '경매예정',
+  LIVE: '경매중',
+  SOLD: '낙찰',
+  RETURN_REQUESTED: '환수요청',
+  RETURN_SHIPPING: '반송중',
+  RETURN_COMPLETED: '환수완료',
+  DELETED: '삭제',
+};
+
 const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyChange }) => {
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -181,6 +196,15 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
     if (!validate()) { showToast('필수 항목을 확인해주세요', 'warning'); return; }
     setLoading(true);
     try {
+      // 저장 직전 최신 상태 확인: 수정 화면을 열어둔 사이 수정 불가 상태(경매예정/경매중/낙찰 등)로
+      // 전환됐다면 수정 차단. 허용 상태(승인요청중/유찰/숨김)가 아니면 모두 막는다.
+      const latest = await getProduct(product.id);
+      if (latest.status && !EDITABLE_API_STATUSES.includes(latest.status as typeof EDITABLE_API_STATUSES[number])) {
+        const label = STATUS_LABEL_KO[latest.status] ?? '현재';
+        showToast(`${label} 상태로 변경되어 수정할 수 없어요.`, 'warning');
+        onSaved(); // 목록으로 돌아가 최신 상태로 새로고침
+        return;
+      }
       await updateProduct(product.id, {
         name: title,
         description,

@@ -1,3 +1,35 @@
+/* 상태 필터 바 (드롭다운) */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.filterLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.filterSelect {
+  flex: 1;
+  max-width: 220px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.filterSelect:focus { border-color: var(--primary); }
+
 .editBtn {
   font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px;
   background: #fff; color: var(--primary); border: 1.5px solid var(--primary);
@@ -35,3 +67,84 @@
   white-space: nowrap;
 }
 .approveBtn:hover { opacity: 0.85; transition: 0.15s; }
+
+/* 상품 돌려받기 모달 */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.modalTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+.modalDesc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.modalTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modalTextarea:focus { border-color: var(--primary); }
+.modalError {
+  font-size: 12px;
+  color: #e53935;
+  margin: 6px 0 0;
+}
+.modalActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.modalCancelBtn,
+.modalConfirmBtn {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: opacity 0.15s, background 0.15s;
+}
+.modalCancelBtn {
+  background: #fff;
+  color: var(--muted);
+  border: 1.5px solid var(--border);
+}
+.modalCancelBtn:hover:not(:disabled) { background: #f5f5f5; }
+.modalConfirmBtn {
+  background: var(--primary);
+  color: #fff;
+  border: 1.5px solid var(--primary);
+}
+.modalConfirmBtn:hover:not(:disabled) { opacity: 0.88; }
+.modalCancelBtn:disabled,
+.modalConfirmBtn:disabled { opacity: 0.5; cursor: default; }

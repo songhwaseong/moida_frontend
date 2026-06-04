@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getMyProducts, requestProductReturn, type ProductSummaryDto } from '../../api/products';
 import type { MyProduct } from '../../data/myProductStore';
+import { useToast } from '../../components/ToastContext';
 import styles from './MySubPage.module.css';
 import editStyles from './MyProductsPage.module.css';
 
@@ -98,10 +99,16 @@ const toEditableProduct = (item: ProductSummaryDto): MyProduct => ({
 });
 
 const MyProductsPage: React.FC<Props> = ({ onBack, onEdit }) => {
+  const { showToast } = useToast();
   const [tab, setTab] = useState<Tab>('전체');
   const [items, setItems] = useState<ProductSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // 상품 돌려받기 모달 상태
+  const [returnTarget, setReturnTarget] = useState<ProductSummaryDto | null>(null);
+  const [returnReason, setReturnReason] = useState('');
+  const [returnReasonError, setReturnReasonError] = useState('');
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -128,6 +135,17 @@ const MyProductsPage: React.FC<Props> = ({ onBack, onEdit }) => {
     tab === '전체' ? items : items.filter(item => toStatusLabel(item) === tab)
   ), [items, tab]);
 
+  // 상태별 상품 개수. 드롭다운 옵션 옆에 표시한다. ('전체'는 전체 개수)
+  const countByTab = useMemo(() => {
+    const counts = {} as Record<Tab, number>;
+    counts['전체'] = items.length;
+    for (const item of items) {
+      const label = toStatusLabel(item) as Tab;
+      counts[label] = (counts[label] ?? 0) + 1;
+    }
+    return counts;
+  }, [items]);
+
   const statusColor = (status: ProductStatusLabel) => {
     if (status === '경매예정') return styles.statusOn;
     if (status === '승인요청중') return styles.statusApproving;
@@ -147,27 +165,37 @@ const MyProductsPage: React.FC<Props> = ({ onBack, onEdit }) => {
   );
 
   const canEdit = (status: ProductStatusLabel) => (
-    status === '경매예정' || status === '유찰' || status === '숨김'
+    status === '승인요청중' || status === '유찰' || status === '숨김'
   );
 
-  const handleReturnRequest = async (item: ProductSummaryDto) => {
-    const reason = window.prompt('상품을 돌려받는 사유를 입력해주세요.', '단순 변심');
-    if (reason === null) return;
-    if (!reason.trim()) {
-      window.alert('사유를 입력해주세요.');
+  // 돌려받기 버튼 클릭 → 사유 입력 모달 오픈
+  const handleReturnRequest = (item: ProductSummaryDto) => {
+    setReturnTarget(item);
+    setReturnReason('단순 변심');
+    setReturnReasonError('');
+  };
+
+  // 모달에서 '돌려받기 요청' 확정 시 실제 처리
+  const submitReturnRequest = async () => {
+    const item = returnTarget;
+    if (!item) return;
+    if (!returnReason.trim()) {
+      setReturnReasonError('사유를 입력해주세요.');
       return;
     }
-    const ok = window.confirm('출품을 중단하고 관리자 확인 후 반송 절차가 진행됩니다. 상품 돌려받기를 요청할까요?');
-    if (!ok) return;
-
+    setReturnSubmitting(true);
     try {
-      await requestProductReturn(item.id, reason.trim());
+      await requestProductReturn(item.id, returnReason.trim());
       setItems(prev => prev.map(product => (
         product.id === item.id ? { ...product, status: 'RETURN_REQUESTED' } : product
       )));
+      setReturnTarget(null);
+      showToast('상품 돌려받기를 요청했어요.', 'success');
     } catch (requestError) {
       console.error('Failed to request product return', requestError);
-      window.alert('환수요청에 실패했어요. 잠시 후 다시 시도해주세요.');
+      showToast('환수요청에 실패했어요. 잠시 후 다시 시도해주세요.', 'error');
+    } finally {
+      setReturnSubmitting(false);
     }
   };
 
@@ -183,10 +211,17 @@ const MyProductsPage: React.FC<Props> = ({ onBack, onEdit }) => {
         <div style={{ width: 32 }}/>
       </div>
 
-      <div className={styles.tabs}>
-        {TABS.map(t => (
-          <button key={t} className={`${styles.tab} ${tab === t ? styles.tabActive : ''}`} onClick={() => setTab(t)}>{t}</button>
-        ))}
+      <div className={editStyles.filterBar}>
+        <label className={editStyles.filterLabel}>상태</label>
+        <select
+          className={editStyles.filterSelect}
+          value={tab}
+          onChange={e => setTab(e.target.value as Tab)}
+        >
+          {TABS.map(t => (
+            <option key={t} value={t}>{t} ({countByTab[t] ?? 0})</option>
+          ))}
+        </select>
       </div>
 
       <div className={styles.list}>
@@ -235,6 +270,38 @@ const MyProductsPage: React.FC<Props> = ({ onBack, onEdit }) => {
           </div>
         )}
       </div>
+
+      {returnTarget && (
+        <div className={editStyles.modalOverlay} onClick={() => !returnSubmitting && setReturnTarget(null)}>
+          <div className={editStyles.modal} onClick={e => e.stopPropagation()}>
+            <p className={editStyles.modalTitle}>상품 돌려받기</p>
+            <p className={editStyles.modalDesc}>
+              출품을 중단하고 관리자 확인 후 반송 절차가 진행됩니다.<br />돌려받는 사유를 입력해주세요.
+            </p>
+            <textarea
+              className={editStyles.modalTextarea}
+              value={returnReason}
+              onChange={e => { setReturnReason(e.target.value); setReturnReasonError(''); }}
+              placeholder="예) 단순 변심"
+              rows={3}
+              disabled={returnSubmitting}
+            />
+            {returnReasonError && <p className={editStyles.modalError}>{returnReasonError}</p>}
+            <div className={editStyles.modalActions}>
+              <button
+                className={editStyles.modalCancelBtn}
+                onClick={() => setReturnTarget(null)}
+                disabled={returnSubmitting}
+              >취소</button>
+              <button
+                className={editStyles.modalConfirmBtn}
+                onClick={submitReturnRequest}
+                disabled={returnSubmitting}
+              >{returnSubmitting ? '요청 중...' : '돌려받기 요청'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

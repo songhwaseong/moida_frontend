@@ -279,7 +279,7 @@ const FindAccountPage: React.FC<Props> = ({ onBack, initialTab = 'id' }) => {
                   type="button"
                   className={styles.pwToggle}
                   onClick={handleSendIdPhoneCode}
-                  disabled={!idName.trim() || !idPhone.trim() || idSendingCode || idPhoneVerified}
+                  disabled={idSendingCode || idPhoneVerified}
                 >
                   {idPhoneVerified ? '인증완료' : idSendingCode ? '전송 중' : idCodeSent ? '재전송' : '인증번호 받기'}
                 </button>

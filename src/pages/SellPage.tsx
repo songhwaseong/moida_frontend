@@ -75,6 +75,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
   const [loading, setLoading] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const auctionStartPriceRef = React.useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── 변경 여부 감지 ──
@@ -113,6 +114,14 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
     }, 1000);
     return () => window.clearTimeout(timer);
   }, [codeSent, phoneVerified, codeTimer]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    window.requestAnimationFrame(() => {
+      auctionStartPriceRef.current?.scrollIntoView({ block: 'center' });
+      auctionStartPriceRef.current?.focus({ preventScroll: true });
+    });
+  }, [step]);
 
   // ── 이미지 처리 ──
   const handleAddImage = () => { if (images.length >= 10) return; fileInputRef.current?.click(); };
@@ -492,6 +501,7 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
                 <div className={styles.priceWrap}>
                   <span className={styles.pricePrefix}>₩</span>
                   <input
+                    ref={auctionStartPriceRef}
                     className={`${styles.input} ${styles.priceInput} ${errors.auctionStartPrice ? styles.inputError : ''}`}
                     placeholder="시작가를 입력해주세요"
                     value={auctionStartPrice}

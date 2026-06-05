@@ -11,9 +11,12 @@ const CATEGORY_COLOR: Record<NoticeCategory, string> = {
 
 const CATEGORIES: NoticeCategory[] = ['서비스', '이벤트', '점검', '정책'];
 
-interface Props { onBack: () => void; }
+interface Props {
+  onBack: () => void;
+  initialNoticeId?: number;
+}
 
-const NoticeBoardPage: React.FC<Props> = ({ onBack }) => {
+const NoticeBoardPage: React.FC<Props> = ({ onBack, initialNoticeId }) => {
   const [notices, setNotices] = useState<NoticeDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,8 +28,22 @@ const NoticeBoardPage: React.FC<Props> = ({ onBack }) => {
     let alive = true;
     const load = async () => {
       try {
+        if (!initialNoticeId) {
+          setSelected(null);
+        }
         const data = await getNotices();
         if (alive) setNotices(data);
+        if (alive && initialNoticeId) {
+          try {
+            const detail = await getNotice(initialNoticeId);
+            if (!alive) return;
+            setSelected(detail);
+            setNotices((prev) => prev.map((n) => n.id === detail.id ? detail : n));
+          } catch {
+            const fallback = data.find((notice) => notice.id === initialNoticeId);
+            if (fallback) setSelected(fallback);
+          }
+        }
       } catch {
         if (alive) setError('공지사항을 불러오지 못했습니다.');
       } finally {
@@ -35,7 +52,7 @@ const NoticeBoardPage: React.FC<Props> = ({ onBack }) => {
     };
     void load();
     return () => { alive = false; };
-  }, []);
+  }, [initialNoticeId]);
 
   const filtered = activeCategory ? notices.filter((n) => n.category === activeCategory) : notices;
 
@@ -64,8 +81,8 @@ const NoticeBoardPage: React.FC<Props> = ({ onBack }) => {
           <span className={styles.title}>공지사항</span>
           <div style={{ width: 32 }} />
         </div>
-        <div style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <div className={styles.noticeDetail}>
+          <div className={styles.noticeDetailMetaRow}>
             <span style={{
               fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
               background: CATEGORY_COLOR[selected.category] ?? '#F0F1F4', color: '#444',
@@ -74,11 +91,11 @@ const NoticeBoardPage: React.FC<Props> = ({ onBack }) => {
             </span>
             {selected.isPinned && <span style={{ fontSize: 11, color: '#888' }}>📌 고정</span>}
           </div>
-          <h2 style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.4, marginBottom: 8 }}>{selected.title}</h2>
-          <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+          <h2 className={styles.noticeDetailTitle}>{selected.title}</h2>
+          <p className={styles.noticeDetailInfo}>
             {selected.author} · {selected.createdAt} · 조회 {selected.viewCount}
           </p>
-          <div style={{ fontSize: 14, lineHeight: 1.8, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+          <div className={styles.noticeDetailContent}>
             {selected.content}
           </div>
         </div>

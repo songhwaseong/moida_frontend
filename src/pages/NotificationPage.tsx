@@ -19,9 +19,10 @@ const CATEGORY_META: Record<NotificationCategory, { label: string; icon: string;
 
 interface Props {
   onUnreadCountChange?: () => void;
+  onNavigateLink?: (linkUrl: string) => void;
 }
 
-const NotificationPage: React.FC<Props> = ({ onUnreadCountChange }) => {
+const NotificationPage: React.FC<Props> = ({ onUnreadCountChange, onNavigateLink }) => {
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,6 +95,13 @@ const NotificationPage: React.FC<Props> = ({ onUnreadCountChange }) => {
     }
   };
 
+  const handleNotificationClick = async (notification: NotificationDto) => {
+    await markOne(notification.id);
+    if (notification.linkUrl) {
+      onNavigateLink?.(notification.linkUrl);
+    }
+  };
+
   return (
     <main className={styles.main}>
       <div className={styles.header}>
@@ -120,7 +128,7 @@ const NotificationPage: React.FC<Props> = ({ onUnreadCountChange }) => {
             <button
               key={notification.id}
               className={`${styles.item} ${!notification.read ? styles.unread : ''}`}
-              onClick={() => markOne(notification.id)}
+              onClick={() => { void handleNotificationClick(notification); }}
               type="button"
             >
               <div className={styles.iconBox} style={{ background: meta.color }} aria-hidden="true">

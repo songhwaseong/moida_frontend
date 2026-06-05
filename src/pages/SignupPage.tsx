@@ -417,7 +417,7 @@ const SignupPage: React.FC<Props> = ({ onSignup, onGoLogin, socialMode = false, 
                   type="button"
                   className={styles.pwToggle}
                   onClick={handleSendCode}
-                  disabled={!form.phone.trim() || sendingCode || phoneVerified}
+                  disabled={sendingCode || phoneVerified}
                 >
                   {phoneVerified ? '인증완료' : sendingCode ? '전송 중' : codeSent ? '재전송' : '인증번호 받기'}
                 </button>

@@ -23,6 +23,7 @@ import MemberListPage from './MemberListPage';
 import WithdrawnMemberPage from './WithdrawnMemberPage';
 import AdminSettingsPage from './AdminSettingsPage';
 import AdminLoginLogPage from './AdminLoginLogPage';
+import AdminActionLogPage from './AdminActionLogPage';
 import AuctionManagePage from './AuctionManagePage';
 import type { IdleMinutes } from './adminSettingsOptions';
 import TrackingModal from '../../components/TrackingModal';
@@ -60,7 +61,7 @@ type MenuKey =
   | '제재 내역' | '채팅 로그'
   | '회원 목록' | '탈퇴 회원'
   | '공지사항' | '카테고리/배너' | '정산/수수료' | '지갑 요청' | '고객문의/FAQ'
-  | '설정' | '접속 기록';
+  | '설정' | '접속 기록' | '변경 기록';
 
 const IC = (p: React.SVGProps<SVGSVGElement>) => (
   <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" {...p} />
@@ -97,6 +98,8 @@ const SIDE_ICONS: Record<MenuKey, React.ReactNode> = {
   '설정': <IC><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="12" x2="3" y2="12" /><line x1="21" y1="18" x2="3" y2="18" /><circle cx="8" cy="6" r="2" fill="#fff" /><circle cx="16" cy="12" r="2" fill="#fff" /><circle cx="8" cy="18" r="2" fill="#fff" /></IC>,
   /* History (접속 기록) */
   '접속 기록': <IC><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><polyline points="3 3 3 8 8 8" /><polyline points="12 7 12 12 15 14" /></IC>,
+  /* ClipboardList (변경 기록) */
+  '변경 기록': <IC><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M6 4H5a2 2 0 0 0-2 2v16h18V6a2 2 0 0 0-2-2h-1" /><path d="M8 12h8" /><path d="M8 16h5" /></IC>,
 };
 
 // 사이드바 구조. menuKey 는 내부 state 식별자(한국어 고정)이고,
@@ -152,6 +155,7 @@ const SIDE_SECTIONS: { sectionKey: string; items: { key: MenuKey; labelKey: stri
     sectionKey: 'admin.section.system',
     items: [
       { key: '접속 기록', labelKey: 'admin.menu.loginLogs', adminOnly: true },
+      { key: '변경 기록', labelKey: 'admin.menu.actionLogs', adminOnly: true },
       { key: '설정', labelKey: 'admin.menu.settings' },
     ],
   },
@@ -648,6 +652,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
         />
       );
       case '접속 기록': return isAdminRole ? <AdminLoginLogPage /> : null;
+      case '변경 기록': return isAdminRole ? <AdminActionLogPage /> : null;
       default: return null;
     }
   };

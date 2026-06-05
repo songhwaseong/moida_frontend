@@ -65,7 +65,7 @@ type Screen =
   | { type: 'navNotification' }
   | { type: 'navChat' }
   | { type: 'navMy' }
-  | { type: 'myMenu'; menu: MyMenuKey }
+  | { type: 'myMenu'; menu: MyMenuKey; noticeId?: number }
   | { type: 'editProfile' }
   | { type: 'changePassword' };
 
@@ -132,6 +132,10 @@ const getInitialScreen = (): Screen => {
   if (path === '/search') return { type: 'navSearch' };
   if (path.startsWith('/my/')) {
     const menu = decodeURIComponent(path.slice(4)) as MyMenuKey;
+    const noticeId = Number(new URLSearchParams(window.location.search).get('noticeId'));
+    if (menu === '공지사항' && Number.isFinite(noticeId) && noticeId > 0) {
+      return { type: 'myMenu', menu, noticeId };
+    }
     return { type: 'myMenu', menu };
   }
 
@@ -197,7 +201,12 @@ const getHistoryPath = (view: AppHistoryView, isAdmin = false) => {
   if (view.screen.type === 'navChat') return '/chat';
   if (view.screen.type === 'navNotification') return '/notifications';
   if (view.screen.type === 'navSearch') return '/search';
-  if (view.screen.type === 'myMenu') return `/my/${encodeURIComponent(view.screen.menu)}`;
+  if (view.screen.type === 'myMenu') {
+    const base = `/my/${encodeURIComponent(view.screen.menu)}`;
+    return view.screen.menu === '공지사항' && view.screen.noticeId
+      ? `${base}?noticeId=${view.screen.noticeId}`
+      : base;
+  }
   if (view.screen.type === 'home') {
     if (view.mainTab === '경매') return '/auction';
     if (view.mainTab === '인기') return '/popular';
@@ -449,6 +458,15 @@ const App: React.FC = () => {
       void refreshNotificationCount();
     }, 300);
   }, [refreshNotificationCount]);
+
+  const handleNotificationLink = useCallback((linkUrl: string) => {
+    const noticeMatch = linkUrl.match(/^\/notices\/(\d+)\/?$/);
+    if (noticeMatch) {
+      const noticeId = Number(noticeMatch[1]);
+      setNavTab('my');
+      setScreen({ type: 'myMenu', menu: '공지사항', noticeId });
+    }
+  }, []);
 
   useEffect(() => {
     // 로그인 세션이 준비된 경우에만 unread count를 초기 조회합니다.
@@ -890,14 +908,14 @@ const App: React.FC = () => {
         '고객센터': <CustomerServicePage onBack={backToMy} />,
         '이용약관': <TermsPage onBack={backToMy} initialTab={termsInitialTab} />,
         '이용 가이드': <GuidePage onBack={backToMy} />,
-        '공지사항': <NoticeBoardPage onBack={backToMy} />,
+        '공지사항': <NoticeBoardPage onBack={backToMy} initialNoticeId={screen.noticeId} />,
       };
       return editingProduct
         ? <EditProductPage product={editingProduct} onBack={goBack} onSaved={() => { setEditingProduct(null); setFormDirty(false); }} onDirtyChange={setFormDirty} />
         : menuMap[screen.menu];
     }
     if (screen.type === 'navSearch') return <SearchPage onProductClick={handleProductClick} onAuctionClick={handleAuctionClick} initialQuery={searchQuery} onQueryClear={() => setSearchQuery('')} />;
-    if (screen.type === 'navNotification') return <NotificationPage onUnreadCountChange={refreshNotificationCount} />;
+    if (screen.type === 'navNotification') return <NotificationPage onUnreadCountChange={refreshNotificationCount} onNavigateLink={handleNotificationLink} />;
     if (screen.type === 'navChat') return <ChatPage />;
     if (screen.type === 'navMy') return <MyPage onLogout={logout} onMenuClick={(menu) => setScreen({ type: 'myMenu', menu: menu as MyMenuKey })} onEditProfile={() => setScreen({ type: 'editProfile' })} />;
     return null;

@@ -61,10 +61,11 @@ export const getAdminSettlementSummary = async (): Promise<AdminSettlementSummar
 export const updateAdminSettlementStatus = async (
   settlementId: number,
   label: SettlementStatusLabel,
+  reason: string,
 ): Promise<AdminSettlementDto> => {
   const res = await customAxios.patch<ApiResponse<AdminSettlementDto>>(
     `/admin/settlements/${settlementId}/status`,
-    { status: labelToEnum(label) },
+    { status: labelToEnum(label), reason },
   );
   return unwrap(res);
 };

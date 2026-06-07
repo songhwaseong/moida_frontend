@@ -14,6 +14,7 @@ import {
   updateAdminFeeRule,
   type FeeRuleDto,
 } from '../../api/adminFeeRules';
+import { useAdminDialog } from './useAdminDialog';
 
 // 화면에서 쓰는 평탄한 형태. status 는 한글 라벨로 들고 다닌다.
 interface SettlementRow {
@@ -49,6 +50,7 @@ const toRow = (dto: AdminSettlementDto): SettlementRow => ({
 const PAGE_SIZE = 5;
 
 const SettlementPage: React.FC = () => {
+  const adminDialog = useAdminDialog();
   const [tab, setTab] = useState<'settlement' | 'fee'>('settlement');
   const [rows, setRows] = useState<SettlementRow[]>([]);
   const [summary, setSummary] = useState<AdminSettlementSummaryDto>({ totalSale: 0, totalFee: 0, totalNet: 0, pending: 0 });
@@ -122,10 +124,17 @@ const SettlementPage: React.FC = () => {
 
   // 상태 변경 (낙관적 업데이트 + 실패 시 롤백, 성공 시 요약도 재조회)
   const changeStatus = async (id: number, label: SettlementStatusLabel) => {
+    const reason = await adminDialog.prompt({
+      title: `${label} 처리 사유`,
+      message: `${label} 처리 사유를 입력하세요.`,
+      confirmLabel: '처리하기',
+      variant: label === '보류' ? 'danger' : 'default',
+    });
+    if (!reason) return;
     const snapshot = rows;
     setRows(prev => prev.map(r => r.id === id ? { ...r, status: label } : r));
     try {
-      const updated = await updateAdminSettlementStatus(id, label);
+      const updated = await updateAdminSettlementStatus(id, label, reason);
       setRows(prev => prev.map(r => r.id === id ? toRow(updated) : r));
       // 요약 카드 합계도 영향을 받으므로 가볍게 다시 조회한다.
       try { setSummary(await getAdminSettlementSummary()); } catch { /* ignore */ }
@@ -372,6 +381,7 @@ const SettlementPage: React.FC = () => {
           </div>
         </div>
       )}
+      {adminDialog.element}
     </div>
   );
 };

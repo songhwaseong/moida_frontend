@@ -9,6 +9,7 @@ import {
 } from '../../api/adminWallet';
 import type { WalletTransactionStatus, WalletTransactionType } from '../../api/wallet';
 import s from './admin.module.css';
+import { useAdminDialog } from './useAdminDialog';
 
 type TypeFilter = 'ALL' | WalletTransactionType;
 
@@ -31,6 +32,7 @@ const formatDate = (value: string) => {
 };
 
 const WalletRequestPage: React.FC = () => {
+  const adminDialog = useAdminDialog();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState<WalletTransactionStatus>('PENDING');
   const [transactions, setTransactions] = useState<AdminWalletTransactionDto[]>([]);
@@ -74,17 +76,27 @@ const WalletRequestPage: React.FC = () => {
 
   const handleConfirm = async (transaction: AdminWalletTransactionDto) => {
     if (transaction.status !== 'PENDING') return;
-    const ok = window.confirm(`${TYPE_LABEL[transaction.type]} 요청 ${transaction.amount.toLocaleString()}원을 승인할까요?`);
+    const ok = await adminDialog.confirm({
+      title: `${TYPE_LABEL[transaction.type]} 승인`,
+      message: `${TYPE_LABEL[transaction.type]} 요청 ${transaction.amount.toLocaleString()}원을 승인할까요?`,
+      confirmLabel: '승인하기',
+    });
     if (!ok) return;
+    const reason = await adminDialog.prompt({
+      title: `${TYPE_LABEL[transaction.type]} 승인 사유`,
+      message: `${TYPE_LABEL[transaction.type]} 승인 사유를 입력하세요.`,
+      confirmLabel: '승인하기',
+    });
+    if (!reason) return;
 
     setActionId(transaction.id);
     setError(null);
     setMessage(null);
     try {
       if (transaction.type === 'DEPOSIT') {
-        await confirmAdminDeposit(transaction.id);
+        await confirmAdminDeposit(transaction.id, reason);
       } else {
-        await confirmAdminWithdrawal(transaction.id);
+        await confirmAdminWithdrawal(transaction.id, reason);
       }
       setMessage(`${TYPE_LABEL[transaction.type]} 요청을 승인했습니다.`);
       await loadTransactions();
@@ -98,17 +110,29 @@ const WalletRequestPage: React.FC = () => {
 
   const handleCancel = async (transaction: AdminWalletTransactionDto) => {
     if (transaction.status !== 'PENDING') return;
-    const ok = window.confirm(`${TYPE_LABEL[transaction.type]} 요청 ${transaction.amount.toLocaleString()}원을 취소할까요?`);
+    const ok = await adminDialog.confirm({
+      title: `${TYPE_LABEL[transaction.type]} 취소`,
+      message: `${TYPE_LABEL[transaction.type]} 요청 ${transaction.amount.toLocaleString()}원을 취소할까요?`,
+      confirmLabel: '취소하기',
+      variant: 'danger',
+    });
     if (!ok) return;
+    const reason = await adminDialog.prompt({
+      title: `${TYPE_LABEL[transaction.type]} 취소 사유`,
+      message: `${TYPE_LABEL[transaction.type]} 취소 사유를 입력하세요.`,
+      confirmLabel: '취소하기',
+      variant: 'danger',
+    });
+    if (!reason) return;
 
     setActionId(transaction.id);
     setError(null);
     setMessage(null);
     try {
       if (transaction.type === 'DEPOSIT') {
-        await cancelAdminDeposit(transaction.id);
+        await cancelAdminDeposit(transaction.id, reason);
       } else {
-        await cancelAdminWithdrawal(transaction.id);
+        await cancelAdminWithdrawal(transaction.id, reason);
       }
       setMessage(`${TYPE_LABEL[transaction.type]} 요청을 취소했습니다.`);
       await loadTransactions();
@@ -265,6 +289,7 @@ const WalletRequestPage: React.FC = () => {
           ))}
         </tbody>
       </table>
+      {adminDialog.element}
     </div>
   );
 };

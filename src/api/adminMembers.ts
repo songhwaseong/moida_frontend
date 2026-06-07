@@ -59,6 +59,17 @@ export const getAdminMembers = async (): Promise<AdminMemberDto[]> => {
   return unwrap(response);
 };
 
+export const updateAdminMemberRole = async (
+  memberId: number,
+  role: 'USER' | 'MANAGER',
+  reason: string,
+): Promise<void> => {
+  await customAxios.patch<ApiResponse<string>>(`/admin/members/${memberId}/role`, {
+    role,
+    reason,
+  });
+};
+
 export const getDeactivatedMembers = async () => {
   const response = await customAxios.get<ApiResponse<AdminDeactivatedMemberDto[]>>(
     '/admin/members/deactivated',

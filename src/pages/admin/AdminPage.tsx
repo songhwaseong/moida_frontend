@@ -27,6 +27,7 @@ import AdminActionLogPage from './AdminActionLogPage';
 import AuctionManagePage from './AuctionManagePage';
 import type { IdleMinutes } from './adminSettingsOptions';
 import TrackingModal from '../../components/TrackingModal';
+import { useAdminDialog } from './useAdminDialog';
 import styles from './AdminPage.module.css';
 
 // ─── 관리자용 통합 상품 타입 ───────────────────────────────────────────
@@ -175,6 +176,7 @@ interface Props {
 }
 
 const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, onChangeIdleMinutes }) => {
+  const adminDialog = useAdminDialog();
   const t = useT();
   // ADMIN 전용 메뉴(접속 기록) 노출 판별. MANAGER 는 제외.
   const isAdminRole = localStorage.getItem('moida_user_role') === 'ADMIN';
@@ -365,11 +367,18 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
   }, [baseFiltered, statFilter]);
 
   const handleStatusChange = async (id: string, newStatus: AdminProduct['status']) => {
+    const reason = await adminDialog.prompt({
+      title: `${newStatus} 처리 사유`,
+      message: `${newStatus} 처리 사유를 입력하세요.`,
+      confirmLabel: '변경하기',
+      variant: newStatus === '숨김' ? 'danger' : 'default',
+    });
+    if (!reason) return;
     const snapshot = products;
     // 낙관적 업데이트 후 실패 시 롤백
     setProducts(cur => cur.map(p => p.id === id ? { ...p, status: newStatus } : p));
     try {
-      await updateAdminProductStatus(Number(id), newStatus as AdminProductStatus);
+      await updateAdminProductStatus(Number(id), newStatus as AdminProductStatus, reason);
     } catch {
       setProducts(snapshot);
       setAlertModal('상태 변경에 실패했습니다.\n잠시 후 다시 시도해주세요.');
@@ -379,8 +388,15 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const target = deleteTarget;
+    const reason = await adminDialog.prompt({
+      title: '상품 삭제 사유',
+      message: '상품 삭제 사유를 입력하세요.',
+      confirmLabel: '삭제하기',
+      variant: 'danger',
+    });
+    if (!reason) return;
     try {
-      await deleteAdminProduct(Number(target.id));
+      await deleteAdminProduct(Number(target.id), reason);
       setProducts(prev => prev.filter(p => p.id !== target.id));
     } catch {
       setAlertModal('상품 삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
@@ -746,7 +762,14 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
                           await updateAdminProduct(id, payload);
                         }
                         if (editForm.status && editForm.status !== detailProduct.status) {
-                          await updateAdminProductStatus(id, editForm.status as AdminProductStatus);
+                          const reason = await adminDialog.prompt({
+                            title: `${editForm.status} 처리 사유`,
+                            message: `${editForm.status} 처리 사유를 입력하세요.`,
+                            confirmLabel: '변경하기',
+                            variant: editForm.status === '숨김' ? 'danger' : 'default',
+                          });
+                          if (!reason) return;
+                          await updateAdminProductStatus(id, editForm.status as AdminProductStatus, reason);
                         }
                       } catch {
                         setAlertModal('상품 수정에 실패했습니다.\n잠시 후 다시 시도해주세요.');
@@ -1057,6 +1080,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
             </div>
           </div>
         )}
+        {adminDialog.element}
       </div>
     </div>
   );

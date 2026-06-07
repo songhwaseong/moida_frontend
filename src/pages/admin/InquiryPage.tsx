@@ -8,6 +8,7 @@ import {
   type FaqRequestDto,
 } from '../../api/faqs';
 import s from './admin.module.css';
+import { useAdminDialog } from './useAdminDialog';
 
 type Faq = FaqDto;
 
@@ -23,6 +24,7 @@ const getFaqCategoryClass = (category: string) => {
 };
 
 const InquiryPage: React.FC = () => {
+  const adminDialog = useAdminDialog();
   const [faqs, setFaqs] = useState<Faq[]>([]);
   const [faqCat, setFaqCat] = useState('전체');
   const [editFaq, setEditFaq] = useState<Faq | null>(null);
@@ -129,7 +131,13 @@ const InquiryPage: React.FC = () => {
   };
 
   const removeFaq = async (faq: Faq) => {
-    if (!window.confirm('FAQ를 삭제하시겠습니까?')) return;
+    const ok = await adminDialog.confirm({
+      title: 'FAQ 삭제',
+      message: 'FAQ를 삭제하시겠습니까?',
+      confirmLabel: '삭제하기',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       setFaqError('');
@@ -240,6 +248,7 @@ const InquiryPage: React.FC = () => {
           </div>
         </div>
       )}
+      {adminDialog.element}
     </div>
   );
 };

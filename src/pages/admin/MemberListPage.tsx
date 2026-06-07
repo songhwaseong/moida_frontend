@@ -3,6 +3,8 @@ import { type Member } from '../../data/memberData';
 import MemberDetailPage from './MemberDetailPage';
 import styles from './admin.module.css';
 import axiosInstance from '../../api/axiosInstance';
+import { updateAdminMemberRole } from '../../api/adminMembers';
+import { useAdminDialog } from './useAdminDialog';
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'permanent' | 'withdrawn';
 
@@ -18,6 +20,7 @@ const tempColor = (t: number) => t >= 40 ? '#3B6D11' : t >= 35 ? '#EF9F27' : '#E
 const NOW_TIME = Date.now();
 
 const MemberListPage: React.FC = () => {
+  const adminDialog = useAdminDialog();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedMemberNo, setSelectedMemberNo] = useState<string | null>(null);
@@ -29,19 +32,35 @@ const MemberListPage: React.FC = () => {
   const currentRole = localStorage.getItem('moida_user_role');
 
   const handleRoleToggle = async (m: Member) => {
-    if (!m.id) { alert('API 연동 후 사용 가능합니다'); return; }
+    if (!m.id) {
+      await adminDialog.alert('API 연동 후 사용 가능합니다.');
+      return;
+    }
     const newRole = m.role === 'MANAGER' ? 'USER' : 'MANAGER';
     const label = newRole === 'MANAGER' ? '매니저로 지정' : '매니저 해제';
-    if (!window.confirm(`${m.name}을 ${label}하시겠습니까?`)) return;
+    const ok = await adminDialog.confirm({
+      title: label,
+      message: `${m.name}을 ${label}하시겠습니까?`,
+      confirmLabel: '변경하기',
+      variant: newRole === 'USER' ? 'danger' : 'default',
+    });
+    if (!ok) return;
+    const reason = await adminDialog.prompt({
+      title: `${label} 사유`,
+      message: `${label} 사유를 입력하세요.`,
+      confirmLabel: '변경하기',
+      variant: newRole === 'USER' ? 'danger' : 'default',
+    });
+    if (!reason) return;
 
     try {
-      await axiosInstance.patch(`/admin/members/${m.id}/role`, { role: newRole });
+      await updateAdminMemberRole(m.id, newRole, reason);
       setList(prev => prev.map(item =>
         item.memberNo === m.memberNo ? { ...item, role: newRole } : item
       ));
-      alert(`${label} 완료`);
+      await adminDialog.alert(`${label} 완료`);
     } catch {
-      alert('역할 변경에 실패했습니다');
+      await adminDialog.alert('역할 변경에 실패했습니다.');
     }
   };
 
@@ -229,6 +248,7 @@ const MemberListPage: React.FC = () => {
           >다음</button>
         </div>
       )}
+      {adminDialog.element}
     </div>
   );
 };

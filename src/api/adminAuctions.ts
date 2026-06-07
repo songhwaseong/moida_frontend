@@ -102,10 +102,14 @@ export const getAdminAuctionBids = async (auctionId: number): Promise<AdminAucti
 };
 
 // 상태 변경. 한글 라벨을 받아 enum 으로 변환해 전송한다.
-export const updateAdminAuctionStatus = async (auctionId: number, label: AdminAuctionStatusLabel): Promise<AdminAuctionDto> => {
+export const updateAdminAuctionStatus = async (
+  auctionId: number,
+  label: AdminAuctionStatusLabel,
+  reason: string,
+): Promise<AdminAuctionDto> => {
   const response = await customAxios.patch<ApiResponse<AdminAuctionDto>>(
     `/admin/auctions/${auctionId}/status`,
-    { status: labelToEnum(label) },
+    { status: labelToEnum(label), reason },
   );
   return unwrap(response);
 };

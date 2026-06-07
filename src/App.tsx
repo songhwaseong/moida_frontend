@@ -12,6 +12,7 @@ import LeaveConfirmModal from './components/LeaveConfirmModal';
 import AlertModal from './components/AlertModal';
 import SellNoticeModal from './components/SellNoticeModal';
 import { IDLE_OPTIONS, type IdleMinutes } from './pages/admin/adminSettingsOptions';
+import { recordAdminAuditEvent, type AdminAuditEventAction } from './api/adminAuditEvents';
 import styles from './App.module.css';
 import './styles/global.css';
 
@@ -351,6 +352,21 @@ const App: React.FC = () => {
     setAuthScreen('login');
   }, [clearAdminIdleCountdown, clearAdminIdleTimer]);
 
+  const clearAdminSessionWithAudit = useCallback(async (
+    actionType: AdminAuditEventAction,
+    reason: string,
+  ) => {
+    const hasToken = Boolean(localStorage.getItem('accessToken'));
+    if (hasToken) {
+      try {
+        await recordAdminAuditEvent(actionType, reason);
+      } catch (error) {
+        console.error('Failed to record admin audit event', error);
+      }
+    }
+    clearAllAuthState();
+  }, [clearAllAuthState]);
+
   const startAdminIdleCountdown = useCallback(() => {
     setAdminIdleCountdown(ADMIN_IDLE_WARN_COUNTDOWN_S);
     clearAdminIdleCountdown();
@@ -358,13 +374,13 @@ const App: React.FC = () => {
       setAdminIdleCountdown(prev => {
         if (prev <= 1) {
           clearAdminIdleCountdown();
-          clearAllAuthState();
+          void clearAdminSessionWithAudit('ADMIN_IDLE_TIMEOUT', '관리자 세션 유휴 시간 초과');
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }, [clearAdminIdleCountdown, clearAllAuthState]);
+  }, [clearAdminIdleCountdown, clearAdminSessionWithAudit]);
 
   const scheduleAdminIdleWarning = useCallback(() => {
     clearAdminIdleTimer();
@@ -507,7 +523,7 @@ const App: React.FC = () => {
   // 과거에는 logout 은 isLoggedIn 만, logoutAdmin 은 isAdmin 만 정리해서,
   // 새로고침 후처럼 두 플래그가 모두 true 인 상태에서 한 번에 로그아웃되지 않고
   // "본인 계정 화면으로 바뀐 뒤 다시 로그아웃" 해야 하는 문제가 있었다.
-  const logoutAdmin = () => { clearAllAuthState(); };
+  const logoutAdmin = () => { void clearAdminSessionWithAudit('ADMIN_LOGOUT', '관리자 수동 로그아웃'); };
   const switchToNormal = () => { localStorage.setItem('moida_admin_view', 'normal'); setAdminViewMode('normal'); };
   const switchToAdmin = () => { localStorage.setItem('moida_admin_view', 'admin'); setAdminViewMode('admin'); };
   const login = (name?: string) => {
@@ -530,7 +546,9 @@ const App: React.FC = () => {
 
     if (localStorage.getItem(ADMIN_IDLE_WARNED_KEY)) {
       localStorage.removeItem(ADMIN_IDLE_WARNED_KEY);
-      const logoutTimer = window.setTimeout(() => clearAllAuthState(), 0);
+      const logoutTimer = window.setTimeout(() => {
+        void clearAdminSessionWithAudit('ADMIN_IDLE_TIMEOUT', '관리자 세션 유휴 시간 초과');
+      }, 0);
       return () => window.clearTimeout(logoutTimer);
     }
 
@@ -543,7 +561,7 @@ const App: React.FC = () => {
       clearAdminIdleTimer();
       clearAdminIdleCountdown();
     };
-  }, [clearAdminIdleCountdown, clearAdminIdleTimer, clearAllAuthState, isAdmin, resetAdminIdleTimer]);
+  }, [clearAdminIdleCountdown, clearAdminIdleTimer, clearAdminSessionWithAudit, isAdmin, resetAdminIdleTimer]);
 
   // 소셜 로그인 콜백 처리 - 앱 시작 시 URL 확인
   useEffect(() => {
@@ -735,7 +753,7 @@ const App: React.FC = () => {
           {adminIdleCountdown}초 후 자동으로 로그아웃됩니다.
         </p>
         <div className={styles.adminIdleActions}>
-          <button className={styles.adminIdleLogoutBtn} onClick={clearAllAuthState}>로그아웃</button>
+          <button className={styles.adminIdleLogoutBtn} onClick={logoutAdmin}>로그아웃</button>
           <button className={styles.adminIdleContinueBtn} onClick={continueAdminSession}>계속 사용하기</button>
         </div>
       </div>

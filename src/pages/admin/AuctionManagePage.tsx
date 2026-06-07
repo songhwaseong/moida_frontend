@@ -12,6 +12,7 @@ import {
   type AdminAuctionStatusLabel,
   type AdminProgressLabel,
 } from '../../api/adminAuctions';
+import { useAdminDialog } from './useAdminDialog';
 
 // 화면 행 타입. API DTO 를 살짝 가공해 한글 status 와 함께 들고 다닌다.
 interface AuctionRow {
@@ -61,6 +62,7 @@ const toRow = (dto: AdminAuctionDto): AuctionRow => ({
 });
 
 const AuctionManagePage: React.FC = () => {
+  const adminDialog = useAdminDialog();
   const [rows, setRows] = useState<AuctionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -135,10 +137,17 @@ const AuctionManagePage: React.FC = () => {
 
   // 상태 변경. 낙관적 업데이트 후 실패 시 롤백.
   const changeStatus = async (id: number, status: AdminAuctionStatusLabel) => {
+    const reason = await adminDialog.prompt({
+      title: `${status} 처리 사유`,
+      message: `${status} 처리 사유를 입력하세요.`,
+      confirmLabel: '변경하기',
+      variant: status === '취소' || status === '유찰' ? 'danger' : 'default',
+    });
+    if (!reason) return;
     const snapshot = rows;
     setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     try {
-      const updated = await updateAdminAuctionStatus(id, status);
+      const updated = await updateAdminAuctionStatus(id, status, reason);
       // 서버가 winner 지정 등 부수 변경을 반영했을 수 있으므로 응답으로 다시 동기화한다.
       setRows(prev => prev.map(r => r.id === id ? toRow(updated) : r));
     } catch (e: unknown) {
@@ -363,6 +372,7 @@ const AuctionManagePage: React.FC = () => {
           </div>
         </div>
       )}
+      {adminDialog.element}
     </div>
   );
 };

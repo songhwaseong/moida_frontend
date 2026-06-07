@@ -124,11 +124,20 @@ export const updateAdminProduct = async (productId: number, payload: AdminProduc
 };
 
 // 상품 상태 변경
-export const updateAdminProductStatus = async (productId: number, status: AdminProductStatus) => {
-  await customAxios.patch(`/admin/products/${productId}/status`, { status: STATUS_TO_ENUM[status] });
+export const updateAdminProductStatus = async (
+  productId: number,
+  status: AdminProductStatus,
+  reason: string,
+) => {
+  await customAxios.patch(`/admin/products/${productId}/status`, {
+    status: STATUS_TO_ENUM[status],
+    reason,
+  });
 };
 
 // 상품 삭제 (soft delete)
-export const deleteAdminProduct = async (productId: number) => {
-  await customAxios.delete(`/admin/products/${productId}`);
+export const deleteAdminProduct = async (productId: number, reason: string) => {
+  await customAxios.delete(`/admin/products/${productId}`, {
+    data: { reason },
+  });
 };

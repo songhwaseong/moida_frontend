@@ -7,6 +7,7 @@ import {
   deleteAdminInquiry,
 } from '../../api/adminInquiries';
 import type { InquiryResponseDto } from '../../api/inquiries';
+import { useAdminDialog } from './useAdminDialog';
 
 type InquiryKind = 'product' | 'auction';
 type StatusFilter = '전체' | '미답변' | '답변완료';
@@ -44,6 +45,7 @@ const toItem = (dto: InquiryResponseDto): InquiryItem => ({
 });
 
 const InquiryProductPage: React.FC = () => {
+  const adminDialog = useAdminDialog();
   const [inquiries, setInquiries] = useState<InquiryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -118,7 +120,13 @@ const InquiryProductPage: React.FC = () => {
   // 답변만 제거 (문의는 유지). 모달에서 "답변 삭제"로 사용 가능.
   const removeAnswer = async () => {
     if (!target || !target.answer) return;
-    if (!window.confirm('답변을 삭제하시겠어요?')) return;
+    const ok = await adminDialog.confirm({
+      title: '답변 삭제',
+      message: '답변을 삭제하시겠어요?',
+      confirmLabel: '삭제하기',
+      variant: 'danger',
+    });
+    if (!ok) return;
     setSubmitting(true);
     try {
       await removeAdminInquiryAnswer(target.id);
@@ -134,7 +142,13 @@ const InquiryProductPage: React.FC = () => {
 
   // 문의 자체 삭제. 카드에서 직접 호출.
   const deleteInquiry = async (rec: InquiryItem) => {
-    if (!window.confirm(`'${rec.user}'님의 문의를 삭제하시겠어요?`)) return;
+    const ok = await adminDialog.confirm({
+      title: '문의 삭제',
+      message: `'${rec.user}'님의 문의를 삭제하시겠어요?`,
+      confirmLabel: '삭제하기',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await deleteAdminInquiry(rec.id);
       setInquiries(prev => prev.filter(i => i.id !== rec.id));
@@ -356,6 +370,7 @@ const InquiryProductPage: React.FC = () => {
           </div>
         </div>
       )}
+      {adminDialog.element}
     </div>
   );
 };

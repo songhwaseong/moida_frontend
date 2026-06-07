@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { type Member } from '../../data/memberData';
 import { SANCTIONS } from '../../data/adminData';
 import styles from './admin.module.css';
+import { useAdminDialog } from './useAdminDialog';
 
 interface Props {
   member: Member;
@@ -19,6 +20,7 @@ const statusColor = (s: Member['status']) => ({
 const tempColor = (t: number) => t >= 40 ? '#3B6D11' : t >= 35 ? '#EF9F27' : '#E24B4A';
 
 const MemberDetailPage: React.FC<Props> = ({ member, onBack, onUpdateStatus }) => {
+  const adminDialog = useAdminDialog();
   const [activeTab] = useState<'sanction'>('sanction');
   const [showSanctionModal, setShowSanctionModal] = useState(false);
   const [sanctionType, setSanctionType] = useState<Member['status']>('suspended');
@@ -27,8 +29,11 @@ const MemberDetailPage: React.FC<Props> = ({ member, onBack, onUpdateStatus }) =
 
   const sanctions = SANCTIONS.filter(s => s.memberNo === member.memberNo);
 
-  const handleSanction = () => {
-    if (!sanctionReason) { alert('사유를 입력해주세요'); return; }
+  const handleSanction = async () => {
+    if (!sanctionReason) {
+      await adminDialog.alert('사유를 입력해주세요.');
+      return;
+    }
     onUpdateStatus(member.memberNo, sanctionType, suspendUntil || undefined);
     setShowSanctionModal(false);
   };
@@ -162,6 +167,7 @@ const MemberDetailPage: React.FC<Props> = ({ member, onBack, onUpdateStatus }) =
           </div>
         </div>
       )}
+      {adminDialog.element}
     </div>
   );
 };

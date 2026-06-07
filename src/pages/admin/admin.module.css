@@ -124,6 +124,47 @@
   padding: 28px;
 }
 
+.dialogModal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+}
+
+.dialogBody {
+  font-size: 14px;
+  color: #4A4A6A;
+  line-height: 1.6;
+}
+
+.dialogInput {
+  width: 100%;
+  min-height: 92px;
+  margin-top: 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.dialogInput:focus {
+  border-color: #E24B4A;
+  box-shadow: 0 0 0 3px rgba(226,75,74,0.12);
+}
+
+.dialogError {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #C62828;
+}
+
 .modalHeader {
   display: flex;
   justify-content: space-between;

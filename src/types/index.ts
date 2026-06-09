@@ -22,6 +22,16 @@ export interface BidHistory {
   time: string;
 }
 
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  isNewUser: boolean;
+}
+
 export interface AuctionDetail extends AuctionItem {
   images: string[];
   description: string;

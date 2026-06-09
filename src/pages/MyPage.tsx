@@ -5,8 +5,6 @@ import styles from './MyPage.module.css';
 type MenuKey = '입찰 내역' | '구매 내역' | '관심 목록' | '내 계좌' | '받은 후기' | '내 주소 관리' | '알림 설정' | '자주 묻는 질문' | '고객센터' | '이용약관' | '배송 조회' | '이용 가이드' | '내 등록 상품' | '내 문의' | '공지사항' | '회원탈퇴';
 type AccountDeactivationStep = 'notice' | 'verify' | 'processing' | 'complete';
 
-const ACCOUNT_DEACTIVATION_CONFIRMATION_TEXT = '회원탈퇴';
-
 const ACCOUNT_DEACTIVATION_REASONS = [
   { value: 'NO_LONGER_USED', label: '서비스를 더 이상 이용하지 않아요' },
   { value: 'LOW_TRUST', label: '거래 신뢰도가 낮다고 느꼈어요' },
@@ -92,19 +90,17 @@ const MyPage: React.FC<Props> = ({ onLogout, onMenuClick, onEditProfile }) => {
   const [accountDeactivationReasonCode, setAccountDeactivationReasonCode] = useState('');
   const [accountDeactivationReason, setAccountDeactivationReason] = useState('');
   const [profile, setProfile] = useState<MemberProfileResponse | null>(null);
-
   useEffect(() => {
     getMyProfile().then(setProfile).catch(console.error);
   }, []);
 
   const isPasswordAccountDeactivation = accountDeactivationInfo?.authenticationMethod === 'PASSWORD';
   const isSocialAccountDeactivation = accountDeactivationInfo?.authenticationMethod === 'SOCIAL_CONFIRMATION';
-  const accountDeactivationConfirmationLabel = accountDeactivationInfo?.confirmationText || ACCOUNT_DEACTIVATION_CONFIRMATION_TEXT;
+  const accountDeactivationConfirmationLabel = accountDeactivationInfo?.confirmationText || '회원탈퇴';
   const hasRequiredAccountDeactivationAuth = isPasswordAccountDeactivation
     ? accountDeactivationPassword.trim().length > 0
     : isSocialAccountDeactivation && accountDeactivationConfirmationText.trim().length > 0;
   const canSubmitAccountDeactivation = Boolean(accountDeactivationReasonCode && hasRequiredAccountDeactivationAuth);
-
   const openAccountDeactivationModal = () => {
     setAccountDeactivationStep('notice');
     setAccountDeactivationError('');

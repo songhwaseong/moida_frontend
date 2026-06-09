@@ -57,6 +57,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
   const [passwordlessExpiresAt, setPasswordlessExpiresAt] = useState<number | null>(null);
   const [clockTick, setClockTick] = useState(() => Date.now());
   const passwordlessSocketRef = useRef<WebSocket | null>(null);
+  const [showManage, setShowManage] = useState(false);
 
   useEffect(() => () => {
     passwordlessSocketRef.current?.close();
@@ -201,6 +202,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
     setError('');
     setLoginMode(mode);
     localStorage.setItem(SAVED_LOGIN_MODE_KEY, mode);
+    setShowManage(false);
     if (mode === 'passwordless') {
       setShowPw(false);
     } else {
@@ -210,6 +212,16 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
       setPasswordlessStatus('');
       setPasswordlessExpiresAt(null);
     }
+  };
+
+  const openManagePanel = () => {
+    setError('');
+    setShowManage(true);
+  };
+
+  const closeManagePanel = () => {
+    setShowManage(false);
+    setError('');
   };
 
   const handleEmailChange = (value: string) => {
@@ -270,141 +282,175 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
       </div>
 
       <div className={styles.form}>
-        <div className={styles.inputGroup}>
-          <label className={styles.label}>이메일</label>
-          <input
-            className={`${styles.input} ${error && !email ? styles.inputError : ''}`}
-            type="email"
-            placeholder="example@email.com"
-            value={email}
-            onChange={(e) => handleEmailChange(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            autoComplete="email"
-          />
-        </div>
-
-        <label className={styles.rememberRow}>
-          <input
-            type="checkbox"
-            checked={rememberEmail}
-            onChange={(e) => handleRememberEmailChange(e.target.checked)}
-          />
-          <span>이메일 저장</span>
-        </label>
-
-        {loginMode === 'password' && (
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>비밀번호</label>
-            <div className={styles.pwWrap}>
+        {showManage ? (
+          <PasswordlessManagePanel onBack={closeManagePanel} />
+        ) : (
+          <>
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>이메일</label>
               <input
-                className={`${styles.input} ${error && !password ? styles.inputError : ''}`}
-                type={showPw ? 'text' : 'password'}
-                placeholder="비밀번호를 입력해주세요"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                className={`${styles.input} ${error && !email ? styles.inputError : ''}`}
+                type="email"
+                placeholder="example@email.com"
+                value={email}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                autoComplete="current-password"
+                autoComplete="email"
               />
+            </div>
+
+            {loginMode === 'password' ? (
+              <>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>비밀번호</label>
+                  <div className={styles.pwWrap}>
+                    <input
+                      className={`${styles.input} ${error && !password ? styles.inputError : ''}`}
+                      type={showPw ? 'text' : 'password'}
+                      placeholder="비밀번호를 입력해주세요"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      className={styles.pwToggle}
+                      onClick={() => setShowPw((p) => !p)}
+                      type="button"
+                      aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'}
+                    >
+                      {showPw ? (
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                          <line x1="1" y1="1" x2="23" y2="23" />
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <label className={styles.rememberRow}>
+                  <input
+                    type="checkbox"
+                    checked={rememberEmail}
+                    onChange={(e) => handleRememberEmailChange(e.target.checked)}
+                  />
+                  <span>이메일 저장</span>
+                </label>
+              </>
+            ) : (
+              <>
+                <div className={styles.passwordlessPanel}>
+                  <div className={styles.passwordlessTimer}>
+                    <div className={styles.passwordlessTimerFill} style={{ width: `${passwordlessProgress}%` }} />
+                    <div className={styles.passwordlessCode}>
+                      {passwordlessSession ? passwordlessSession.oneTimeToken : '\u00A0'}
+                    </div>
+                  </div>
+                  {passwordlessSession && (
+                    <>
+                      <div className={styles.passwordlessTimeText}>남은 시간 {passwordlessRemainingSeconds}초</div>
+                      {passwordlessStatus && <p>{passwordlessStatus}</p>}
+                      <div className={styles.passwordlessActions}>
+                        <button type="button" onClick={() => void completePasswordless()} disabled={passwordlessLoading}>
+                          승인 확인
+                        </button>
+                        <button type="button" onClick={() => void cancelPasswordless()} disabled={passwordlessLoading}>
+                          취소
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <label className={styles.rememberRow}>
+                  <input
+                    type="checkbox"
+                    checked={rememberEmail}
+                    onChange={(e) => handleRememberEmailChange(e.target.checked)}
+                  />
+                  <span>이메일 저장</span>
+                </label>
+              </>
+            )}
+
+            {error && <p className={styles.errorMsg}>⚠️ {error}</p>}
+
+            <div className={styles.modeSwitch} aria-label="로그인 방식 선택">
               <button
-                className={styles.pwToggle}
-                onClick={() => setShowPw((p) => !p)}
                 type="button"
-                aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 보기'}
+                className={`${styles.modeOption} ${loginMode === 'password' ? styles.modeOptionActive : ''}`}
+                onClick={() => selectLoginMode('password')}
               >
-                {showPw ? (
-                  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
+                비밀번호
+              </button>
+              <button
+                type="button"
+                className={`${styles.modeOption} ${loginMode === 'passwordless' ? styles.modeOptionActive : ''}`}
+                onClick={() => selectLoginMode('passwordless')}
+              >
+                Passwordless
               </button>
             </div>
-          </div>
+
+            <button
+              className={`${styles.loginBtn} ${loading || passwordlessLoading ? styles.loading : ''}`}
+              onClick={handleSubmit}
+              disabled={isSubmitDisabled}
+            >
+              {submitText}
+            </button>
+
+            {onGuest && (
+              <button className={styles.guestBtn} onClick={onGuest}>
+                비회원으로 둘러보기
+              </button>
+            )}
+
+            {loginMode === 'password' && (
+              <div className={styles.findRow}>
+                <button className={styles.forgotPw} onClick={() => onFindAccount('id')}>아이디 찾기</button>
+                <span className={styles.findDivider}>|</span>
+                <button className={styles.forgotPw} onClick={() => onFindAccount('pw')}>비밀번호 찾기</button>
+                <span className={styles.findDivider}>|</span>
+                <button className={styles.signupLink} onClick={onGoSignup}>회원가입</button>
+              </div>
+            )}
+
+            {loginMode === 'passwordless' && (
+              <div className={styles.findRow}>
+                <button className={styles.signupLink} onClick={onGoSignup}>회원가입</button>
+                <span className={styles.findDivider}>|</span>
+                <button className={styles.signupLink} onClick={openManagePanel}>
+                  Passwordless 등록/해지
+                </button>
+              </div>
+            )}
+          </>
         )}
-
-      {error && <p className={styles.errorMsg}>⚠️ {error}</p>}
-
-      <div className={styles.modeSwitch} aria-label="로그인 방식 선택">
-        <button
-            type="button"
-            className={`${styles.modeOption} ${loginMode === 'password' ? styles.modeOptionActive : ''}`}
-            onClick={() => selectLoginMode('password')}
-          >
-            비밀번호
-          </button>
-          <button
-            type="button"
-            className={`${styles.modeOption} ${loginMode === 'passwordless' ? styles.modeOptionActive : ''}`}
-            onClick={() => selectLoginMode('passwordless')}
-          >
-            Passwordless
-        </button>
       </div>
 
-      {loginMode === 'passwordless' && <PasswordlessManagePanel />}
-
-      <button
-          className={`${styles.loginBtn} ${loading || passwordlessLoading ? styles.loading : ''}`}
-          onClick={handleSubmit}
-          disabled={isSubmitDisabled}
-        >
-          {submitText}
-        </button>
-
-        {passwordlessSession && (
-          <div className={styles.passwordlessPanel}>
-            <div className={styles.passwordlessLabel}>자동 비밀번호</div>
-            <div className={styles.passwordlessTimer}>
-              <div className={styles.passwordlessTimerFill} style={{ width: `${passwordlessProgress}%` }} />
-              <div className={styles.passwordlessCode}>{passwordlessSession.oneTimeToken}</div>
-            </div>
-            <div className={styles.passwordlessTimeText}>남은 시간 {passwordlessRemainingSeconds}초</div>
-            {passwordlessStatus && <p>{passwordlessStatus}</p>}
-            <div className={styles.passwordlessActions}>
-              <button type="button" onClick={() => void completePasswordless()} disabled={passwordlessLoading}>
-                승인 확인
-              </button>
-              <button type="button" onClick={() => void cancelPasswordless()} disabled={passwordlessLoading}>
-                취소
-              </button>
-            </div>
-          </div>
-        )}
-
-        {onGuest && (
-          <button className={styles.guestBtn} onClick={onGuest}>
-            비회원으로 둘러보기
+      {!showManage && (
+        <div className={styles.socialBtns}>
+          <button className={`${styles.socialBtn} ${styles.kakao}`} onClick={handleKakaoLogin}>
+            <img src={kakaoTalk} alt="" aria-hidden="true" className={styles.socialIconImg} />
+            카카오로 로그인
           </button>
-        )}
-
-        <div className={styles.findRow}>
-          <button className={styles.forgotPw} onClick={() => onFindAccount('id')}>아이디 찾기</button>
-          <span className={styles.findDivider}>|</span>
-          <button className={styles.forgotPw} onClick={() => onFindAccount('pw')}>비밀번호 찾기</button>
-          <span className={styles.findDivider}>|</span>
-          <button className={styles.signupLink} onClick={onGoSignup}>회원가입</button>
+          <button className={`${styles.socialBtn} ${styles.naver}`} onClick={handleNaverLogin}>
+            <span className={styles.socialIcon} style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>N</span>
+            네이버로 로그인
+          </button>
+          <button className={`${styles.socialBtn} ${styles.google}`} onClick={handleGoogleLogin}>
+            <img src={googleG} alt="" aria-hidden="true" className={`${styles.socialIconImg} ${styles.googleIcon}`} />
+            구글로 로그인
+          </button>
         </div>
-      </div>
-
-      <div className={styles.socialBtns}>
-        <button className={`${styles.socialBtn} ${styles.kakao}`} onClick={handleKakaoLogin}>
-          <img src={kakaoTalk} alt="" aria-hidden="true" className={styles.socialIconImg} />
-          카카오로 로그인
-        </button>
-        <button className={`${styles.socialBtn} ${styles.naver}`} onClick={handleNaverLogin}>
-          <span className={styles.socialIcon} style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>N</span>
-          네이버로 로그인
-        </button>
-        <button className={`${styles.socialBtn} ${styles.google}`} onClick={handleGoogleLogin}>
-          <img src={googleG} alt="" aria-hidden="true" className={`${styles.socialIconImg} ${styles.googleIcon}`} />
-          구글로 로그인
-        </button>
-      </div>
+      )}
     </div>
   );
 };

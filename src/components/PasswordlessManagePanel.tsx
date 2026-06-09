@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
 import styles from './PasswordlessManagePanel.module.css';
 
@@ -42,7 +42,11 @@ const authHeader = (accessToken: string) => ({
   Authorization: `Bearer ${accessToken}`,
 });
 
-const PasswordlessManagePanel: React.FC = () => {
+interface Props {
+  onBack?: () => void;
+}
+
+const PasswordlessManagePanel: React.FC<Props> = ({ onBack }) => {
   const [mode, setMode] = useState<ManageMode>('register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,7 +55,33 @@ const PasswordlessManagePanel: React.FC = () => {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    return () => {
+      socketRef.current?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft === null) return;
+    if (timeLeft <= 0) return;
+
+    const timer = setTimeout(() => {
+      if (timeLeft <= 1) {
+        socketRef.current?.close();
+        setRegistration(null);
+        setTimeLeft(null);
+        setError('Passwordless 등록 시간이 만료되었습니다.');
+        setStatus('');
+      } else {
+        setTimeLeft((prev) => (prev !== null ? prev - 1 : null));
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [timeLeft]);
 
   const loginForPasswordlessManage = async () => {
     if (!email.trim()) throw new Error('이메일을 입력해주세요.');
@@ -76,6 +106,7 @@ const PasswordlessManagePanel: React.FC = () => {
     if (response.data.data.registered) {
       socketRef.current?.close();
       setRegistration(null);
+      setTimeLeft(null);
       setStatus('Passwordless 등록 완료.');
       return;
     }
@@ -99,6 +130,7 @@ const PasswordlessManagePanel: React.FC = () => {
       );
       const nextRegistration = response.data.data;
       setRegistration(nextRegistration);
+      setTimeLeft(nextRegistration.expiresInSeconds);
       setStatus('MOIDA 앱에서 QR을 스캔해 등록하세요.');
 
       if (nextRegistration.pushConnectorUrl && nextRegistration.pushConnectorToken) {
@@ -116,6 +148,14 @@ const PasswordlessManagePanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const cancelRegistration = () => {
+    socketRef.current?.close();
+    setRegistration(null);
+    setTimeLeft(null);
+    setStatus('');
+    setError('');
   };
 
   const withdraw = async () => {
@@ -144,6 +184,51 @@ const PasswordlessManagePanel: React.FC = () => {
       ? registration.qr
       : `data:image/png;base64,${registration.qr}`
     : '';
+
+  if (registration) {
+    return (
+      <section className={styles.panel} aria-label="Passwordless 등록">
+        <div className={styles.qrRegistrationView}>
+          <h3 className={styles.qrTitle}>Passwordless 서비스 등록</h3>
+          <p className={styles.qrDesc}>스마트폰에 MOIDA 앱을 설치한 후, QR 코드를 스캔해 주세요.</p>
+          
+          <div className={styles.qrBox}>
+            <img src={qrSrc} alt="Passwordless 등록 QR" />
+            <dl>
+              <div>
+                <dt>서버 URL</dt>
+                <dd>{registration.serverUrl || '-'}</dd>
+              </div>
+              <div>
+                <dt>등록 키</dt>
+                <dd>{registration.registerKey || '-'}</dd>
+              </div>
+            </dl>
+          </div>
+
+          {timeLeft !== null && (
+            <div className={styles.timerRow}>
+              <span className={styles.timerText}>
+                남은 시간: {Math.floor(timeLeft / 60)} : {String(timeLeft % 60).padStart(2, '0')}
+              </span>
+            </div>
+          )}
+
+          {status && <p className={styles.status}>{status}</p>}
+          {error && <p className={styles.error}>{error}</p>}
+
+          <div className={styles.actions}>
+            <button type="button" onClick={() => void confirmRegistration()} disabled={loading} className={styles.confirmBtn}>
+              등록 확인
+            </button>
+            <button type="button" onClick={cancelRegistration} className={styles.cancelBtn}>
+              취소
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={styles.panel} aria-label="Passwordless 등록 및 해지">
@@ -178,11 +263,6 @@ const PasswordlessManagePanel: React.FC = () => {
           <button type="button" onClick={() => void startRegistration()} disabled={loading}>
             QR 등록 시작
           </button>
-          {registration && (
-            <button type="button" onClick={() => void confirmRegistration()} disabled={loading}>
-              등록 확인
-            </button>
-          )}
         </div>
       ) : (
         <div className={styles.actions}>
@@ -192,24 +272,16 @@ const PasswordlessManagePanel: React.FC = () => {
         </div>
       )}
 
-      {qrSrc && (
-        <div className={styles.qrBox}>
-          <img src={qrSrc} alt="Passwordless 등록 QR" />
-          <dl>
-            <div>
-              <dt>서버 URL</dt>
-              <dd>{registration?.serverUrl || '-'}</dd>
-            </div>
-            <div>
-              <dt>등록 키</dt>
-              <dd>{registration?.registerKey || '-'}</dd>
-            </div>
-          </dl>
-        </div>
-      )}
-
       {status && <p className={styles.status}>{status}</p>}
       {error && <p className={styles.error}>{error}</p>}
+
+      {onBack && (
+        <div className={styles.backRow}>
+          <button type="button" className={styles.backLink} onClick={onBack}>
+            로그인으로 돌아가기
+          </button>
+        </div>
+      )}
     </section>
   );
 };

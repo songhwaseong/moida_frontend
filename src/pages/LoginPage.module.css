@@ -356,54 +356,48 @@ input[type="password"]::-ms-reveal {
 
 .passwordlessPanel {
   margin-top: 2px;
-  padding: 14px;
-  border: 1px solid #F2D5D4;
-  border-radius: 12px;
-  background: #FFF8F8;
-}
-
-.passwordlessLabel {
-  margin-bottom: 8px;
-  color: #7A3E3D;
-  font-size: 12px;
-  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .passwordlessCode {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
-  min-height: 48px;
-  padding: 10px 12px;
   color: #fff;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 0;
-  word-break: break-all;
-  line-height: 1.35;
+  letter-spacing: 1px;
+  line-height: 50px;
   text-align: center;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+  text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.7);
 }
 
 .passwordlessTimer {
   position: relative;
-  min-height: 48px;
-  border: 1px solid #F0C7C6;
+  height: 50px;
   border-radius: 8px;
-  background: #F7B0AE;
+  background: url('/images/timerBG.png') no-repeat center right;
+  background-size: cover;
   overflow: hidden;
 }
 
 .passwordlessTimerFill {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: inherit;
-  background: #E24B4A;
+  height: 50px;
+  border-radius: 8px;
+  background: rgb(55 138 239 / 70%);
   transition: width 0.25s linear;
 }
 
 .passwordlessTimeText {
-  margin-top: 7px;
-  color: #7A3E3D;
+  margin-top: 4px;
+  color: var(--muted);
   font-size: 11px;
   font-weight: 800;
   text-align: right;

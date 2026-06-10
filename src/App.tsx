@@ -593,7 +593,6 @@ const App: React.FC = () => {
           body: JSON.stringify(body),
         });
         const data = await res.json();
-        console.log('소셜 로그인 응답:', data.data);
         const { accessToken, refreshToken, name, role, newUser: isNewUser } = data.data;
 
         localStorage.setItem('accessToken', accessToken);

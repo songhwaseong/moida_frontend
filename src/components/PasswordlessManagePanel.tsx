@@ -225,6 +225,21 @@ const PasswordlessManagePanel: React.FC<Props> = ({ onBack }) => {
               취소
             </button>
           </div>
+
+          {onBack && (
+            <div className={styles.returnRow}>
+              <button
+                type="button"
+                className={styles.returnLink}
+                onClick={() => {
+                  cancelRegistration();
+                  onBack();
+                }}
+              >
+                로그인으로 돌아가기
+              </button>
+            </div>
+          )}
         </div>
       </section>
     );
@@ -276,8 +291,8 @@ const PasswordlessManagePanel: React.FC<Props> = ({ onBack }) => {
       {error && <p className={styles.error}>{error}</p>}
 
       {onBack && (
-        <div className={styles.backRow}>
-          <button type="button" className={styles.backLink} onClick={onBack}>
+        <div className={styles.returnRow}>
+          <button type="button" className={styles.returnLink} onClick={onBack}>
             로그인으로 돌아가기
           </button>
         </div>

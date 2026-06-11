@@ -236,6 +236,8 @@ const App: React.FC = () => {
   });
   const [socialSignupStep, setSocialSignupStep] = useState<null | 'info' | 'form'>(null);
   const [socialSignupName, setSocialSignupName] = useState('');
+  // 소셜 로그인 콜백이 거부됐을 때(예: Passwordless 등록 회원) 로그인 화면에 노출할 메시지.
+  const [socialAuthError, setSocialAuthError] = useState('');
   const [isSocialProcessing, setIsSocialProcessing] = useState(() => {
     const path = window.location.pathname;
     const code = new URLSearchParams(window.location.search).get('code');
@@ -604,8 +606,8 @@ const App: React.FC = () => {
           window.history.replaceState({}, '', '/');
           setIsSocialProcessing(false);
           setIsGuest(false);
+          setSocialAuthError(message);
           setAuthScreen('login');
-          showAlert(message);
           return;
         }
 
@@ -634,8 +636,8 @@ const App: React.FC = () => {
         window.history.replaceState({}, '', '/');
         setIsSocialProcessing(false);
         setIsGuest(false);
+        setSocialAuthError('소셜 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
         setAuthScreen('login');
-        showAlert('소셜 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
       }
     };
 
@@ -812,6 +814,7 @@ const App: React.FC = () => {
           onGoSignup={() => setAuthScreen('signup')}
           onFindAccount={(tab) => setAuthScreen(tab === 'pw' ? 'find-pw' : 'find-id')}
           onGuest={() => { setIsGuest(true); setScreen({ type: 'home' }); setNavTab('home'); }}
+          initialError={socialAuthError}
         />
       </ToastProvider>
     );

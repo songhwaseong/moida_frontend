@@ -28,6 +28,8 @@ interface Props {
   onGoSignup: () => void;
   onFindAccount: (tab?: 'id' | 'pw') => void;
   onGuest?: () => void;
+  // 소셜 로그인 콜백 등 화면 진입 시점에 미리 보여줄 안내/에러 메시지.
+  initialError?: string;
 }
 
 type LoginMode = 'password' | 'passwordless';
@@ -41,7 +43,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return response?.data?.message || fallback;
 };
 
-const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccount, onGuest }) => {
+const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccount, onGuest, initialError }) => {
   const [email, setEmail] = useState(() => localStorage.getItem(SAVED_EMAIL_KEY) ?? '');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -49,7 +51,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
     localStorage.getItem(SAVED_LOGIN_MODE_KEY) === 'passwordless' ? 'passwordless' : 'password'
   ));
   const [rememberEmail, setRememberEmail] = useState(() => Boolean(localStorage.getItem(SAVED_EMAIL_KEY)));
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError ?? '');
   const [loading, setLoading] = useState(false);
   const [passwordlessLoading, setPasswordlessLoading] = useState(false);
   const [passwordlessSession, setPasswordlessSession] = useState<PasswordlessLoginStartResponse | null>(null);

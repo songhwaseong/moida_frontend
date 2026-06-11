@@ -7,6 +7,7 @@ import { CARRIERS } from '../data/carriers';
 import styles from './SellPage.module.css';
 import customAxios from '../api/axiosInstance';
 import { getMyProfile } from '../api/member';
+import { uploadProductImages } from '../api/productImages';
 import { sendPhoneCode, verifyPhoneCode } from '../api/phoneVerification';
 
 interface Props {
@@ -128,37 +129,18 @@ const SellPage: React.FC<Props> = ({ onBack, onSubmit, onDirtyChange }) => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
     if (!files.length) return;
+
     const remaining = 10 - images.length;
-    const toProcess = files.slice(0, remaining);
+    const toUpload = files.slice(0, remaining);
 
-    const compressed = await Promise.all(
-      toProcess.map(file => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const base64 = ev.target?.result as string;
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const maxSize = 800;
-            let w = img.width, h = img.height;
-            if (w > maxSize || h > maxSize) {
-              if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-              else { w = Math.round(w * maxSize / h); h = maxSize; }
-            }
-            canvas.width = w;
-            canvas.height = h;
-            canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-            resolve(canvas.toDataURL('image/jpeg', 0.75));
-          };
-          img.src = base64;
-        };
-        reader.readAsDataURL(file);
-      }))
-    );
-
-    setImages(prev => [...prev, ...compressed].slice(0, 10));
-    e.target.value = '';
+    try {
+      const uploadedImages = await uploadProductImages(toUpload);
+      setImages(prev => [...prev, ...uploadedImages].slice(0, 10));
+    } catch (error) {
+      showToast(getErrorMessage(error, "이미지 업로드에 실패했어요."), "error");
+    }
   };
 
   const removeImage = (idx: number) => {

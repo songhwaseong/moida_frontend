@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getProduct, updateProduct } from '../../api/products';
+import { uploadProductImages } from '../../api/productImages';
 import type { MyProduct } from '../../data/myProductStore';
 import { useToast } from '../../components/ToastContext';
 import styles from '../SellPage.module.css';
@@ -155,15 +156,20 @@ const EditProductPage: React.FC<Props> = ({ product, onBack, onSaved, onDirtyCha
 
   const handleAddImage = () => { if (images.length < 10) fileInputRef.current?.click(); };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+
     const remaining = 10 - images.length;
-    files.slice(0, remaining).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = ev => setImages(prev => prev.length < 10 ? [...prev, ev.target?.result as string] : prev);
-      reader.readAsDataURL(file);
-    });
-    e.target.value = '';
+    const toUpload = files.slice(0, remaining);
+
+    try {
+      const uploadedImages = await uploadProductImages(toUpload);
+      setImages(prev => [...prev, ...uploadedImages].slice(0, 10));
+    } catch {
+      showToast("이미지 업로드에 실패했어요.", "error");
+    }
   };
 
   const removeImage = (idx: number) => {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getAdminActionLogs, type AdminActionLogDto } from '../../api/adminActionLogs';
 import s from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 const PAGE_SIZE = 15;
 
@@ -72,6 +73,8 @@ const AdminActionLogPage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 서버 목록을 가져오는 정상 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  useRegisterAdminRefresh(reload, loading);
 
   const actionOptions = useMemo(() => {
     const values = Array.from(new Set(rows.map(row => row.actionType))).sort();
@@ -208,12 +211,6 @@ const AdminActionLogPage: React.FC = () => {
           placeholder="관리자, 대상, IP 검색"
           style={{ padding: '8px 12px', border: '1px solid #E0E0E0', borderRadius: 8, fontSize: 13, color: '#4A4A6A', fontFamily: 'Noto Sans KR, sans-serif', outline: 'none', width: 240 }}
         />
-        <button
-          onClick={reload}
-          style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #E0E0E0', background: '#fff', color: '#4A4A6A', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
-        >
-          새로고침
-        </button>
         <span style={{ fontSize: 13, color: '#8B8FA8', marginLeft: 'auto' }}>총 {filtered.length}건</span>
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { type Member } from '../../data/memberData';
 import MemberDetailPage from './MemberDetailPage';
 import styles from './admin.module.css';
@@ -6,6 +6,7 @@ import axiosInstance from '../../api/axiosInstance';
 import { updateAdminMemberRole } from '../../api/adminMembers';
 import { useAdminDialog } from './useAdminDialog';
 import { getUserRole } from '../../utils/authStorage';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 type StatusFilter = 'all' | 'active' | 'suspended' | 'permanent' | 'withdrawn';
 
@@ -65,12 +66,18 @@ const MemberListPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    axiosInstance.get('/admin/members')
+  const loadMembers = useCallback(() => {
+    setLoading(true);
+    return axiosInstance.get('/admin/members')
       .then(res => setList(res.data.data))
       .catch(() => setList([]))
       .finally(() => setLoading(false));
   }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
+  useEffect(() => { void loadMembers(); }, [loadMembers]);
+
+  useRegisterAdminRefresh(loadMembers, loading);
 
   const filtered = list.filter(m => {
     const matchStatus = statusFilter === 'all' || m.status === statusFilter;

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import styles from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 import {
   getAdminSanctions,
   createAdminSanction,
@@ -84,6 +85,8 @@ const SanctionPage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  useRegisterAdminRefresh(reload, loading);
 
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const paged = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

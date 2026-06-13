@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import s from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 import {
   getAdminSettlements,
   getAdminSettlementSummary,
@@ -107,6 +108,13 @@ const SettlementPage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  // 공통 헤더 새로고침은 현재 활성 탭(정산 내역/수수료 정책) 기준으로 다시 불러온다.
+  const refreshActiveTab = useCallback(
+    () => (tab === 'fee' ? reloadFeeRules() : reload()),
+    [tab, reload, reloadFeeRules],
+  );
+  useRegisterAdminRefresh(refreshActiveTab, tab === 'fee' ? feeLoading : loading);
 
   const filtered = useMemo(() => rows.filter(t => {
     if (filterStatus !== '전체' && t.status !== filterStatus) return false;

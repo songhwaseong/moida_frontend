@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getProductChatMessages, type ProductChatMessage, type ProductChatRoomStatus } from '../../api/chat';
 import {
   getAdminChatRooms,
@@ -7,6 +7,7 @@ import {
   type AdminChatRoom,
 } from '../../api/adminChat';
 import styles from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 const STATUS_LABEL: Record<ProductChatRoomStatus, string> = {
   ACTIVE: '활성',
@@ -22,7 +23,7 @@ const ChatLogPage: React.FC = () => {
   const [error, setError] = useState('');
 
   // 관리자 목록은 채팅방별 상태, 최근 메시지, 메시지 수를 한 줄로 보여준다.
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getAdminChatRooms();
@@ -34,7 +35,7 @@ const ChatLogPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const initialTimer = window.setTimeout(() => {
@@ -42,7 +43,9 @@ const ChatLogPage: React.FC = () => {
     }, 0);
 
     return () => window.clearTimeout(initialTimer);
-  }, []);
+  }, [loadRooms]);
+
+  useRegisterAdminRefresh(loadRooms, isLoading);
 
   // 채팅방 상세 모달은 같은 상품 채팅 API를 사용하되,
   // 관리자가 흐름을 볼 수 있도록 더 많은 메시지를 요청한다.

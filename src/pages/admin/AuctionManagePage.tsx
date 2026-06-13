@@ -13,6 +13,7 @@ import {
   type AdminProgressLabel,
 } from '../../api/adminAuctions';
 import { useAdminDialog } from './useAdminDialog';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 // 화면 행 타입. API DTO 를 살짝 가공해 한글 status 와 함께 들고 다닌다.
 interface AuctionRow {
@@ -61,14 +62,19 @@ const toRow = (dto: AdminAuctionDto): AuctionRow => ({
   timeLeft: dto.timeLeft,
 });
 
-const AuctionManagePage: React.FC = () => {
+interface Props {
+  /** 대시보드 카드 등에서 진입할 때 초기로 적용할 상태 필터(예: '낙찰', '유찰'). */
+  initialStatusFilter?: StatusFilter;
+}
+
+const AuctionManagePage: React.FC<Props> = ({ initialStatusFilter = '전체' }) => {
   const adminDialog = useAdminDialog();
   const [rows, setRows] = useState<AuctionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('전체');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatusFilter);
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('전체');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [bidsByAuction, setBidsByAuction] = useState<Record<number, AdminAuctionBidDto[]>>({});
@@ -94,6 +100,8 @@ const AuctionManagePage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  useRegisterAdminRefresh(reload, loading);
 
   // timeLeft 가 실시간으로 줄어들도록 1초마다 클라이언트에서 감소시킨다.
   // 정확한 값은 다음 reload 시 서버 기준으로 다시 맞춰진다.

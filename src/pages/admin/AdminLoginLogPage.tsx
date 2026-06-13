@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import s from './admin.module.css';
 import { getAdminLoginLogs, type AdminLoginLogDto, type LoginResult } from '../../api/adminLoginLogs';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 const PAGE_SIZE = 15;
 
@@ -34,6 +35,8 @@ const AdminLoginLogPage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  useRegisterAdminRefresh(reload, loading);
 
   const filtered = useMemo(() => rows.filter(r => {
     if (resultFilter !== 'all' && r.result !== resultFilter) return false;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   createAdminNotice,
   deleteAdminNotice,
@@ -10,6 +10,7 @@ import {
   type NoticeStatus,
 } from '../../api/notices';
 import s from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 type Notice = NoticeDto;
 
@@ -58,7 +59,7 @@ const NoticePage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const loadNotices = async () => {
+  const loadNotices = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -69,7 +70,7 @@ const NoticePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -77,7 +78,9 @@ const NoticePage: React.FC = () => {
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [loadNotices]);
+
+  useRegisterAdminRefresh(loadNotices, loading);
 
   const filtered = notices.filter(n => {
     if (filterCategory !== '전체' && n.category !== filterCategory) return false;

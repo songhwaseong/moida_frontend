@@ -8,7 +8,7 @@ import {
   CONDITION_OPTIONS,
   type AdminProductStatus,
 } from '../../api/adminProducts';
-import DashboardPage from './DashboardPage';
+import DashboardPage, { type DashboardNavTarget } from './DashboardPage';
 import NoticePage from './NoticePage';
 import BannerPage from './BannerPage';
 import SettlementPage from './SettlementPage';
@@ -25,9 +25,12 @@ import AdminSettingsPage from './AdminSettingsPage';
 import AdminLoginLogPage from './AdminLoginLogPage';
 import AdminActionLogPage from './AdminActionLogPage';
 import AuctionManagePage from './AuctionManagePage';
+import type { AdminAuctionStatusLabel } from '../../api/adminAuctions';
 import type { IdleMinutes } from './adminSettingsOptions';
 import TrackingModal from '../../components/TrackingModal';
 import { useAdminDialog } from './useAdminDialog';
+import RefreshButton from './RefreshButton';
+import { AdminRefreshContext, type AdminRefreshHandler, type RegisterAdminRefresh } from './AdminRefreshContext';
 import { getAdminUiItem, getUserRole } from '../../utils/authStorage';
 import styles from './AdminPage.module.css';
 
@@ -256,6 +259,14 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
   const [statusFilter, setStatusFilter] = useState('전체');
   const [statFilter, setStatFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  // 대시보드 카드에서 경매 관리로 진입할 때 전달할 초기 상태 필터(낙찰/유찰 등).
+  // 사이드바로 직접 진입하면 '전체'로 초기화한다.
+  const [auctionInitialStatus, setAuctionInitialStatus] = useState<AdminAuctionStatusLabel | '전체'>('전체');
+  // 자식 페이지(별도 컴포넌트)가 등록한 새로고침 핸들러. 공통 헤더 버튼이 사용한다.
+  const [childRefresh, setChildRefresh] = useState<AdminRefreshHandler | null>(null);
+  const registerRefresh = useCallback<RegisterAdminRefresh>((handler) => {
+    setChildRefresh(handler);
+  }, []);
   const PAGE_SIZE = 10;
 
   // 안내 알림 모달
@@ -414,6 +425,33 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
   const handleStatClick = (key: string) => {
     setStatFilter(prev => prev === key ? null : key);
     setCurrentPage(1);
+  };
+
+  // 대시보드 카드 클릭 → 해당 관리 메뉴로 이동(+필요 시 필터 자동 적용).
+  const handleDashboardNavigate = (target: DashboardNavTarget) => {
+    switch (target) {
+      case 'members':
+        setActiveMenu('회원 목록');
+        break;
+      case 'products':
+        // 상품 목록 필터를 전체로 초기화한 뒤 이동(대시보드의 '전체 상품/최근 등록 상품' 숫자와 매칭).
+        setStatusFilter('전체');
+        setStatFilter(null);
+        setCurrentPage(1);
+        setActiveMenu('상품 관리');
+        break;
+      case 'auctionWon':
+        setAuctionInitialStatus('낙찰');
+        setActiveMenu('경매 관리');
+        break;
+      case 'auctionFailed':
+        setAuctionInitialStatus('유찰');
+        setActiveMenu('경매 관리');
+        break;
+      case 'sanctions':
+        setActiveMenu('제재 내역');
+        break;
+    }
   };
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
@@ -655,10 +693,10 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
   // ─── 메뉴별 컨텐츠 렌더 ─────────────────────────────────────────
   const renderContent = () => {
     switch (activeMenu) {
-      case '대시보드': return <DashboardPage totalProducts={products.length} />;
+      case '대시보드': return <DashboardPage totalProducts={products.length} onNavigate={handleDashboardNavigate} />;
       case '상품 관리': return renderProducts();
       case '상품 문의': return <InquiryProductPage />;
-      case '경매 관리': return <AuctionManagePage />;
+      case '경매 관리': return <AuctionManagePage key={auctionInitialStatus} initialStatusFilter={auctionInitialStatus} />;
       case '제재 내역': return <SanctionPage />;
       case '채팅 로그': return <ChatLogPage />;
       case '회원 목록': return <MemberListPage />;
@@ -680,6 +718,12 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
     }
   };
 
+  // 공통 헤더 새로고침 버튼이 사용할 핸들러.
+  // 상품 관리 목록은 AdminPage 가 직접 렌더(loadProducts 보유)하므로 여기서 바로 연결하고,
+  // 그 외 별도 컴포넌트 페이지는 자식이 등록한 childRefresh 를 사용한다.
+  const headerRefresh: AdminRefreshHandler | null =
+    activeMenu === '상품 관리' ? { onRefresh: loadProducts, loading } : childRefresh;
+
   return (
     <div className={styles.root}>
       <div className={styles.inner}>
@@ -690,6 +734,9 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
         </div>
         <div className={styles.headerRight}>
           <span className={styles.headerAdmin}>{t('admin.header.loggedInAs')}</span>
+          {headerRefresh && (
+            <RefreshButton onRefresh={headerRefresh.onRefresh} loading={headerRefresh.loading} variant="header" />
+          )}
           <button className={styles.normalBtn} onClick={onSwitchToNormal} title={t('admin.header.gotoNormal')} aria-label={t('admin.header.gotoNormal')}>
             <svg className={styles.normalIcon} viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 11.5 12 4l9 7.5" />
@@ -718,7 +765,7 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
                     <button
                       key={m.key}
                       className={`${styles.sideItem} ${activeMenu === m.key ? styles.sideItemActive : ''}`}
-                      onClick={() => setActiveMenu(m.key)}
+                      onClick={() => { setAuctionInitialStatus('전체'); setActiveMenu(m.key); }}
                     >
                       <span className={styles.sideIcon}>{SIDE_ICONS[m.key]}</span>
                       {t(m.labelKey)}
@@ -742,7 +789,9 @@ const AdminPage: React.FC<Props> = ({ onLogout, onSwitchToNormal, idleMinutes, o
 
         {/* 메인 컨텐츠 */}
         <main className={styles.main}>
-          {renderContent()}
+          <AdminRefreshContext.Provider value={registerRefresh}>
+            {renderContent()}
+          </AdminRefreshContext.Provider>
         </main>
       </div>
 

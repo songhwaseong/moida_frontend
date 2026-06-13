@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import s from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 import {
   getAdminCategories,
   setCategoryVisibility,
@@ -34,10 +35,15 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   '한정판':      <SvgIcon><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></SvgIcon>,
 };
 
-const renderIcon = (c: CategoryRow): React.ReactNode => {
-  if (c.emoji && c.emoji.trim()) return <span style={{ fontSize: 18 }}>{c.emoji}</span>;
-  return CATEGORY_ICONS[c.name] ?? <span style={{ fontSize: 18 }}>📦</span>;
-};
+// 매핑에 없는 카테고리용 기본 SVG(태그 아이콘).
+const DEFAULT_CATEGORY_ICON = (
+  <SvgIcon><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></SvgIcon>
+);
+
+// 카테고리 아이콘은 이름별 SVG 로 통일해 표시한다(DB emoji 값 대신).
+const renderIcon = (c: CategoryRow): React.ReactNode => (
+  CATEGORY_ICONS[c.name] ?? DEFAULT_CATEGORY_ICON
+);
 
 const toRow = (dto: AdminCategoryDto): CategoryRow => ({
   id: dto.id,
@@ -72,6 +78,8 @@ const BannerPage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  useRegisterAdminRefresh(reload, loading);
 
   const handleDragStart = (id: number) => { dragIdRef.current = id; };
 

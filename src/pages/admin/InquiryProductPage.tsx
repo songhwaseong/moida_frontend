@@ -8,6 +8,7 @@ import {
 } from '../../api/adminInquiries';
 import type { InquiryResponseDto } from '../../api/inquiries';
 import { useAdminDialog } from './useAdminDialog';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 type InquiryKind = 'product' | 'auction';
 type StatusFilter = '전체' | '미답변' | '답변완료';
@@ -74,6 +75,8 @@ const InquiryProductPage: React.FC = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 페치, 정상 데이터 로딩 패턴
   useEffect(() => { reload(); }, [reload]);
+
+  useRegisterAdminRefresh(reload, loading);
 
   const pendingCount = inquiries.filter(i => !i.answer).length;
   const doneCount = inquiries.length - pendingCount;

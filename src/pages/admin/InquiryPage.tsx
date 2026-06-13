@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   createAdminFaq,
   deleteAdminFaq,
@@ -9,6 +9,7 @@ import {
 } from '../../api/faqs';
 import s from './admin.module.css';
 import { useAdminDialog } from './useAdminDialog';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 type Faq = FaqDto;
 
@@ -35,7 +36,7 @@ const InquiryPage: React.FC = () => {
   const [faqSaving, setFaqSaving] = useState(false);
   const [faqError, setFaqError] = useState('');
 
-  const loadFaqs = async () => {
+  const loadFaqs = useCallback(async () => {
     try {
       setFaqLoading(true);
       setFaqError('');
@@ -46,7 +47,7 @@ const InquiryPage: React.FC = () => {
     } finally {
       setFaqLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -54,7 +55,9 @@ const InquiryPage: React.FC = () => {
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, []);
+  }, [loadFaqs]);
+
+  useRegisterAdminRefresh(loadFaqs, faqLoading);
 
   const filteredFaqs = faqs
     .filter(f => faqCat === '전체' || f.category === faqCat)

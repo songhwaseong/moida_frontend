@@ -10,6 +10,7 @@ import {
 import type { WalletTransactionStatus, WalletTransactionType } from '../../api/wallet';
 import s from './admin.module.css';
 import { useAdminDialog } from './useAdminDialog';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 type TypeFilter = 'ALL' | WalletTransactionType;
 
@@ -66,6 +67,8 @@ const WalletRequestPage: React.FC = () => {
 
     return () => window.clearTimeout(timer);
   }, [loadTransactions]);
+
+  useRegisterAdminRefresh(loadTransactions, loading);
 
   const summary = useMemo(() => ({
     total: transactions.length,
@@ -195,9 +198,6 @@ const WalletRequestPage: React.FC = () => {
           <option value="COMPLETED">완료</option>
           <option value="CANCELED">취소</option>
         </select>
-        <button className={s.actionBtn} onClick={() => void loadTransactions()} disabled={loading}>
-          {loading ? '조회 중' : '새로고침'}
-        </button>
         <span style={{ marginLeft: 'auto', fontSize: 13, color: '#8B8FA8' }}>최대 100건</span>
       </div>
 

@@ -4,6 +4,7 @@ import {
   type AdminDeactivatedMemberDto,
 } from '../../api/adminMembers';
 import styles from './admin.module.css';
+import { useRegisterAdminRefresh } from './AdminRefreshContext';
 
 const PAGE_SIZE = 5;
 const NOW_TIME = Date.now();
@@ -50,6 +51,8 @@ const WithdrawnMemberPage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [loadMembers]);
 
+  useRegisterAdminRefresh(loadMembers, loading);
+
   const summary = useMemo(() => {
     const recent = members.filter(member => {
       if (!member.withdrawnAt) return false;
@@ -94,11 +97,6 @@ const WithdrawnMemberPage: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <button className={styles.actionBtn} onClick={() => void loadMembers()} disabled={loading}>
-          {loading ? '조회 중' : '새로고침'}
-        </button>
-      </div>
 
       {error && (
         <div style={{ marginBottom: 12, padding: '10px 12px', borderRadius: 8, background: '#FDEEED', color: '#C62828', fontSize: 13 }}>

@@ -30,7 +30,6 @@ const SalesHistoryPage: React.FC<Props> = ({ onBack }) => {
             </div>
             <div className={styles.tradeActions}>
               <span className={`${styles.statusBadge} ${tab==='판매중'?styles.statusOn:styles.statusDone}`}>{tab==='판매중'?'판매중':'완료'}</span>
-              {tab==='거래완료' && <button className={styles.reviewBtn}>후기 작성</button>}
             </div>
           </div>
         )) : (

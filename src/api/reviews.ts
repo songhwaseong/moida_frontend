@@ -28,3 +28,15 @@ export const getReceivedReviews = async (size = 50) => {
   });
   return unwrap(response);
 };
+
+export interface CreateReviewPayload {
+  productId: number;
+  rating: number;        // 1~5
+  content?: string;
+}
+
+// 구매자(낙찰자)가 수령확인을 마친 거래에 대해 판매자 후기를 작성한다.
+export const createReview = async (payload: CreateReviewPayload) => {
+  const response = await customAxios.post<ApiResponse<number>>('/members/me/reviews', payload);
+  return unwrap(response);
+};

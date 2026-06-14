@@ -4,8 +4,10 @@ import {
   getMyPurchases,
   type PurchaseHistoryDto,
 } from '../../api/products';
+import { createReview } from '../../api/reviews';
 import { useToast } from '../../components/ToastContext';
 import AlertModal from '../../components/AlertModal';
+import ReviewWriteModal from '../../components/ReviewWriteModal';
 import styles from './MySubPage.module.css';
 
 const TABS = ['진행중', '구매완료'] as const;
@@ -37,6 +39,9 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   // 수령확인 확인 모달 대상 (null 이면 닫힘)
   const [confirmTarget, setConfirmTarget] = useState<PurchaseHistoryDto | null>(null);
+  // 후기 작성 모달 대상 (null 이면 닫힘) + 제출 중 여부
+  const [reviewTarget, setReviewTarget] = useState<PurchaseHistoryDto | null>(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const loadPurchases = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -93,10 +98,29 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
       showToast('수령확인이 완료되었습니다. 판매자 정산도 처리됐어요.', 'success');
       await loadPurchases(false);
       setTab('구매완료');
+      // 수령확인 직후 바로 후기 작성 모달을 띄운다.
+      setReviewTarget(item);
     } catch (confirmError) {
       showToast(getApiErrorMessage(confirmError, '수령확인에 실패했습니다.'), 'error');
     } finally {
       setConfirmingId(null);
+    }
+  };
+
+  // 후기 작성 모달 제출 처리
+  const handleSubmitReview = async (rating: number, content: string) => {
+    const item = reviewTarget;
+    if (!item) return;
+    setSubmittingReview(true);
+    try {
+      await createReview({ productId: item.productId, rating, content: content || undefined });
+      showToast('후기가 등록되었습니다. 감사합니다!', 'success');
+      setReviewTarget(null);
+      await loadPurchases(false);
+    } catch (reviewError) {
+      showToast(getApiErrorMessage(reviewError, '후기 등록에 실패했습니다.'), 'error');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -160,6 +184,12 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
                   {confirmingId === item.productId ? '처리중' : '수령확인'}
                 </button>
               )}
+              {item.canReview && (
+                <button className={styles.reviewBtn} onClick={() => setReviewTarget(item)}>
+                  후기 작성
+                </button>
+              )}
+              {item.reviewed && <span className={styles.reviewDone}>후기 작성 완료</span>}
             </div>
           </div>
         )) : (
@@ -176,6 +206,16 @@ const PurchaseHistoryPage: React.FC<Props> = ({ onBack }) => {
           cancelLabel="취소"
           onConfirm={doConfirmReceipt}
           onCancel={() => setConfirmTarget(null)}
+        />
+      )}
+
+      {reviewTarget && (
+        <ReviewWriteModal
+          productName={reviewTarget.name}
+          productImage={reviewTarget.image}
+          submitting={submittingReview}
+          onSubmit={handleSubmitReview}
+          onClose={() => setReviewTarget(null)}
         />
       )}
     </div>

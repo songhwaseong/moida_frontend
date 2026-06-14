@@ -89,6 +89,8 @@ export interface PurchaseHistoryDto {
   purchasedAt: string | null;
   deliveredAt: string | null;
   receivedAt: string | null;
+  reviewed: boolean;       // 이미 후기를 작성했는지
+  canReview: boolean;      // 후기 작성 가능 여부(수령확인 완료 && 미작성)
 }
 
 const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;

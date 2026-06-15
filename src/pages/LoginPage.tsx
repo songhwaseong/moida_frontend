@@ -275,6 +275,10 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
   const passwordlessProgress = passwordlessSession && passwordlessSession.expiresInSeconds > 0
     ? Math.max(0, Math.min(100, (passwordlessRemainingSeconds / passwordlessSession.expiresInSeconds) * 100))
     : 0;
+  // 인증번호를 3글자 + 공백 + 3글자 형태로 표시 (예: "123 456")
+  const passwordlessCodeText = passwordlessSession
+    ? passwordlessSession.oneTimeToken.replace(/(.{3})(?=.)/g, '$1 ')
+    : ' ';
 
   useEffect(() => {
     if (passwordlessSession && passwordlessRemainingSeconds <= 0) {
@@ -362,7 +366,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onAdmin, onGoSignup, onFindAccoun
                   <div className={styles.passwordlessTimer}>
                     <div className={styles.passwordlessTimerFill} style={{ width: `${passwordlessProgress}%` }} />
                     <div className={styles.passwordlessCode}>
-                      {passwordlessSession ? passwordlessSession.oneTimeToken : '\u00A0'}
+                      {passwordlessSession ? passwordlessCodeText : '\u00A0'}
                     </div>
                   </div>
                   {passwordlessSession && (

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getSellerProducts, toProduct } from '../api/products';
+import { getMemberReceivedReviews, type ReceivedReviewDto } from '../api/reviews';
 import type { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import styles from './SellerProfilePage.module.css';
@@ -18,48 +19,80 @@ interface Props {
   onProductClick?: (product: Product) => void;
 }
 
-const REVIEWS = [
-  { id: 1, user: '구매자1', stars: 5, text: '친절하고 물건 상태도 완벽했어요! 강추합니다 😊', date: '2026.04.20' },
-  { id: 2, user: '구매자2', stars: 4, text: '빠른 거래 감사합니다. 상품도 설명과 동일했어요.', date: '2026.04.15' },
-  { id: 3, user: '구매자3', stars: 5, text: '매너 좋은 판매자세요! 다음에도 거래하고 싶어요.', date: '2026.04.10' },
-];
+interface SellerProductsState {
+  sellerId: number;
+  items: Product[];
+  loading: boolean;
+  error: string;
+}
+
+interface SellerReviewsState {
+  sellerId: number;
+  items: ReceivedReviewDto[];
+  loading: boolean;
+  error: string;
+}
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const ratingCount = (rating: number) => Math.max(0, Math.min(5, Math.round(rating)));
+
+const ThumbUp = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', verticalAlign: 'middle' }}>
+    <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" />
+    <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
+  </svg>
+);
 
 const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) => {
   const [activeTab, setActiveTab] = useState<'selling' | 'reviews'>('selling');
   const [barWidth, setBarWidth] = useState(0);
-  const [sellerProducts, setSellerProducts] = useState<Product[]>([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [productsError, setProductsError] = useState('');
+  const [productsState, setProductsState] = useState<SellerProductsState>({
+    sellerId: seller.id,
+    items: [],
+    loading: true,
+    error: '',
+  });
+  const [reviewsState, setReviewsState] = useState<SellerReviewsState>({
+    sellerId: seller.id,
+    items: [],
+    loading: true,
+    error: '',
+  });
 
-  // 매너온도 막대 애니메이션
   useEffect(() => {
     const timer = setTimeout(() => {
-      // 매너온도 범위: 30°C(최저) ~ 50°C(최고), 36.5°C가 중간 기준
       setBarWidth(Math.min(100, Math.max(0, ((seller.temp - 30) / 20) * 100)));
     }, 300);
     return () => clearTimeout(timer);
   }, [seller.temp]);
 
-  const tempColor = seller.temp >= 38 ? '#E24B4A' : seller.temp >= 36.5 ? '#EF9F27' : '#5B9BD5';
-
-  // 해당 판매자 상품 필터링
   useEffect(() => {
     let active = true;
 
     getSellerProducts(seller.id)
       .then((products) => {
         if (!active) return;
-        setSellerProducts(products.map(toProduct));
-        setProductsError('');
+        setProductsState({
+          sellerId: seller.id,
+          items: products.map(toProduct),
+          loading: false,
+          error: '',
+        });
       })
       .catch((error) => {
         if (!active) return;
         console.error('Failed to load seller products', error);
-        setSellerProducts([]);
-        setProductsError('판매 상품을 불러오지 못했어요.');
-      })
-      .finally(() => {
-        if (active) setProductsLoading(false);
+        setProductsState({
+          sellerId: seller.id,
+          items: [],
+          loading: false,
+          error: '판매 상품을 불러오지 못했어요.',
+        });
       });
 
     return () => {
@@ -67,17 +100,48 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
     };
   }, [seller.id]);
 
-  const avgStars = (REVIEWS.reduce((sum, r) => sum + r.stars, 0) / REVIEWS.length).toFixed(1);
-  const ThumbUp = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline', verticalAlign: 'middle' }}>
-      <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z" />
-      <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3" />
-    </svg>
-  );
+  useEffect(() => {
+    let active = true;
+
+    getMemberReceivedReviews(seller.id)
+      .then((nextReviews) => {
+        if (!active) return;
+        setReviewsState({
+          sellerId: seller.id,
+          items: nextReviews,
+          loading: false,
+          error: '',
+        });
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error('Failed to load seller reviews', error);
+        setReviewsState({
+          sellerId: seller.id,
+          items: [],
+          loading: false,
+          error: '받은 후기를 불러오지 못했어요.',
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [seller.id]);
+
+  const tempColor = seller.temp >= 38 ? '#E24B4A' : seller.temp >= 36.5 ? '#EF9F27' : '#5B9BD5';
+  const sellerProducts = productsState.sellerId === seller.id ? productsState.items : [];
+  const productsLoading = productsState.sellerId !== seller.id || productsState.loading;
+  const productsError = productsState.sellerId === seller.id ? productsState.error : '';
+  const reviews = reviewsState.sellerId === seller.id ? reviewsState.items : [];
+  const reviewsLoading = reviewsState.sellerId !== seller.id || reviewsState.loading;
+  const reviewsError = reviewsState.sellerId === seller.id ? reviewsState.error : '';
+  const avgStars = reviews.length > 0
+    ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+    : '-';
 
   return (
     <div className={styles.page}>
-      {/* 헤더 */}
       <div className={styles.header}>
         <button className={styles.back} onClick={onBack}>
           <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -89,14 +153,12 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
       </div>
 
       <div className={styles.scroll}>
-        {/* 프로필 카드 */}
         <div className={styles.profileCard}>
-          <div className={styles.avatar}>😊</div>
+          <div className={styles.avatar}>👤</div>
           <div className={styles.profileInfo}>
             <p className={styles.name}>{seller.name}</p>
-            <p className={styles.location}>📍 {seller.location}</p>
+            <p className={styles.location}>📍 {seller.location || '-'}</p>
 
-            {/* 매너온도 */}
             <div className={styles.tempRow}>
               <span className={styles.tempLabel}>매너온도</span>
               <span className={styles.tempValue} style={{ color: tempColor }}>
@@ -114,7 +176,6 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
           </div>
         </div>
 
-        {/* 통계 */}
         <div className={styles.stats}>
           <div className={styles.statItem}>
             <span className={styles.statNum}>{seller.sales}</span>
@@ -132,24 +193,26 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
           </div>
           <div className={styles.statDivider} />
           <div className={styles.statItem}>
-            <span className={styles.statNum}>{REVIEWS.length}</span>
+            <span className={styles.statNum}>{reviews.length}</span>
             <span className={styles.statLabel}>후기</span>
           </div>
         </div>
 
-        {/* 탭 */}
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${activeTab === 'selling' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('selling')}
-          >판매 상품 {sellerProducts.length}</button>
+          >
+            판매 상품 {sellerProducts.length}
+          </button>
           <button
             className={`${styles.tab} ${activeTab === 'reviews' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('reviews')}
-          >받은 후기 {REVIEWS.length}</button>
+          >
+            받은 후기 {reviews.length}
+          </button>
         </div>
 
-        {/* 판매 상품 */}
         {activeTab === 'selling' && (
           <div className={styles.productList}>
             {productsLoading ? (
@@ -161,40 +224,54 @@ const SellerProfilePage: React.FC<Props> = ({ seller, onBack, onProductClick }) 
                 <p className={styles.emptyText}>{productsError}</p>
               </div>
             ) : sellerProducts.length > 0 ? (
-              sellerProducts.map((p) => (
-                <ProductCard key={p.id} product={p} onClick={onProductClick} />
+              sellerProducts.map((product) => (
+                <ProductCard key={product.id} product={product} onClick={onProductClick} />
               ))
             ) : (
               <div className={styles.empty}>
-                <p style={{ fontSize: 36 }}>📦</p>
+                <p style={{ fontSize: 36 }}>🛍️</p>
                 <p className={styles.emptyText}>판매중인 상품이 없어요</p>
               </div>
             )}
           </div>
         )}
 
-        {/* 받은 후기 */}
         {activeTab === 'reviews' && (
           <div className={styles.reviewList}>
-            {REVIEWS.map((r) => (
-              <div key={r.id} className={styles.reviewItem}>
-                <div className={styles.reviewHeader}>
-                  <div className={styles.reviewUser}>
-                    <div className={styles.reviewAvatar}>👤</div>
-                    <span className={styles.reviewName}>{r.user}</span>
-                  </div>
-                  <span className={styles.reviewDate}>{r.date}</span>
-                </div>
-                <div className={styles.stars} style={{ display: 'flex', gap: 3, color: '#E24B4A' }}>
-                  {Array.from({ length: r.stars }).map((_, i) => <ThumbUp key={i} />)}
-                </div>
-                <p className={styles.reviewText}>{r.text}</p>
+            {reviewsLoading ? (
+              <div className={styles.empty}>
+                <p className={styles.emptyText}>받은 후기를 불러오는 중...</p>
               </div>
-            ))}
+            ) : reviewsError ? (
+              <div className={styles.empty}>
+                <p className={styles.emptyText}>{reviewsError}</p>
+              </div>
+            ) : reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div key={review.id} className={styles.reviewItem}>
+                  <div className={styles.reviewHeader}>
+                    <div className={styles.reviewUser}>
+                      <div className={styles.reviewAvatar}>{review.reviewerAvatar || '👤'}</div>
+                      <span className={styles.reviewName}>{review.reviewerNickname}</span>
+                    </div>
+                    <span className={styles.reviewDate}>{formatDate(review.createdAt)}</span>
+                  </div>
+                  <div className={styles.stars} style={{ display: 'flex', gap: 3, color: '#E24B4A' }}>
+                    {Array.from({ length: ratingCount(review.rating) }).map((_, index) => <ThumbUp key={index} />)}
+                  </div>
+                  <p className={styles.reviewText}>{review.content || '내용 없는 후기입니다.'}</p>
+                  <p className={styles.reviewDate}>{review.productName}</p>
+                </div>
+              ))
+            ) : (
+              <div className={styles.empty}>
+                <p style={{ fontSize: 36 }}>💬</p>
+                <p className={styles.emptyText}>아직 받은 후기가 없어요</p>
+              </div>
+            )}
           </div>
         )}
       </div>
-
     </div>
   );
 };

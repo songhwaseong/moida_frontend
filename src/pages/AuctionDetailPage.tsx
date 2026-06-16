@@ -16,9 +16,21 @@ interface Props {
   isLoggedIn?: boolean;
   onRequireLogin?: () => void;
   onSellerClick?: (seller: { id: number; name: string; temp: number; sales: number; location: string }) => void;
+  onWalletClick?: () => void;
+  onPurchasesClick?: () => void;
+  onMyProductsClick?: () => void;
 }
 
-const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false, onRequireLogin, onSellerClick }) => {
+const AuctionDetailPage: React.FC<Props> = ({
+  itemId,
+  onBack,
+  isLoggedIn = false,
+  onRequireLogin,
+  onSellerClick,
+  onWalletClick,
+  onPurchasesClick,
+  onMyProductsClick,
+}) => {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [item, setItem] = useState<AuctionDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,6 +201,20 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
     : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   const isUrgent = timeLeft > 0 && timeLeft < 300;
   const isEnded  = timeLeft <= 0;
+  const isAuctionLive = item?.auctionStatus ? item.auctionStatus === 'LIVE' : Boolean(item?.isLive && !isEnded);
+  const shouldShowClosedNotice = Boolean(item && !isAuctionLive && item.auctionStatus !== 'AWAITING_PAYMENT');
+  const closedNoticeTitle = item?.auctionStatus === 'SUCCESS'
+    ? '낙찰이 완료된 상품입니다.'
+    : item?.auctionStatus === 'FAILED'
+      ? '유찰된 경매입니다.'
+      : item?.auctionStatus === 'CANCELED'
+        ? '취소된 경매입니다.'
+        : '경매가 종료되었습니다.';
+  const closedNoticeText = item?.isWinner
+    ? '구매자 결제 및 배송 진행 상태는 구매내역에서 확인할 수 있습니다.'
+    : item?.ownedByMe
+      ? '판매 상품의 배송 및 정산 진행 상태는 내 등록 상품에서 확인할 수 있습니다.'
+      : '이미 종료된 경매라 입찰이나 즉시낙찰을 진행할 수 없습니다.';
 
   const getApiErrorMessage = (error: unknown, fallback: string) => {
     const response = (error as { response?: { data?: { message?: string } } })?.response;
@@ -223,6 +249,20 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
     } finally {
       setIsBidding(false);
     }
+  };
+
+  const goToWallet = () => {
+    setShowBidModal(false);
+    setShowInstantModal(false);
+    onWalletClick?.();
+  };
+
+  const goToPurchases = () => {
+    onPurchasesClick?.();
+  };
+
+  const goToMyProducts = () => {
+    onMyProductsClick?.();
   };
 
   // ── 결제 대기 흐름 ────────────────────────────────────────────
@@ -449,6 +489,31 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 </div>
               )}
 
+              {item.auctionStatus === 'AWAITING_PAYMENT' && !item.isWinner && (
+                <div className={styles.auctionNotice}>
+                  <p className={styles.noticeTitle}>낙찰되어 결제 대기 중인 상품입니다.</p>
+                  <p className={styles.noticeText}>낙찰자 결제 절차가 진행 중이라 추가 입찰이나 즉시낙찰을 할 수 없습니다.</p>
+                </div>
+              )}
+
+              {shouldShowClosedNotice && (
+                <div className={styles.auctionNotice}>
+                  <p className={styles.noticeTitle}>{closedNoticeTitle}</p>
+                  <p className={styles.noticeText}>{closedNoticeText}</p>
+                  {item.isWinner && (
+                    <button type="button" className={styles.noticeAction} onClick={goToPurchases}>
+                      구매내역으로 이동
+                    </button>
+                  )}
+                  {item.ownedByMe && (
+                    <button type="button" className={styles.noticeAction} onClick={goToMyProducts}>
+                      내 등록 상품으로 이동
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {isAuctionLive && (
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button
                   className={styles.inlineBidBtn}
@@ -457,9 +522,8 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                     void refreshBalance();
                     setShowBidModal(true);
                   }}
-                  disabled={isEnded}
                 >
-                  {isEnded ? '경매 종료' : '입찰하기'}
+                  입찰하기
                 </button>
                 <button
                   className={styles.inlineInstantBtn}
@@ -484,6 +548,7 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                   즉시낙찰
                 </button>
               </div>
+              )}
             </div>
 
             {/* 입찰 이력 */}
@@ -647,9 +712,12 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 autoFocus
               />
               {isInsufficient && (
-                <p className={styles.insufficientMsg}>
+                <div className={styles.insufficientMsg}>
                   잔액이 부족해요. {(bidAmount - userBalance).toLocaleString()} 더 필요해요
-                </p>
+                  <button type="button" className={styles.walletLinkBtn} onClick={goToWallet}>
+                    내 계좌로 이동
+                  </button>
+                </div>
               )}
               <div className={styles.modalBtns}>
                 <button className={styles.modalCancel} onClick={() => setShowBidModal(false)}>취소</button>
@@ -686,9 +754,12 @@ const AuctionDetailPage: React.FC<Props> = ({ itemId, onBack, isLoggedIn = false
                 readOnly
               />
               {isInsufficient && (
-                <p className={styles.insufficientMsg}>
+                <div className={styles.insufficientMsg}>
                   잔액이 부족해요. {(item.immediatePrice - userBalance).toLocaleString()} 더 필요해요
-                </p>
+                  <button type="button" className={styles.walletLinkBtn} onClick={goToWallet}>
+                    내 계좌로 이동
+                  </button>
+                </div>
               )}
               <div className={styles.modalBtns}>
                 <button className={styles.modalCancel} onClick={() => setShowInstantModal(false)}>취소</button>

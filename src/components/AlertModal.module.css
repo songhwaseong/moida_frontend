@@ -24,6 +24,21 @@
   animation: slideUp 0.2s ease;
 }
 
+.modalLarge {
+  max-width: 440px;
+  padding: 34px 32px 28px;
+  gap: 14px;
+}
+
+.modalLarge .message {
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.modalLarge .actions {
+  margin-top: 8px;
+}
+
 .iconWrap {
   width: 52px;
   height: 52px;

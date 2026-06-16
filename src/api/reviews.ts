@@ -29,6 +29,13 @@ export const getReceivedReviews = async (size = 50) => {
   return unwrap(response);
 };
 
+export const getMemberReceivedReviews = async (memberId: number, size = 50) => {
+  const response = await customAxios.get<ApiResponse<ReceivedReviewDto[]>>(`/public/members/${memberId}/reviews/received`, {
+    params: { size },
+  });
+  return unwrap(response);
+};
+
 export interface CreateReviewPayload {
   productId: number;
   rating: number;        // 1~5

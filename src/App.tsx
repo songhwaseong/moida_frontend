@@ -121,6 +121,8 @@ const SELL_NOTICE_DISMISSED_KEY = 'moida_sell_notice_dismissed';
 const ADMIN_IDLE_STORAGE_KEY = 'moida_admin_idle_minutes';
 const ADMIN_IDLE_WARNED_KEY = 'moida_admin_idle_warned';
 const ADMIN_IDLE_WARN_COUNTDOWN_S = 30;
+const PRODUCT_SUBMIT_NOTICE_MESSAGE =
+  '상품 등록이 완료되었습니다.\n관리자 승인 후 경매예정 상품으로 등록되며, 승인 전에는 다른 사용자에게 노출되지 않습니다.';
 
 const isAppHistoryState = (state: unknown): state is AppHistoryState => {
   return typeof state === 'object' && state !== null && (state as AppHistoryState).source === 'moida-app';
@@ -326,6 +328,7 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationCount, setNotificationCount] = useState(0);
   const [showSellNotice, setShowSellNotice] = useState(false);
+  const [submittedProductNoticeId, setSubmittedProductNoticeId] = useState<number | null>(null);
 
   // 폼 이탈 확인 상태
   const [formDirty, setFormDirty] = useState(false);
@@ -535,6 +538,12 @@ const App: React.FC = () => {
   };
 
   const handleNotificationLink = useCallback((linkUrl: string, notification?: NotificationDto) => {
+    if (notification?.type === 'DELIVERY_DELIVERED') {
+      setNavTab('my');
+      setScreen({ type: 'myMenu', menu: '구매 내역' });
+      return;
+    }
+
     if (isWalletDepositApprovalNotification(notification)) {
       setNavTab('my');
       setScreen({ type: 'myMenu', menu: '내 계좌' });
@@ -1022,12 +1031,33 @@ const App: React.FC = () => {
         onDirtyChange={setFormDirty}
         onSubmit={(productId: number) => {
           setFormDirty(false);
+          setSubmittedProductNoticeId(productId);
           setScreen({ type: 'productDetail', id: productId }); // ← 등록 후 상세 페이지로
         }}
       />
     );
     if (screen.type === 'sellerProfile') return <SellerProfilePage seller={screen.seller} onBack={goBack} onProductClick={handleProductClick} />;
-    if (screen.type === 'auctionDetail') return <AuctionDetailPage itemId={screen.id} onBack={goBack} isLoggedIn={isLoggedIn || isAdmin} onRequireLogin={() => requireLogin(() => { })} onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })} />;
+    if (screen.type === 'auctionDetail') return (
+      <AuctionDetailPage
+        itemId={screen.id}
+        onBack={goBack}
+        isLoggedIn={isLoggedIn || isAdmin}
+        onRequireLogin={() => requireLogin(() => { })}
+        onSellerClick={(seller) => setScreen({ type: 'sellerProfile', seller })}
+        onWalletClick={() => {
+          setNavTab('my');
+          setScreen({ type: 'myMenu', menu: '내 계좌' });
+        }}
+        onPurchasesClick={() => {
+          setNavTab('my');
+          setScreen({ type: 'myMenu', menu: '구매 내역' });
+        }}
+        onMyProductsClick={() => {
+          setNavTab('my');
+          setScreen({ type: 'myMenu', menu: '내 등록 상품' });
+        }}
+      />
+    );
     if (screen.type === 'productDetail') return (
       <ProductDetailPage
         productId={screen.id}
@@ -1137,6 +1167,14 @@ const App: React.FC = () => {
         <SellNoticeModal
           onConfirm={handleConfirmSellNotice}
           onCancel={() => setShowSellNotice(false)}
+        />
+      )}
+      {screen.type === 'productDetail' && submittedProductNoticeId === screen.id && (
+        <AlertModal
+          message={PRODUCT_SUBMIT_NOTICE_MESSAGE}
+          confirmLabel="확인"
+          size="large"
+          onConfirm={() => setSubmittedProductNoticeId(null)}
         />
       )}
       {adminIdleModal}

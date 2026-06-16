@@ -5,6 +5,7 @@ interface Props {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  size?: 'default' | 'large';
   onConfirm: () => void;
   onCancel?: () => void; // 없으면 단순 알럿(버튼 1개)
 }
@@ -13,6 +14,7 @@ const AlertModal: React.FC<Props> = ({
   message,
   confirmLabel = '로그인하기',
   cancelLabel = '취소',
+  size = 'default',
   onConfirm,
   onCancel,
 }) => {
@@ -26,7 +28,10 @@ const AlertModal: React.FC<Props> = ({
 
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
-      <div className={styles.modal} onClick={e => e.stopPropagation()}>
+      <div
+        className={`${styles.modal} ${size === 'large' ? styles.modalLarge : ''}`}
+        onClick={e => e.stopPropagation()}
+      >
         <div className={styles.iconWrap}>
           <svg width="28" height="28" fill="none" stroke="var(--primary)" strokeWidth="2" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="10"/>

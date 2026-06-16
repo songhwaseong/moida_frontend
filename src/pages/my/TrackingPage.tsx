@@ -91,7 +91,7 @@ const buildDemoResult = (
       time: `2026.06.${String(13 - index).padStart(2, '0')} ${String(15 - index).padStart(2, '0')}:00`,
       location: step.location,
       status: step.status,
-      stepStatus: complete ? 'done' : index === 0 ? 'active' : 'done',
+      stepStatus: complete ? 'done' : index === visibleSteps.length - 1 ? 'active' : 'done',
     })),
   };
 };

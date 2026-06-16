@@ -79,7 +79,7 @@ const PopularPage: React.FC<Props> = ({ selectedCategory, onProductClick, onAuct
           className={`${styles.tab} ${activeTab === 'product' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('product')}
         >
-          인기 중고(예정)
+          인기경매(예정)
           {selectedCategory && <span className={styles.categoryBadge}>{selectedCategory}</span>}
         </button>
         <button
@@ -114,7 +114,7 @@ const PopularPage: React.FC<Props> = ({ selectedCategory, onProductClick, onAuct
         ) : (
           <div className={styles.empty}>
             <p style={{ fontSize: 36 }}>📦</p>
-            <p className={styles.emptyText}>{selectedCategory} 카테고리 인기 중고(예정)가 없어요</p>
+            <p className={styles.emptyText}>{selectedCategory} 카테고리 인기경매(예정)가 없어요</p>
           </div>
         )
       ) : (

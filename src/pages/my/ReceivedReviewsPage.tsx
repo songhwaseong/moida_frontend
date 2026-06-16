@@ -117,6 +117,10 @@ const ReceivedReviewsPage: React.FC<Props> = ({ onBack }) => {
                 src={r.productImage || moidaLogoMark}
                 alt={r.productName}
                 className={styles.reviewProductImg}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = moidaLogoMark;
+                }}
               />
               <p className={styles.reviewProduct}>{r.productName}</p>
             </div>

@@ -4,6 +4,7 @@ import Banner from '../components/Banner';
 import AuctionCard from '../components/AuctionCard';
 import ProductCard from '../components/ProductCard';
 import SectionHeader from '../components/SectionHeader';
+import AlertModal from '../components/AlertModal';
 import { CATEGORIES as FALLBACK_CATEGORIES } from '../data/mockData';
 import { getProducts, toAuctionItem, toProduct, type ProductSortKey } from '../api/products';
 import { fetchCategories } from '../api/categories';
@@ -71,6 +72,7 @@ const HomePage: React.FC<Props> = ({
   const [auctions, setAuctions] = useState<AuctionItem[]>([]);
   const [categories, setCategories] = useState<Category[]>(FALLBACK_CATEGORIES);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showSiteClosureModal, setShowSiteClosureModal] = useState(true);
   // 최초 로드는 placeholder ("불러오는 중...")를 띄우지만, 정렬/카테고리 변경에 의한
   // 재조회 시에는 화면 흔들림(레이아웃 시프트로 인한 스크롤 점프)을 막기 위해
   // 기존 데이터를 그대로 보여주고 응답이 오면 조용히 교체한다.
@@ -272,7 +274,17 @@ const HomePage: React.FC<Props> = ({
   }, []);
 
   return (
-    <main className={styles.main}>
+    <>
+      {showSiteClosureModal && (
+        <AlertModal
+          message={'MOIDA 서비스 종료 안내\n2026년 6월 18일부로 사이트가 폐쇄됩니다.\n그동안 이용해 주셔서 감사합니다.(이제 안해~~!!!!)'}
+          confirmLabel="확인"
+          size="large"
+          onConfirm={() => setShowSiteClosureModal(false)}
+        />
+      )}
+
+      <main className={styles.main}>
       <CategoryRow
         categories={categories}
         selectedLabel={selectedCategory}
@@ -392,7 +404,8 @@ const HomePage: React.FC<Props> = ({
           <div className={styles.empty}><p>해당 카테고리의 매물이 없어요</p></div>
         )}
       </section>
-    </main>
+      </main>
+    </>
   );
 };
 

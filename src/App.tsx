@@ -14,6 +14,7 @@ import AlertModal from './components/AlertModal';
 import SellNoticeModal from './components/SellNoticeModal';
 import { IDLE_OPTIONS, type IdleMinutes } from './pages/admin/adminSettingsOptions';
 import { recordAdminAuditEvent, type AdminAuditEventAction } from './api/adminAuditEvents';
+import { logout as revokeServerSession } from './api/auth';
 import {
   clearAuthSession,
   getAccessToken,
@@ -379,6 +380,10 @@ const App: React.FC = () => {
 
   // 일반/관리자 로그아웃 공통 처리: 모든 인증 상태를 한 번에 정리한다.
   const clearAllAuthState = useCallback(() => {
+    // 서버에 저장된 refresh 토큰도 폐기해 "로그아웃 = 서버 세션 무효화" 가 되게 한다.
+    // best-effort + fire-and-forget: 토큰은 revokeServerSession 내부에서 동기 캡처되므로,
+    // 아래 clearAuthSession() 으로 storage 를 비워도 요청 헤더에는 영향이 없다(로컬 정리도 지연 없음).
+    void revokeServerSession();
     clearAdminIdleTimer();
     clearAdminIdleCountdown();
     showAdminIdleModalRef.current = false;
